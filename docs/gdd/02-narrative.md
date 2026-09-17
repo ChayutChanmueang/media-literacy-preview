@@ -46,9 +46,11 @@
 ## สถานะสื่อวิดีโอ
 
 - ✅ มีเนื้อหาวิดีโอแนวตั้งแล้ว (ชุด "รู้ทันสื่อ")
-- ⏳ รอ: รายการคลิปทั้งหมด + ลิงก์ YouTube ของแต่ละคลิป เพื่อทำ mapping คลิป↔บทเรียน↔เกม ลงใน [Data Schema](../software/03-data-schema.md)
+- ✅ รายการคลิปทั้งหมด + ลิงก์ YouTube ของชุดที่ 1 (3 Topics) บันทึกไว้ที่ [04 — Video Clip Registry](./04-video-clips.md) แล้ว
+- ⏳ รอ: คลิปของชุดที่ 2 (เชิงทัศนคติ) — ยังไม่มี lessonId/videoId เฉพาะ
 
 ## Related Documents
 - Concept: [Concept & Architecture](./00-concept.md)
 - Mechanics: [Core Mechanics](./01-mechanics.md)
+- Video Clips: [04 — Video Clip Registry](./04-video-clips.md)
 - นโยบาย AI Content: [Concept §5](./00-concept.md#5-นโยบายการนำเสนอเนื้อหาที่สร้างจาก-ai-⚠️)

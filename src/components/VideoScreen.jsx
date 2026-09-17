@@ -5,17 +5,17 @@ import { loggingService } from '../services/loggingService';
 // Video mappings for the three lessons (US-CORE-03 & US-DATA-02)
 const VIDEO_MAP = {
   'topic-1': {
-    videoId: 'GYZJsM7sOKU', // Requested YouTube Shorts video
+    videoId: 'FtM6e2QcqgE', // Requested YouTube Shorts video
     title: 'วิธีสังเกตข่าวปลอมและโพสต์ลวงโลก',
     lessonNum: 'บทที่ 1'
   },
   'topic-2': {
-    videoId: '9l5Ro9NEoeg', // Requested YouTube Shorts video
+    videoId: 'olFI-ddmedk', // Requested YouTube Shorts video
     title: 'จับพิรุธสัญญาณมิจฉาชีพทาง SMS และ LINE',
     lessonNum: 'บทที่ 2'
   },
   'topic-3': {
-    videoId: 'XhdNGJPXqas', // Requested YouTube Shorts video
+    videoId: 'ZXQeMwJcWFg', // Requested YouTube Shorts video
     title: 'เท่าทันภัยภาพและเสียงสังเคราะห์จาก AI',
     lessonNum: 'บทที่ 3'
   }
@@ -24,7 +24,11 @@ const VIDEO_MAP = {
 export default function VideoScreen({ lessonId = 'topic-1', onNext }) {
   const [videoFinished, setVideoFinished] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
+  const [showSkipButton, setShowSkipButton] = useState(false);
   const playerRef = useRef(null);
+  const loadingTimerRef = useRef(null);
+  const videoPlayingRef = useRef(false);
+  const skipBtnShownAtRef = useRef(null);
 
   const videoDetails = VIDEO_MAP[lessonId] || VIDEO_MAP['topic-1'];
   const videoId = videoDetails.videoId;
@@ -33,6 +37,16 @@ export default function VideoScreen({ lessonId = 'topic-1', onNext }) {
   useEffect(() => {
     // Log entry event
     loggingService.logEvent('enter_video', { lesson_id: lessonId, video_id: videoId });
+
+    // US-CF-49: Start 1-second loading timer (for testing)
+    loadingTimerRef.current = setTimeout(() => {
+      console.log("[VideoScreen] Timer triggered. videoPlayingRef.current =", videoPlayingRef.current);
+      if (!videoPlayingRef.current) {
+        setShowSkipButton(true);
+        skipBtnShownAtRef.current = Date.now();
+        loggingService.logEvent('video_slow_load_shown', { lesson_id: lessonId, video_id: videoId });
+      }
+    }, 1000);
 
     // Check if script already loaded
     let sdkLoaded = window.YT !== undefined;
@@ -45,6 +59,7 @@ export default function VideoScreen({ lessonId = 'topic-1', onNext }) {
     }
 
     const initPlayer = () => {
+      console.log("[VideoScreen] Initializing YouTube Player...");
       playerRef.current = new window.YT.Player('yt-player-iframe', {
         height: '100%',
         width: '100%',
@@ -59,14 +74,31 @@ export default function VideoScreen({ lessonId = 'topic-1', onNext }) {
         },
         events: {
           onReady: (event) => {
+            console.log("[VideoScreen] Player ready. Attempting playVideo()...");
             setPlayerReady(true);
             try {
               event.target.playVideo();
-            } catch (e) {}
+            } catch (e) {
+              console.error("[VideoScreen] Error in playVideo:", e);
+            }
           },
           onStateChange: (event) => {
+            console.log("[VideoScreen] Player state changed to:", event.data);
             // YT.PlayerState.PLAYING is 1
             if (event.data === 1) {
+              videoPlayingRef.current = true;
+              if (loadingTimerRef.current) {
+                clearTimeout(loadingTimerRef.current);
+                loadingTimerRef.current = null;
+              }
+              // If button was already shown, it means it took > 7s but eventually loaded
+              setShowSkipButton((prev) => {
+                if (prev) {
+                  loggingService.logEvent('video_slow_load_resolved', { lesson_id: lessonId, video_id: videoId });
+                }
+                return false;
+              });
+              
               loggingService.logEvent('play_video', { lesson_id: lessonId, video_id: videoId });
             }
             // YT.PlayerState.ENDED is 0
@@ -86,6 +118,9 @@ export default function VideoScreen({ lessonId = 'topic-1', onNext }) {
     }
 
     return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
       if (playerRef.current && typeof playerRef.current.destroy === 'function') {
         try {
           playerRef.current.destroy();
@@ -94,119 +129,73 @@ export default function VideoScreen({ lessonId = 'topic-1', onNext }) {
     };
   }, [lessonId, videoId]);
 
-  const handleSkip = () => {
-    setVideoFinished(true);
-    loggingService.logEvent('skip_video', { lesson_id: lessonId, video_id: videoId });
+  const handleSkipSlowLoad = () => {
+    const waitDurationMs = skipBtnShownAtRef.current ? Date.now() - skipBtnShownAtRef.current : 0;
+    loggingService.logEvent('video_skip_slow_load', { 
+      lesson_id: lessonId, 
+      video_id: videoId,
+      wait_duration_ms: waitDurationMs
+    });
+    onNext();
   };
 
   return (
     <div className="screen-container">
-      <div className="content-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-          <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{videoDetails.lessonNum}</span>
+      <div className="content-area flex-1 flex flex-col">
+        <div className="flex items-center justify-center gap-2 text-[var(--text-secondary)]">
+          <span className="font-bold text-[var(--primary)]">{videoDetails.lessonNum}</span>
         </div>
 
-        <h2 style={{ marginTop: '8px', marginBottom: '8px' }}>{videoDetails.title}</h2>
-        <p className="text-small" style={{ marginBottom: '16px' }}>
+        <h2 className="mt-2 mb-2">{videoDetails.title}</h2>
+        <p className="text-small mb-4">
           *กรุณารับชมคลิปวิดีโอให้จบ เพื่อเปิดทำแบบฝึกหัดทบทวนครับ*
         </p>
 
-        {/* Video Player Container with 9:16 aspect ratio */}
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: '320px',
-          aspectRatio: '9 / 16',
-          backgroundColor: '#000000',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-lg)',
-          overflow: 'hidden',
-          margin: '0 auto 16px auto',
-          border: '4px solid var(--border)'
-        }}>
+        {/* Video Player Container with 9:16 aspect ratio — height-driven so it always
+            fits the space left after the title/instructions/buttons on a short phone,
+            instead of a fixed width that forces the height to whatever the ratio gives */}
+        <div className="relative h-[min(46dvh,400px)] max-w-full aspect-[9/16] bg-black rounded-[var(--radius-xl)] shadow-[var(--shadow-lg)] overflow-hidden mx-auto mb-4 border-4 border-[var(--border)] shrink-0">
           {/* IFrame placeholder */}
-          <div id="yt-player-iframe" style={{ width: '100%', height: '100%' }}></div>
-          
+          <div id="yt-player-iframe" className="w-full h-full"></div>
+
           {!playerReady && (
-            <div style={{
-              position: 'absolute',
-              top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              padding: '24px',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                width: '50px',
-                height: '50px',
-                border: '5px solid #334155',
-                borderTopColor: 'var(--primary)',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                marginBottom: '16px'
-              }}></div>
-              <span style={{ fontSize: '18px', fontWeight: 'bold' }}>กำลังโหลดวิดีโอ...</span>
+            <div className="absolute inset-0 bg-[rgba(15,23,42,0.95)] flex flex-col items-center justify-center text-white p-6 text-center">
+              <div className="w-[50px] h-[50px] border-[5px] border-[#334155] rounded-full [border-top-color:var(--primary)] [animation:spin_1s_linear_infinite] mb-4"></div>
+              <span className="text-[18px] font-bold">กำลังโหลดวิดีโอ...</span>
             </div>
           )}
         </div>
 
         {/* External Link Fallback */}
-        <a 
-          href={videoUrl} 
-          target="_blank" 
+        <a
+          href={videoUrl}
+          target="_blank"
           rel="noopener noreferrer"
-          className="btn btn-outline"
+          className="btn btn-outline max-w-[320px] mx-auto mb-4 min-h-[48px] px-4 py-2 text-[16px] gap-2"
           onClick={() => loggingService.logEvent('open_external_youtube', { lesson_id: lessonId, video_id: videoId })}
-          style={{ 
-            maxWidth: '320px', 
-            margin: '0 auto 16px auto', 
-            minHeight: '48px', 
-            padding: '8px 16px',
-            fontSize: '16px',
-            gap: '8px'
-          }}
         >
           <span>เปิดดูด้วยแอป YouTube</span>
           <ExternalLink size={16} />
         </a>
       </div>
 
-      {/* Developer Skip Feature & Next Button */}
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        
-        {!videoFinished && (
-          <button 
-            onClick={handleSkip}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              fontSize: '16px',
-              margin: '0 auto',
-              display: 'block'
-            }}
+      {/* Skip Slow Load & Next Button Area */}
+      <div className="w-full flex flex-col gap-3">
+
+        {!videoFinished && showSkipButton && (
+          <button
+            onClick={handleSkipSlowLoad}
+            className="btn btn-primary text-[22px] min-h-[64px] transition-all duration-300 skip-btn-enter"
           >
-            ข้ามวิดีโอ (สำหรับทดสอบ)
+            <span>ข้ามวิดีโอ</span>
+            <ArrowRight size={24} />
           </button>
         )}
 
-        <button 
-          onClick={onNext} 
-          className="btn btn-primary"
+        <button
+          onClick={onNext}
+          className={`btn btn-primary text-[22px] min-h-[64px] transition-all duration-300 ${videoFinished ? 'shadow-[0_0_15px_rgba(13,148,136,0.4)] scale-[1.02]' : 'shadow-none scale-100'}`}
           disabled={!videoFinished}
-          style={{ 
-            fontSize: '22px', 
-            minHeight: '64px',
-            boxShadow: videoFinished ? '0 0 15px rgba(13, 148, 136, 0.4)' : 'none',
-            transform: videoFinished ? 'scale(1.02)' : 'none',
-            transition: 'all 0.3s ease'
-          }}
         >
           <span>ไปทำแบบฝึกหัด (เกม)</span>
           <ArrowRight size={24} />

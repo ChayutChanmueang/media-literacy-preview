@@ -6,7 +6,7 @@ const LESSONS = [
   {
     id: 'topic-1',
     title: 'บทที่ 1: รู้เท่าทันข่าวสาร',
-    subTitle: 'ใครๆ ก็ทำสื่อได้ / จริงหรือมั่ว?',
+    subTitle: 'ใคร ๆ ก็ทำสื่อได้ / จริงหรือมั่ว?',
     desc: 'ฝึกวิเคราะห์ข้อมูลข่าวสารและหัวข้อข่าวที่แชร์ต่อๆ กันในกลุ่มไลน์',
     badge: 'ข่าวสารออนไลน์'
   },
@@ -18,11 +18,11 @@ const LESSONS = [
     badge: 'ป้องกันสแกม'
   },
   {
-    id: 'topic-3',
-    title: 'บทที่ 3: สังเกตสื่อจาก AI',
-    subTitle: 'Deepfake / ภาพสังเคราะห์',
-    desc: 'เรียนรู้วิธีสังเกตรายละเอียดภาพใบหน้าและจุดบกพร่องที่สร้างจาก AI',
-    badge: 'เทคโนโลยี AI'
+    id: 'topic-6',
+    title: 'บทที่ 3: จำลองแชท LINE',
+    subTitle: 'จับสัญญาณมิจในแชทจำลอง (G6)',
+    desc: 'ฝึกแตะจุดผิดปกติในห้องแชท LINE จำลองที่มิจฉาชีพทักเข้ามาหลอกลวงหลายรูปแบบ',
+    badge: 'จำลองสถานการณ์'
   },
   {
     id: 'topic-5',
@@ -32,11 +32,11 @@ const LESSONS = [
     badge: 'สร้างกำลังใจ'
   },
   {
-    id: 'topic-6',
-    title: 'บทที่ 5: จำลองแชท LINE',
-    subTitle: 'จับสัญญาณมิจในแชทจำลอง (G6)',
-    desc: 'ฝึกแตะจุดผิดปกติในห้องแชท LINE จำลองที่มิจฉาชีพทักเข้ามาหลอกลวงหลายรูปแบบ',
-    badge: 'จำลองสถานการณ์'
+    id: 'topic-3',
+    title: 'บทที่ 5: สังเกตสื่อจาก AI',
+    subTitle: 'Deepfake / AI หรือ ของจริง',
+    desc: 'เรียนรู้วิธีสังเกตรายละเอียดภาพใบหน้าและจุดบกพร่องที่สร้างจาก AI',
+    badge: 'เทคโนโลยี AI'
   }
 ];
 
@@ -82,73 +82,47 @@ export default function LessonSelector({
 
   if (activeSubPage === 'modes') {
     return (
-      <div className="screen-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--primary)', marginBottom: '12px' }}>
-          <BookOpen size={28} />
-          <span style={{ fontWeight: 'bold', fontSize: '24px' }}>รู้ทันสื่อวัยเก๋า</span>
+      <div className="screen-container flex flex-col justify-center overflow-y-auto [-webkit-overflow-scrolling:touch]">
+        <div className="flex items-center justify-center gap-2 text-[var(--primary)] mb-2">
+          <BookOpen size={26} />
+          <span className="font-bold text-[22px]">รู้ทันสื่อวัยเก๋า</span>
         </div>
-        
-        <h2 style={{ fontSize: '28px', textAlign: 'center', fontWeight: '800' }}>เลือกรูปแบบการเรียนรู้ของท่าน</h2>
-        <p className="text-lead" style={{ textAlign: 'center', marginBottom: '32px', fontSize: '20px' }}>
+
+        <h2 className="text-[26px] text-center font-extrabold">เลือกรูปแบบการเรียนรู้ของท่าน</h2>
+        <p className="text-lead text-center mb-5 text-[18px]">
           กรุณาเลือกรูปแบบที่ท่านชอบเพื่อเริ่มกิจกรรมแสนสนุกครับ
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+        <div className="flex flex-col gap-4 w-full">
           {/* Option 1: Flow Mode */}
           <button
             onClick={onStartFlowMode}
-            className="btn btn-primary"
-            style={{ 
-              width: '100%', 
-              fontSize: '22px', 
-              minHeight: '84px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
-              padding: '16px 24px',
-              borderRadius: 'var(--radius-lg)',
-              cursor: 'pointer',
-              boxShadow: 'var(--shadow-md)'
-            }}
+            className="btn btn-primary w-full text-[22px] min-h-[84px] justify-between px-6 py-4 rounded-[var(--radius-lg)] shadow-[var(--shadow-md)]"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="flex items-center gap-3">
               <ArrowRight size={26} />
-              <div style={{ textAlign: 'left' }}>
-                <span style={{ fontWeight: 'bold', display: 'block', fontSize: '22px' }}>1. เรียนต่อเนื่องอัตโนมัติ (Flow)</span>
-                <span style={{ fontSize: '13px', fontWeight: 'normal', opacity: 0.9, display: 'block', marginTop: '2px' }}>
+              <div className="text-left">
+                <span className="font-bold block text-[22px]">1. เรียนต่อเนื่องอัตโนมัติ (Flow)</span>
+                <span className="text-[13px] font-normal opacity-90 block mt-0.5">
                   เล่นวิดีโอและทำแบบฝึกหัดติดต่อกันจนครบทีละบท (แนะนำ)
                 </span>
               </div>
             </div>
           </button>
-          
+
           {/* Option 2: Manual Mode */}
           <button
             onClick={() => {
               setActiveSubPage('lessons');
               onStartManualMode('manual');
             }}
-            className="btn btn-outline"
-            style={{ 
-              width: '100%', 
-              fontSize: '22px', 
-              minHeight: '84px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
-              padding: '16px 24px',
-              borderColor: 'var(--primary)',
-              color: 'var(--primary)',
-              borderRadius: 'var(--radius-lg)',
-              cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)'
-            }}
+            className="btn btn-outline w-full text-[22px] min-h-[84px] justify-between px-6 py-4 border-[var(--primary)] text-[var(--primary)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)]"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="flex items-center gap-3">
               <BookOpen size={26} />
-              <div style={{ textAlign: 'left' }}>
-                <span style={{ fontWeight: 'bold', display: 'block', fontSize: '22px' }}>2. เลือกเรียนเองอิสระ (Manual)</span>
-                <span style={{ fontSize: '13px', fontWeight: 'normal', opacity: 0.9, display: 'block', marginTop: '2px' }}>
+              <div className="text-left">
+                <span className="font-bold block text-[22px]">2. เลือกเรียนเองอิสระ (Manual)</span>
+                <span className="text-[13px] font-normal opacity-90 block mt-0.5">
                   กดเลือกดูหัวข้อวิชาเรียนที่ท่านต้องการทบทวนเอง
                 </span>
               </div>
@@ -163,43 +137,31 @@ export default function LessonSelector({
   return (
     <div className="screen-container">
       {/* Back Button Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', width: '100%', textAlign: 'left' }}>
+      <div className="flex items-center gap-3 mb-4 w-full text-left">
         <button
           onClick={handleBackToModes}
-          className="btn btn-outline"
-          style={{ 
-            padding: '6px 12px', 
-            fontSize: '16px', 
-            minHeight: '40px', 
-            borderColor: 'var(--border)', 
-            color: 'var(--text-secondary)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            cursor: 'pointer'
-          }}
+          className="btn btn-outline px-3 py-1.5 text-[16px] min-h-[40px] border-[var(--border)] text-[var(--text-secondary)] rounded-[var(--radius-md)] gap-1.5"
         >
           <span>← ย้อนกลับ</span>
         </button>
-        <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+        <span className="text-[18px] font-bold text-[var(--text-secondary)]">
           เปลี่ยนรูปแบบการเรียน
         </span>
       </div>
 
       <div className="content-area">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--primary)' }}>
+        <div className="flex items-center justify-center gap-2 text-[var(--primary)]">
           <BookOpen size={24} />
-          <span style={{ fontWeight: 'bold', fontSize: '20px' }}>แผนผังวิชาเรียนรู้เท่าทันสื่อ</span>
+          <span className="font-bold text-[20px]">แผนผังวิชาเรียนรู้เท่าทันสื่อ</span>
         </div>
-        
+
         <h2>เลือกวิชาเรียนอิสระ (Manual)</h2>
-        <p className="text-lead" style={{ marginBottom: '24px' }}>
+        <p className="text-lead mb-6">
           กรุณากดเลือกหัวข้อบทเรียนด้านล่างนี้ เพื่อเข้าศึกษาบทเรียนสะสมดาวครับ
         </p>
 
         {/* Lessons map */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '12px' }}>
+        <div className="flex flex-col gap-5 mt-3">
           {LESSONS.map((lesson, idx) => {
             const unlocked = isLessonUnlocked(lesson.id, idx);
             const stars = progress.stars[lesson.id];
@@ -209,52 +171,41 @@ export default function LessonSelector({
               <div
                 key={lesson.id}
                 onClick={() => handleLessonClick(lesson, idx, unlocked)}
-                className="premium-card"
-                style={{
-                  padding: '20px',
-                  textAlign: 'left',
-                  cursor: unlocked ? 'pointer' : 'not-allowed',
-                  borderLeft: unlocked ? '8px solid var(--primary)' : '8px solid var(--border)',
-                  opacity: unlocked ? 1 : 0.65,
-                  backgroundColor: isCompleted ? 'rgba(13, 148, 136, 0.04)' : 'var(--bg-card)',
-                  transform: unlocked ? 'translateY(0)' : 'none',
-                  boxShadow: unlocked ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-                  transition: 'all 0.2s ease'
-                }}
+                className={`premium-card p-5 text-left transition-all duration-200 ${unlocked ? 'cursor-pointer opacity-100 shadow-[var(--shadow-md)] border-l-[8px] border-l-[var(--primary)]' : 'cursor-not-allowed opacity-65 shadow-[var(--shadow-sm)] border-l-[8px] border-l-[var(--border)]'}`}
+                style={{ backgroundColor: isCompleted ? 'rgba(13, 148, 136, 0.04)' : 'var(--bg-card)' }}
               >
                 {/* Badge and Unlock Status */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    padding: '4px 10px',
-                    borderRadius: 'var(--radius-pill)',
-                    backgroundColor: unlocked ? 'var(--primary-light)' : 'var(--border)',
-                    color: unlocked ? 'var(--primary-dark)' : 'var(--text-secondary)'
-                  }}>
+                <div className="flex justify-between items-center mb-2">
+                  <span
+                    className="text-[14px] font-bold px-2.5 py-1 rounded-[var(--radius-pill)]"
+                    style={{
+                      backgroundColor: unlocked ? 'var(--primary-light)' : 'var(--border)',
+                      color: unlocked ? 'var(--primary-dark)' : 'var(--text-secondary)'
+                    }}
+                  >
                     {lesson.badge}
                   </span>
-                  
+
                   {!unlocked && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)' }}>
+                    <div className="flex items-center gap-1 text-[var(--text-secondary)]">
                       <Lock size={16} />
-                      <span style={{ fontSize: '14px' }}>ต้องผ่านบทก่อนหน้า</span>
+                      <span className="text-[14px]">ต้องผ่านบทก่อนหน้า</span>
                     </div>
                   )}
                 </div>
 
                 {/* Title */}
-                <h3 style={{ fontSize: '22px', fontWeight: 'bold', margin: '4px 0' }}>{lesson.title}</h3>
-                <h4 style={{ fontSize: '18px', color: 'var(--text-secondary)', fontWeight: '600' }}>{lesson.subTitle}</h4>
-                <p className="text-small" style={{ marginTop: '8px', lineHeight: '1.4' }}>{lesson.desc}</p>
+                <h3 className="text-[22px] font-bold my-1">{lesson.title}</h3>
+                <h4 className="text-[18px] text-[var(--text-secondary)] font-semibold">{lesson.subTitle}</h4>
+                <p className="text-small mt-2 leading-snug">{lesson.desc}</p>
 
                 {/* Star display */}
                 {unlocked && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[var(--border)]">
+                    <span className="text-[16px] font-bold text-[var(--text-secondary)]">
                       {isCompleted ? 'รางวัลที่ได้:' : 'ยังไม่เคยเล่น:'}
                     </span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
+                    <div className="flex gap-1">
                       {[1, 2, 3].map((s) => (
                         <Star
                           key={s}
@@ -279,33 +230,14 @@ export default function LessonSelector({
             loggingService.logEvent('click_view_certificate');
             onGoToCertificate();
           }}
-          className="btn btn-primary"
-          style={{
-            fontSize: '22px',
-            minHeight: '68px',
-            backgroundColor: '#eab308',
-            color: '#0f172a',
-            fontWeight: 'bold',
-            boxShadow: '0 10px 20px -5px rgba(234, 179, 8, 0.4)',
-            animation: 'pulseGlow 2s infinite',
-            marginTop: '24px'
-          }}
+          className="btn btn-primary text-[22px] min-h-[68px] bg-[#eab308] text-[#0f172a] font-bold shadow-[0_10px_20px_-5px_rgba(234,179,8,0.4)] [animation:pulseGlow_2s_infinite] mt-6"
         >
           <Award size={24} />
           <span>รับใบประกาศเกียรติคุณสำเร็จวิชา</span>
           <ArrowRight size={24} />
         </button>
       ) : (
-        <div style={{ 
-          padding: '16px', 
-          textAlign: 'center', 
-          backgroundColor: 'var(--bg-app)', 
-          borderRadius: 'var(--radius-lg)',
-          marginTop: '24px',
-          fontSize: '16px',
-          color: 'var(--text-secondary)',
-          border: '1px dashed var(--border)'
-        }}>
+        <div className="p-4 text-center bg-[var(--bg-app)] rounded-[var(--radius-lg)] mt-6 text-[16px] text-[var(--text-secondary)] border border-dashed border-[var(--border)]">
           <span>🔒 เรียนสะสมดาวครบทั้ง 3 บทเรียน เพื่อรับเกียรติบัตรดีเด่น</span>
         </div>
       )}

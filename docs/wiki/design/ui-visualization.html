@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รู้ทันสื่อ Interactive — UI Design System Visualizer & Playground</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* ----------------------------------------------------
+       1. Core Design System Tokens (CSS Variables)
+       ---------------------------------------------------- */
+    :root {
+      /* Visualizer App Colors */
+      --vis-bg: #f8fafc;
+      --vis-panel: #ffffff;
+      --vis-panel-border: #e2e8f0;
+      --vis-text: #0f172a;
+      --vis-text-muted: #64748b;
+      
+      /* Active Simulator Variables (Teal theme default) */
+      --primary: #0d9488;
+      --primary-hover: #0f766e;
+      --primary-light: #ccfbf1;
+      --primary-dark: #115e59;
+      --primary-rgb: 13, 148, 136;
+      
+      --bg-app: #f8fafc;
+      --bg-card: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --border: #e2e8f0;
+      
+      --accent-success: #16a34a;
+      --accent-error: #dc2626;
+      
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-pill: 9999px;
+      
+      --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+      --font-content: 'Sarabun', 'Inter', system-ui, sans-serif;
+      
+      --font-size-base: 20px;
+      --font-size-title: 32px;
+      --font-size-subtitle: 24px;
+      --font-size-small: 18px;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --shadow-premium: 0 20px 25px -5px rgba(var(--primary-rgb), 0.08), 0 8px 10px -6px rgba(var(--primary-rgb), 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: var(--vis-bg);
+      color: var(--vis-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ----------------------------------------------------
+       2. Outer Layout Structure
+       ---------------------------------------------------- */
+    header {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--vis-panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(to right, #0d9488, #4f46e5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header p {
+      color: var(--vis-text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 430px;
+      flex: 1;
+      height: calc(100vh - 85px);
+      min-height: 600px;
+    }
+
+    /* Left Content Panel (Split into Tabs) */
+    .docs-area {
+      padding: 30px;
+      overflow-y: auto;
+      background-color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .tab-nav {
+      display: flex;
+      gap: 12px;
+      border-bottom: 1px solid var(--vis-panel-border);
+      padding-bottom: 12px;
+    }
+
+    .tab-link {
+      background: none;
+      border: none;
+      color: var(--vis-text-muted);
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-link:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--vis-text);
+    }
+
+    .tab-link.active {
+      background-color: #6366f1;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Right Smartphone Canvas */
+    .simulator-area {
+      background-color: #e2e8f0;
+      border-left: 1px solid var(--vis-panel-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ----------------------------------------------------
+       3. GDD Style Components (Left Panel)
+       ---------------------------------------------------- */
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #4f46e5;
+      border-left: 4px solid #4f46e5;
+      padding-left: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .content-box {
+      background-color: var(--vis-panel);
+      border: 1px solid var(--vis-panel-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      background-color: #ffffff;
+      padding: 24px;
+      border-radius: 16px;
+      color: #0f172a;
+      text-align: center;
+    }
+
+    .logo-img-placeholder {
+      width: 180px;
+      height: 180px;
+      background-color: #f1f5f9;
+      border-radius: 50%;
+      border: 3px dashed #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .logo-desc-item {
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: left;
+      border-left: 3px solid #6366f1;
+      padding-left: 10px;
+      margin-bottom: 12px;
+    }
+
+    /* Color Swatch Card */
+    .swatch-card {
+      background-color: var(--vis-panel);
+      border: 1px solid var(--vis-panel-border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .swatch-card:hover {
+      border-color: #6366f1;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .swatch-color {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      border: 1px solid var(--vis-panel-border);
+      flex-shrink: 0;
+    }
+
+    .swatch-info {
+      flex: 1;
+    }
+
+    .swatch-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--vis-text);
+      font-family: monospace;
+    }
+
+    .swatch-hex {
+      font-size: 14px;
+      color: var(--vis-text-muted);
+      font-family: monospace;
+      margin-top: 2px;
+    }
+
+    /* Code Pre block */
+    .code-wrapper {
+      position: relative;
+    }
+
+    .code-pre {
+      background-color: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #0f766e;
+      overflow-x: auto;
+      border: 1px solid var(--vis-panel-border);
+    }
+
+    .btn-copy {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background-color: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      background-color: #cbd5e1;
+    }
+
+    /* Component Sandbox Preview Box */
+    .sandbox-preview {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      font-family: var(--font-content);
+      font-size: var(--font-size-base);
+    }
+
+    /* ----------------------------------------------------
+       4. Smartphone Mockup & Screens
+       ---------------------------------------------------- */
+    .phone-frame {
+      width: 375px;
+      height: 760px;
+      background-color: #000;
+      border-radius: 40px;
+      padding: 10px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.1);
+      border: 3px solid #334155;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .phone-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 25px;
+      background-color: #000;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone-speaker {
+      width: 30px;
+      height: 3px;
+      border-radius: 1.5px;
+      background-color: #334155;
+    }
+
+    .phone-screen {
+      flex: 1;
+      background-color: var(--bg-app);
+      border-radius: 30px;
+      overflow-y: hidden; /* บังคับหน้าเดียว ไม่ให้มี scroll bar เพื่อความก้าวหน้าของผู้สูงอายุ */
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      font-family: var(--font-content);
+      font-size: var(--font-size-base);
+      color: var(--text-primary);
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* App Component Styles inside phone */
+    .app-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 28px 16px 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg-card);
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--primary);
+      font-family: var(--font-sans);
+    }
+
+    .app-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--primary);
+    }
+
+    .app-reset {
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .app-progress {
+      width: 100%;
+      height: 4px;
+      background-color: var(--border);
+      overflow: hidden;
+    }
+
+    .app-progress-bar {
+      height: 100%;
+      background-color: var(--primary);
+      width: 25%;
+      transition: width 0.3s;
+    }
+
+    .app-body {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .app-nav {
+      display: flex;
+      justify-content: space-around;
+      background-color: var(--bg-card);
+      border-top: 1px solid var(--border);
+      padding: 10px 4px;
+      border-bottom-left-radius: 30px;
+      border-bottom-right-radius: 30px;
+    }
+
+    .app-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 10px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-weight: 600;
+      font-family: var(--font-content);
+    }
+
+    .app-nav-btn.active {
+      color: var(--primary);
+    }
+
+    .app-nav-icon {
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    /* Screen Typography inside Simulator */
+    .app-h1 {
+      font-family: var(--font-sans);
+      font-size: var(--font-size-title);
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.3;
+    }
+
+    .app-h2 {
+      font-family: var(--font-sans);
+      font-size: var(--font-size-subtitle);
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .app-body-text {
+      font-size: var(--font-size-base);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .app-small-text {
+      font-size: var(--font-size-small);
+      color: var(--text-secondary);
+    }
+
+    /* Actual Components for Simulated App */
+    .app-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: var(--primary-light);
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      color: var(--primary-dark);
+      margin: 0 auto;
+      font-size: var(--font-size-small);
+      font-weight: 600;
+      width: fit-content;
+    }
+
+    .app-hero-icon {
+      width: 90px;
+      height: 90px;
+      background-color: var(--primary-light);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px auto;
+      box-shadow: var(--shadow-premium);
+      color: var(--primary);
+      font-size: 40px;
+      transition: all 0.2s;
+    }
+
+    [data-size="large"] .app-hero-icon {
+      width: 70px;
+      height: 70px;
+      font-size: 32px;
+      margin: 6px auto;
+    }
+    [data-size="xlarge"] .app-hero-icon {
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+      margin: 4px auto;
+      border-radius: 14px;
+    }
+
+    .app-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 56px;
+      padding: 10px 20px;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      font-weight: 600;
+      border-radius: var(--radius-lg);
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: var(--shadow-md);
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .app-btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .app-btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .app-btn-outline {
+      background-color: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      box-shadow: none;
+    }
+
+    .app-btn-outline:hover {
+      background-color: var(--primary-light);
+    }
+
+    .app-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-premium);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      text-align: left;
+      border-left: 6px solid var(--primary);
+    }
+
+    .app-option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .app-option-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .app-option-item.selected {
+      border-color: var(--primary);
+      background-color: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .app-radio-circle {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .app-option-item.selected .app-radio-circle {
+      border-color: var(--primary);
+    }
+
+    .app-radio-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      display: none;
+    }
+
+    .app-option-item.selected .app-radio-dot {
+      display: block;
+    }
+
+    .app-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: var(--bg-app);
+      padding: 8px 12px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-align: left;
+    }
+
+    /* Lesson selector items inside mockup */
+    .app-lesson-row {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 6px 2px;
+      width: 100%;
+      scrollbar-width: none; /* ซ่อน scrollbar */
+      -ms-overflow-style: none;
+    }
+    .app-lesson-row::-webkit-scrollbar {
+      display: none; /* ซ่อน scrollbar Chrome/Safari/Edge */
+    }
+
+    .app-lesson-card {
+      flex: 0 0 85%; /* ล็อคขนาดการ์ดกว้าง 85% ของพื้นที่ เพื่อเผยหัวการ์ดถัดไป */
+      scroll-snap-align: start;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .app-lesson-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      background-color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--primary);
+    }
+
+    .app-stars {
+      display: flex;
+      gap: 2px;
+      color: #eab308;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* Simulator Options Floating Panel */
+    .sim-config-bar {
+      width: 100%;
+      background-color: var(--vis-panel);
+      border-bottom: 1px solid var(--vis-panel-border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .config-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--vis-text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .config-btn-group {
+      display: flex;
+      background-color: #f1f5f9;
+      border-radius: 8px;
+      padding: 3px;
+      border: 1px solid var(--vis-panel-border);
+    }
+
+    .config-btn {
+      background: none;
+      border: none;
+      color: var(--vis-text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .config-btn.active {
+      background-color: #6366f1;
+      color: white;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div>
+      <h1>
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        รู้ทันสื่อ Interactive — Design System Visualizer & Playground
+      </h1>
+      <p>เครื่องมือจำลองสี ปริมาณพื้นที่ใช้งาน และส่วนประกอบ UI สำหรับผู้ออกแบบและผู้พัฒนา</p>
+    </div>
+    <div style="font-size: 14px; background-color: var(--vis-panel); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--vis-panel-border);">
+       <i class="fa-solid fa-code-branch"></i> Version 1.0 (Vite React Config)
+    </div>
+  </header>
+
+  <div class="main-grid">
+    
+    <!-- LEFT PANEL: Documentation and Components Tab -->
+    <div class="docs-area">
+      
+      <!-- Tab Controls -->
+      <div class="tab-nav">
+        <button class="tab-link active" onclick="switchTab('tab-identity')">
+          <i class="fa-solid fa-passport"></i> 01 - Brand Identity
+        </button>
+        <button class="tab-link" onclick="switchTab('tab-tokens')">
+          <i class="fa-solid fa-palette"></i> 02 - Design Tokens
+        </button>
+        <button class="tab-link" onclick="switchTab('tab-sandbox')">
+          <i class="fa-solid fa-cube"></i> 03 - Component Sandbox
+        </button>
+        <button class="tab-link" onclick="switchTab('tab-integration')">
+          <i class="fa-solid fa-laptop-code"></i> 04 - Integration Guide
+        </button>
+      </div>
+
+      <!-- TAB 1: Brand Identity -->
+      <div id="tab-identity" class="tab-content active">
+        <div class="section-title">
+          <i class="fa-solid fa-leaf"></i> แนวคิดและสัญลักษณ์หลัก (Identity Concept)
+        </div>
+        <div class="content-box">
+          <p style="color: var(--vis-text-muted); line-height: 1.6; margin-bottom: 20px;">
+            ภาพตราสัญลักษณ์ประจำโครงการ "สานพลัง สังคมสูงวัย ใส่ใจสุขภาพ แพร่ • น่าน • เชียงใหม่" ถ่ายทอดภาพลักษณ์กิจกรรมชุมชน ความเอาใจใส่ และการประสานความร่วมมือระหว่างช่วงวัย โดยมีโครงสร้างหลัก 3 ธีมสีจำแนกตามจังหวัดจัดกิจกรรมจริงเพื่อสร้างประสบการณ์ที่น่าจดจำและเข้าถึงท้องถิ่น
+          </p>
+          
+          <div class="grid-2">
+            
+            <div class="logo-container">
+              <img src="_logo.jpg" alt="โลโก้โครงการ สานพลัง สังคมสูงวัย ใส่ใจสุขภาพ แพร่ • น่าน • เชียงใหม่" style="width: 100%; max-width: 260px; height: auto; border-radius: 12px;">
+              <div style="font-size: 12px; color: #64748b; margin-top: 10px;">
+                <i class="fa-solid fa-info-circle"></i> อ้างอิงไฟล์ภาพ: docs/wiki/design/_logo.jpg
+              </div>
+            </div>
+
+            <div>
+              <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--vis-text);">ความหมายสีสันของตัวแทนสัญลักษณ์หลัก</h3>
+              
+              <div class="logo-desc-item">
+                <strong>สีม่วง (เชียงใหม่)</strong>: สัญลักษณ์ของเจดีย์ โบราณสถาน และตัวละครชายสูงอายุ สื่อถึงความฉลาด ภูมิปัญญา และเสถียรภาพ
+              </div>
+              <div class="logo-desc-item">
+                <strong>สีส้ม (แพร่)</strong>: สัญลักษณ์วัดพระธาตุช่อแฮ และตัวละครเด็กชูมือ สื่อถึงความกระตือรือร้น ครอบครัว และความอบอุ่นใจ
+              </div>
+              <div class="logo-desc-item">
+                <strong>สีเขียว (น่าน)</strong>: สัญลักษณ์ของใบไม้บนยอด และตัวละครหญิงสูงอายุ สื่อถึงความสมดุล ธรรมชาติบำบัด และความสมบูรณ์
+              </div>
+              <div class="logo-desc-item">
+                <strong>สีเขียวหัวเป็ด/Teal</strong>: ตัวหนังสือของตราสัญลักษณ์หลัก สื่อถึงการมีสุขภาพดี มีความสุข และกระฉับกระเฉง
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="section-title">
+          <i class="fa-solid fa-circle-check"></i> ข้อควรระวังการใช้งานโลโก้
+        </div>
+        <div class="content-box">
+          <ul style="padding-left: 20px; display: flex; flex-direction: column; gap: 10px; color: var(--vis-text-muted); line-height: 1.5;">
+            <li><strong style="color: var(--vis-text);">Clear Space</strong>: ต้องเว้นช่องว่างอย่างน้อย 16px รอบโลโก้ในการจัดหน้าเว็บเสมอ</li>
+            <li><strong style="color: var(--vis-text);">พื้นหลังหน้าเว็บ</strong>: แนะนำให้วางตราสัญลักษณ์บนพื้นหลังสีขาวหรือสีครีมสว่างเพื่อคอนทราสต์ที่ดี</li>
+            <li><strong style="color: var(--vis-text);">ข้อห้ามบิดเบือน</strong>: ห้ามบีบ ยืด ปรับองศาเอียง หรือสลับสีกราฟิกแต่ละส่วนของโลโก้ต้นฉบับ</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- TAB 2: Design Tokens -->
+      <div id="tab-tokens" class="tab-content">
+        <div class="section-title">
+          <i class="fa-solid fa-mobile-screen"></i> แรงบันดาลใจเลย์เอาต์ (GreenTravel UI Reference)
+        </div>
+        <div class="content-box">
+          <p style="color: var(--vis-text-muted); margin-bottom: 16px;">
+            ต้นแบบขอบโค้งมน (Radius), เงาพรีเมียม (Elevation), การ์ดสถิติ และวงแหวนคะแนน ถอดแบบมาจากภาพตัวอย่าง UI มือถือด้านล่าง — ดูรายละเอียดเพิ่มเติมใน <code>02-website-design-tokens.md</code>
+          </p>
+          <img src="_idea-1.jpg" alt="ภาพตัวอย่างอ้างอิง GreenTravel UI" style="width: 100%; max-width: 640px; height: auto; border-radius: 16px; display: block; margin: 0 auto;">
+          <div style="font-size: 12px; color: #64748b; margin-top: 10px; text-align: center;">
+            <i class="fa-solid fa-info-circle"></i> อ้างอิงไฟล์ภาพ: docs/wiki/design/_idea-1.jpg
+          </div>
+        </div>
+
+        <div class="section-title">
+          <i class="fa-solid fa-paint-brush"></i> ระบบรหัสสี (CSS Colors Tokens)
+        </div>
+        <div class="content-box">
+          <p style="color: var(--vis-text-muted); margin-bottom: 16px;">สลับธีมฝั่งขวา เพื่อให้จานสีด้านล่างคำนวณและแสดงค่าสี HEX ที่ใช้งานในธีมนั้นแบบไดนามิก:</p>
+          <div class="grid-2" id="swatchContainer">
+            <!-- Render dynamically via JS -->
+          </div>
+        </div>
+
+        <div class="section-title">
+          <i class="fa-solid fa-text-height"></i> ระบบขนาดฟอนต์เพื่อผู้สูงอายุ (Typography Scale)
+        </div>
+        <div class="content-box">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--vis-panel-border); color: var(--vis-text-muted);">
+                <th style="padding: 10px;">ระดับขนาดฟอนต์</th>
+                <th style="padding: 10px;">หัวเรื่องใหญ่ (Title)</th>
+                <th style="padding: 10px;">หัวข้อย่อย (Subtitle)</th>
+                <th style="padding: 10px;">เนื้อหาหลัก (Body)</th>
+                <th style="padding: 10px;">คำแนะนำย่อย (Small)</th>
+              </tr>
+            </thead>
+            <tbody style="color: var(--vis-text);">
+              <tr style="border-bottom: 1px solid var(--vis-panel-border);">
+                <td style="padding: 10px; font-weight: bold;">ขนาดปกติ (Normal - A)</td>
+                <td style="padding: 10px;">28px</td>
+                <td style="padding: 10px;">22px</td>
+                <td style="padding: 10px; color: #34d399;">18px</td>
+                <td style="padding: 10px;">16px</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--vis-panel-border); background-color: rgba(99,102,241,0.05);">
+                <td style="padding: 10px; font-weight: bold; color: #38bdf8;">ขนาดวัยเก๋า (Large - A+) *แนะนำ</td>
+                <td style="padding: 10px;">32px</td>
+                <td style="padding: 10px;">24px</td>
+                <td style="padding: 10px; color: #38bdf8; font-weight: bold;">20px</td>
+                <td style="padding: 10px;">18px</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--vis-panel-border);">
+                <td style="padding: 10px; font-weight: bold;">ขนาดใหญ่พิเศษ (XL - A++)</td>
+                <td style="padding: 10px;">36px</td>
+                <td style="padding: 10px;">28px</td>
+                <td style="padding: 10px; color: #34d399;">24px</td>
+                <td style="padding: 10px;">20px</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: Component Sandbox -->
+      <div id="tab-sandbox" class="tab-content">
+        <div class="section-title">
+          <i class="fa-solid fa-keyboard"></i> ตัวอย่างและสเปกส่วนประกอบ (Components Sandbox)
+        </div>
+        <div class="content-box">
+          <p style="color: var(--vis-text-muted); margin-bottom: 16px;">ตัวอย่างของส่วนประกอบ UI ด้านล่างจะเปลี่ยนลักษณะสี ขนาด และความโค้งมนโดยอัตโนมัติตามตัวกำหนดค่าจำลองในแผงควบคุมฝั่งขวา:</p>
+          
+          <h4 style="font-size: 15px; margin-bottom: 8px;">1. ปุ่มควบคุมขนาดสัมผัสใหญ่ (High-Accessibility Buttons)</h4>
+          <div class="sandbox-preview">
+            <button class="app-btn app-btn-primary">ปุ่มแบบสีหลัก (Primary CTA)</button>
+            <button class="app-btn app-btn-outline">ปุ่มแบบสีโปร่งขอบเส้น (Outline CTA)</button>
+            <button class="app-btn app-btn-disabled" style="opacity: 0.6; cursor: not-allowed;">ปุ่มกดไม่ได้ (Disabled Button)</button>
+          </div>
+
+          <h4 style="font-size: 15px; margin-top: 20px; margin-bottom: 8px;">2. การ์ดเนื้อหาพรีเมียม (Premium Bordered Card)</h4>
+          <div class="sandbox-preview">
+            <div class="app-card">
+              <strong style="color: var(--primary-dark); display: block; margin-bottom: 6px; font-size: var(--font-size-subtitle)">
+                💡 ข้อคิดวัยเก๋าป้องกันลิงก์สแกม
+              </strong>
+              <span class="app-body-text">
+                หากได้รับข้อความจากเบอร์โทรแปลกๆ ที่ส่งลิงก์มาให้กดเพื่อขออัปเดตข้อมูลหรือรับสิทธิประโยชน์ ห้ามกดเป็นอันขาด! ให้สังเกตข้อความสะกดผิดหรือโดเมนแปลกๆ เสมอ
+              </span>
+            </div>
+          </div>
+
+          <h4 style="font-size: 15px; margin-top: 20px; margin-bottom: 8px;">3. กล่องตัวเลือกสัมผัส (Touch Options List)</h4>
+          <div class="sandbox-preview">
+            <div class="app-option-list">
+              <div class="app-option-item selected" onclick="toggleSimRadio(this)">
+                <div class="app-radio-circle"><div class="app-radio-dot"></div></div>
+                <span>ตัวเลือกที่ผู้สูงวัยเลือกตอบ (Selected Option)</span>
+              </div>
+              <div class="app-option-item" onclick="toggleSimRadio(this)">
+                <div class="app-radio-circle"><div class="app-radio-dot"></div></div>
+                <span>ตัวเลือกทั่วไปที่ยังไม่ได้แตะเลือก (Normal Option)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: Integration Guide -->
+      <div id="tab-integration" class="tab-content">
+        <div class="section-title">
+          <i class="fa-solid fa-code"></i> โค้ดประกาศ CSS Variables
+        </div>
+        <div class="content-box">
+          <div class="code-wrapper">
+            <button class="btn-copy" onclick="copyCSSCode()">คัดลอกโค้ด</button>
+            <pre class="code-pre" id="integrationCssBlock">
+/* รออัปเดตตัวแปรตามการตั้งค่า */
+            </pre>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <i class="fa-solid fa-toggle-on"></i> สคริปต์สลับธีมอัตโนมัติตามจังหวัดจัดกิจกรรม
+        </div>
+        <div class="content-box">
+          <p style="color: var(--vis-text-muted); margin-bottom: 12px;">ในแอปพลิเคชัน React+Vite ของจริง เมื่อได้รับข้อมูลพิกัดสถานที่จัดงานของวัยเก๋าจากหน้ากดยินยอม (Consent) สามารถเรียกใช้คำสั่งนี้เพื่อสลับธีมหน้าเว็บ:</p>
+          <pre class="code-pre" style="color: #60a5fa;">
+// ฟังก์ชันเปลี่ยนธีมหลักของแอปตามจังหวัดจัดกิจกรรม
+export const applyThemeFromProvince = (province) => {
+  let themeName = 'teal'; // สีสากล/ทั่วไป
+  
+  if (province) {
+    if (province.includes('เชียงใหม่')) themeName = 'purple';
+    else if (province.includes('แพร่')) themeName = 'orange';
+    else if (province.includes('น่าน')) themeName = 'green';
+  }
+  
+  // สลับธีมสีทั้งหมดโดยการเพิ่มแอตทริบิวต์ในระดับราก (HTML)
+  document.documentElement.setAttribute('data-theme', themeName);
+  localStorage.setItem('user-selected-theme', themeName);
+};
+          </pre>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: Smartphone Simulator & Controller -->
+    <div class="simulator-area">
+      
+      <!-- Top Configurator bar -->
+      <div class="sim-config-bar">
+        <span class="config-title"><i class="fa-solid fa-sliders"></i> แผงควบคุม</span>
+        
+        <div style="display: flex; gap: 8px;">
+          <!-- Active Theme Switcher -->
+          <div class="config-btn-group" id="themePicker">
+            <button class="config-btn active" onclick="changeSimTheme('teal')">Teal</button>
+            <button class="config-btn" onclick="changeSimTheme('purple')">ม่วง</button>
+            <button class="config-btn" onclick="changeSimTheme('orange')">ส้ม</button>
+            <button class="config-btn" onclick="changeSimTheme('green')">เขียว</button>
+            <button class="config-btn" onclick="changeSimTheme('mint')">Mint</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Middle Configurator (Text Scale and Modes) -->
+      <div class="sim-config-bar" style="border-top: none; padding-top: 0; padding-bottom: 16px;">
+        <span class="config-title"><i class="fa-solid fa-universal-access"></i> ปรับระดับวัยเก๋า</span>
+        
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <div class="config-btn-group" id="textSizePicker">
+            <button class="config-btn" onclick="changeSimTextSize('normal')">A</button>
+            <button class="config-btn active" onclick="changeSimTextSize('large')">A+</button>
+            <button class="config-btn" onclick="changeSimTextSize('xlarge')">A++</button>
+          </div>
+          
+          <div class="config-btn-group" id="modePicker">
+            <button class="config-btn active" onclick="changeSimMode('light')"><i class="fa-solid fa-sun"></i></button>
+            <button class="config-btn" onclick="changeSimMode('dark')"><i class="fa-solid fa-moon"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Smartphone Layout Container -->
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%;">
+        <div class="phone-frame">
+          <div class="phone-notch">
+            <div class="phone-speaker"></div>
+          </div>
+          
+          <div class="phone-screen" id="phoneScreen">
+            
+            <!-- Dynamic app topbar -->
+            <div class="app-topbar">
+              <div class="app-brand">
+                <div class="app-dot"></div>
+                <span>รู้ทันสื่อวัยเก๋า</span>
+              </div>
+              <button class="app-reset" onclick="resetSimProgress()">รีเซ็ตแอป</button>
+            </div>
+
+            <!-- Dynamic progress tracker -->
+            <div class="app-progress">
+              <div class="app-progress-bar" id="appProgressBar"></div>
+            </div>
+
+            <!-- Dynamic Simulator App Content -->
+            <div class="app-body" id="appBodyContent">
+              <!-- Rendered dynamically -->
+            </div>
+
+            <!-- Bottom Navigation Bar inside mockup -->
+            <div class="app-nav">
+              <button class="app-nav-btn active" onclick="changeSimScreen('landing')">
+                <span class="app-nav-icon"><i class="fa-solid fa-house"></i></span>
+                <span>หน้าแรก</span>
+              </button>
+              <button class="app-nav-btn" onclick="changeSimScreen('consent')">
+                <span class="app-nav-icon"><i class="fa-solid fa-file-signature"></i></span>
+                <span>ยินยอมข้อมูล</span>
+              </button>
+              <button class="app-nav-btn" onclick="changeSimScreen('selector')">
+                <span class="app-nav-icon"><i class="fa-solid fa-book-open"></i></span>
+                <span>เลือกบทเรียน</span>
+              </button>
+              <button class="app-nav-btn" onclick="changeSimScreen('game')">
+                <span class="app-nav-icon"><i class="fa-solid fa-gamepad"></i></span>
+                <span>หน้าเกม</span>
+              </button>
+            </div>
+
+            <!-- Simulated PDPA Modal Popup inside Phone Mockup -->
+            <div id="simPdpaModal" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+              <div class="app-card" style="background-color: var(--bg-card); width: 100%; border-left: 5px solid var(--primary); display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-lg); pointer-events: auto;">
+                <div style="display: flex; gap: 8px; align-items: center; color: var(--primary-dark); font-weight: bold; font-size: 16px;">
+                  <i class="fa-solid fa-user-shield"></i> การคุ้มครองข้อมูล (PDPA)
+                </div>
+                <p class="app-small-text" style="font-size: 14px; line-height: 1.4; color: var(--text-primary);">
+                  แอปพลิเคชันนี้จะบันทึกช่วงอายุ และระบุจังหวัด/อำเภอ/ตำบลโดยประมาณผ่าน <strong>IP ของอุปกรณ์ท่านโดยอัตโนมัติ</strong> เพื่อวิเคราะห์สถิติโครงการเท่านั้น <strong>โดยไม่มีการเก็บชื่อ เบอร์โทรศัพท์ หรือที่อยู่ IP ดิบของท่าน</strong> ปลอดภัย 100%
+                </p>
+                <button class="app-btn app-btn-primary" style="min-height: 44px; font-size: 15px; padding: 4px; margin-top: 4px;" onclick="toggleSimPdpa(false)">
+                  เข้าใจและปิดหน้าต่าง
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // System Config Values
+    const themeConfigs = {
+      teal: {
+        primary: '#0d9488',
+        hover: '#0f766e',
+        light: '#ccfbf1',
+        dark: '#115e59',
+        rgb: '13, 148, 136',
+        desc: 'ธีมสากลส่วนกลาง (Default Teal)'
+      },
+      purple: {
+        primary: '#7b2cbf',
+        hover: '#5a189a',
+        light: '#f3e5f5',
+        dark: '#4a148c',
+        rgb: '123, 44, 191',
+        desc: 'ธีมจัดงานเชียงใหม่ (Chiang Mai Purple)'
+      },
+      orange: {
+        primary: '#e65100',
+        hover: '#bf360c',
+        light: '#fff3e0',
+        dark: '#b23c00',
+        rgb: '230, 81, 0',
+        desc: 'ธีมจัดงานแพร่ (Phrae Orange)'
+      },
+      green: {
+        primary: '#2e7d32',
+        hover: '#1b5e20',
+        light: '#e8f5e9',
+        dark: '#1b5e20',
+        rgb: '46, 125, 50',
+        desc: 'ธีมจัดงานน่าน (Nan Green)'
+      },
+      mint: {
+        primary: '#00796b',
+        hover: '#004d40',
+        light: '#e0f2f1',
+        dark: '#004d40',
+        rgb: '0, 121, 107',
+        desc: 'ธีม GreenTravel Mint (Premium Style)'
+      }
+    };
+
+    // State
+    let activeTab = 'tab-identity';
+    let simTheme = 'teal';
+    let simTextSize = 'large';
+    let simMode = 'light';
+    let simScreen = 'landing';
+
+    // Tab switcher
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      const targetBtn = document.querySelector(`.tab-link[onclick*="${tabId}"]`);
+      if (targetBtn) targetBtn.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // Theme Switcher for simulation
+    function changeSimTheme(themeName) {
+      simTheme = themeName;
+      
+      // Update configuration picking state UI
+      document.querySelectorAll('#themePicker .config-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.querySelector(`#themePicker .config-btn[onclick*="${themeName}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      // Update root variables of simulator
+      const config = themeConfigs[themeName];
+      const root = document.documentElement;
+      
+      root.style.setProperty('--primary', config.primary);
+      root.style.setProperty('--primary-hover', config.hover);
+      root.style.setProperty('--primary-light', config.light);
+      root.style.setProperty('--primary-dark', config.dark);
+      root.style.setProperty('--primary-rgb', config.rgb);
+
+      // Trigger redraw of colors, swatches and simulator screen
+      drawColorSwatches();
+      updateIntegrationCSSCode();
+      renderSimScreenContent();
+    }
+
+    // Sizing switcher for simulation
+    function changeSimTextSize(sizeName) {
+      simTextSize = sizeName;
+      
+      document.querySelectorAll('#textSizePicker .config-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.querySelector(`#textSizePicker .config-btn[onclick*="${sizeName}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const root = document.documentElement;
+      if (sizeName === 'normal') {
+        root.style.setProperty('--font-size-base', '18px');
+        root.style.setProperty('--font-size-title', '28px');
+        root.style.setProperty('--font-size-subtitle', '22px');
+        root.style.setProperty('--font-size-small', '16px');
+      } else if (sizeName === 'large') {
+        root.style.setProperty('--font-size-base', '20px');
+        root.style.setProperty('--font-size-title', '32px');
+        root.style.setProperty('--font-size-subtitle', '24px');
+        root.style.setProperty('--font-size-small', '18px');
+      } else if (sizeName === 'xlarge') {
+        root.style.setProperty('--font-size-base', '24px');
+        root.style.setProperty('--font-size-title', '36px');
+        root.style.setProperty('--font-size-subtitle', '28px');
+        root.style.setProperty('--font-size-small', '20px');
+      }
+
+      updateIntegrationCSSCode();
+      renderSimScreenContent();
+    }
+
+    // Light/Dark mode switcher for simulation
+    function changeSimMode(modeName) {
+      simMode = modeName;
+      
+      document.querySelectorAll('#modePicker .config-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.querySelector(`#modePicker .config-btn[onclick*="${modeName}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const root = document.documentElement;
+      if (modeName === 'light') {
+        root.style.setProperty('--bg-app', '#f8fafc');
+        root.style.setProperty('--bg-card', '#ffffff');
+        root.style.setProperty('--text-primary', '#0f172a');
+        root.style.setProperty('--text-secondary', '#475569');
+        root.style.setProperty('--border', '#e2e8f0');
+      } else {
+        root.style.setProperty('--bg-app', '#0f172a');
+        root.style.setProperty('--bg-card', '#1e293b');
+        root.style.setProperty('--text-primary', '#f8fafc');
+        root.style.setProperty('--text-secondary', '#cbd5e1');
+        root.style.setProperty('--border', '#334155');
+      }
+
+      drawColorSwatches();
+      updateIntegrationCSSCode();
+      renderSimScreenContent();
+    }
+
+    // App screen switcher inside simulated device
+    function changeSimScreen(screenName) {
+      simScreen = screenName;
+      
+      document.querySelectorAll('.app-nav-btn').forEach(btn => btn.classList.remove('active'));
+      const btnMap = { 'landing': 0, 'consent': 1, 'selector': 2, 'game': 3 };
+      document.querySelectorAll('.app-nav-btn')[btnMap[screenName]].classList.add('active');
+
+      const progressMap = { 'landing': 15, 'consent': 40, 'selector': 70, 'game': 100 };
+      document.getElementById('appProgressBar').style.width = `${progressMap[screenName]}%`;
+
+      // Hide pdpa modal automatically when switching screens
+      toggleSimPdpa(false);
+
+      renderSimScreenContent();
+    }
+
+    // Toggle simulated PDPA popup overlay inside mockup
+    function toggleSimPdpa(show) {
+      const modal = document.getElementById('simPdpaModal');
+      if (modal) {
+        modal.style.display = show ? 'flex' : 'none';
+      }
+    }
+
+    // Reset progress simulator helper
+    function resetSimProgress() {
+      if (confirm('ยืนยันที่จะทำจำลองการรีเซ็ตข้อมูลความคืบหน้าของวัยเก๋า?')) {
+        changeSimScreen('landing');
+      }
+    }
+
+    // Switch swatches lists
+    function drawColorSwatches() {
+      const target = document.getElementById('swatchContainer');
+      const rootStyles = getComputedStyle(document.documentElement);
+      
+      const listColors = [
+        { key: '--primary', hex: rootStyles.getPropertyValue('--primary').trim() },
+        { key: '--primary-hover', hex: rootStyles.getPropertyValue('--primary-hover').trim() },
+        { key: '--primary-light', hex: rootStyles.getPropertyValue('--primary-light').trim() },
+        { key: '--primary-dark', hex: rootStyles.getPropertyValue('--primary-dark').trim() },
+        { key: '--bg-app', hex: rootStyles.getPropertyValue('--bg-app').trim() },
+        { key: '--bg-card', hex: rootStyles.getPropertyValue('--bg-card').trim() },
+        { key: '--text-primary', hex: rootStyles.getPropertyValue('--text-primary').trim() },
+        { key: '--text-secondary', hex: rootStyles.getPropertyValue('--text-secondary').trim() }
+      ];
+
+      target.innerHTML = listColors.map(c => `
+        <div class="swatch-card" onclick="alert('ตัวแปร: ${c.key} มีค่าคือ ${c.hex}')">
+          <div class="swatch-color" style="background-color: ${c.hex}; border: 1px solid var(--border);"></div>
+          <div class="swatch-info">
+            <div class="swatch-title">${c.key}</div>
+            <div class="swatch-hex">${c.hex}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Update CSS variables inspector display
+    function updateIntegrationCSSCode() {
+      const config = themeConfigs[simTheme];
+      const isDark = simMode === 'dark';
+      
+      const codeText = `/* ธีมโครงการ: ${simTheme.toUpperCase()} (จัดจำลองสำหรับ: ${config.desc}) */
+:root {
+  --primary: ${config.primary};
+  --primary-hover: ${config.hover};
+  --primary-light: ${config.light};
+  --primary-dark: ${config.dark};
+  --primary-rgb: ${config.rgb};
+
+  --bg-app: ${isDark ? '#0f172a' : '#f8fafc'};
+  --bg-card: ${isDark ? '#1e293b' : '#ffffff'};
+  --text-primary: ${isDark ? '#f8fafc' : '#0f172a'};
+  --text-secondary: ${isDark ? '#cbd5e1' : '#475569'};
+  --border: ${isDark ? '#334155' : '#e2e8f0'};
+
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  
+  --font-size-base: ${simTextSize === 'normal' ? '18px' : simTextSize === 'large' ? '20px' : '24px'};
+  --font-size-title: ${simTextSize === 'normal' ? '28px' : simTextSize === 'large' ? '32px' : '36px'};
+  --font-size-subtitle: ${simTextSize === 'normal' ? '22px' : simTextSize === 'large' ? '24px' : '28px'};
+}`;
+
+      document.getElementById('integrationCssBlock').textContent = codeText;
+    }
+
+    // Render smartphone application screens
+    function renderSimScreenContent() {
+      const body = document.getElementById('appBodyContent');
+      const isDark = simMode === 'dark';
+
+      if (simScreen === 'landing') {
+        body.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 10px; text-align: center; margin: auto 0;">
+            <div class="app-badge">
+              <span><i class="fa-solid fa-sparkles"></i> สำหรับวัยเก๋า & ผู้สูงอายุ</span>
+            </div>
+            <h1 class="app-h1" style="font-size: var(--font-size-title);">รู้ทันสื่อ Interactive</h1>
+            <h2 class="app-h2" style="font-size: var(--font-size-subtitle);">ปลอดภัยภัยไซเบอร์ด้วยตัวคุณเอง</h2>
+            <p class="app-body-text" style="font-size: 16px; line-height: 1.4;">
+              ชวนวัยเก๋าฝึกจับกลโกงออนไลน์ ปลอดภัย มั่นใจ ไร้กังวล
+            </p>
+          </div>
+          <div style="margin-top: auto;">
+            <button class="app-btn app-btn-primary" onclick="changeSimScreen('consent')">
+              <span>เริ่มต้นเรียนรู้</span> <i class="fa-solid fa-arrow-right-long"></i>
+            </button>
+          </div>
+        `;
+      } 
+      
+      else if (simScreen === 'consent') {
+        let detectedProvince = 'เชียงใหม่';
+        if (simTheme === 'purple') detectedProvince = 'เชียงใหม่';
+        else if (simTheme === 'orange') detectedProvince = 'แพร่';
+        else if (simTheme === 'green') detectedProvince = 'น่าน';
+        else if (simTheme === 'mint') detectedProvince = 'น่าน (สไตล์ Green)';
+
+        body.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 6px; text-align: left;">
+            <h2 class="app-h2" style="text-align: center; font-size: var(--font-size-subtitle); margin-bottom: 2px;">ยินดีต้อนรับเข้าสู่วิชาเรียน</h2>
+            <p class="app-body-text" style="text-align: center; font-size: 15px; margin-bottom: 0;">
+              กรุณากรอกข้อมูลสั้นๆ ด้านล่างเพื่อเริ่มกิจกรรม
+            </p>
+            
+            <div>
+              <strong style="font-size: var(--font-size-small); color: var(--primary-dark); display: block; margin-bottom: 4px;">
+                1. เลือกช่วงอายุของท่าน:
+              </strong>
+              <div class="app-option-list" style="gap: 5px;">
+                <div class="app-option-item selected" style="padding: 8px 12px;" onclick="toggleSimRadio(this)">
+                  <div class="app-radio-circle"><div class="app-radio-dot"></div></div>
+                  <span>60 - 69 ปี (วัยเก๋าตอนต้น)</span>
+                </div>
+                <div class="app-option-item" style="padding: 8px 12px;" onclick="toggleSimRadio(this)">
+                  <div class="app-radio-circle"><div class="app-radio-dot"></div></div>
+                  <span>70 - 79 ปี (วัยเก๋าตอนกลาง)</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin: 2px 0;">
+              <button class="app-reset" style="border-color: var(--primary); color: var(--primary-dark); text-decoration: underline; background: none; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; cursor: pointer;" onclick="toggleSimPdpa(true)">
+                <i class="fa-solid fa-user-shield"></i> อ่านนโยบายความเป็นส่วนตัว (PDPA)
+              </button>
+            </div>
+
+            <div class="app-location" style="padding: 4px 10px; font-size: 12px;">
+              <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i>
+              <span>พื้นที่ใช้งานจาก IP: จ.${detectedProvince}</span>
+            </div>
+          </div>
+
+          <div style="margin-top: auto; padding-top: 2px;">
+            <button class="app-btn app-btn-primary" style="min-height: 44px; font-size: 16px;" onclick="changeSimScreen('selector')">
+              <span>ยินยอมข้อมูลและเริ่มเรียน</span>
+            </button>
+          </div>
+        `;
+      } 
+      
+      else if (simScreen === 'selector') {
+        body.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+            <h2 class="app-h2">วิชาบทเรียนป้องกันภัย</h2>
+            <p class="app-body-text" style="font-size: 16px;">
+              กดเข้าเรียนรู้ทีละบทเรียนเพื่อเก็บดาวสะสมรับใบประกาศนียบัตรกันครับ!
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+              
+              <div class="app-lesson-card" onclick="changeSimScreen('game')">
+                <div class="app-lesson-thumb">📰</div>
+                <div style="flex:1;">
+                  <strong style="font-size: var(--font-size-small); display: block;">บทที่ 1: ข่าวจริงหรือข่าวปลอม</strong>
+                  <div class="app-stars">⭐⭐⭐ <span style="color: var(--text-secondary); margin-left: 4px; font-size:11px;">สมบูรณ์ (3 ดาว)</span></div>
+                </div>
+                <i class="fa-solid fa-circle-chevron-right" style="color: var(--primary);"></i>
+              </div>
+
+              <div class="app-lesson-card" onclick="changeSimScreen('game')">
+                <div class="app-lesson-thumb">📞</div>
+                <div style="flex:1;">
+                  <strong style="font-size: var(--font-size-small); display: block;">บทที่ 2: กลโกงลิงก์และเบอร์สายด่วน</strong>
+                  <div class="app-stars">⭐⭐⭐ <span style="color: var(--text-secondary); margin-left: 4px; font-size:11px;">สมบูรณ์ (3 ดาว)</span></div>
+                </div>
+                <i class="fa-solid fa-circle-chevron-right" style="color: var(--primary);"></i>
+              </div>
+
+              <div class="app-lesson-card" onclick="changeSimScreen('game')">
+                <div class="app-lesson-thumb">🤖</div>
+                <div style="flex:1;">
+                  <strong style="font-size: var(--font-size-small); display: block;">บทที่ 3: รู้ทันรูปและเสียงประกอบ AI</strong>
+                  <span class="app-small-text" style="font-size: 12px; display: block; margin-top: 4px;">ยังไม่เริ่มบทเรียน</span>
+                </div>
+                <i class="fa-solid fa-play" style="color: var(--text-secondary);"></i>
+              </div>
+
+            </div>
+          </div>
+
+          <div style="margin-top: auto;">
+            <button class="app-btn app-btn-outline" onclick="changeSimScreen('landing')">
+              ย้อนกลับหน้าแรก
+            </button>
+          </div>
+        `;
+      } 
+      
+      else if (simScreen === 'game') {
+        body.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="app-badge" style="margin: 0; background-color: var(--primary-light); color: var(--primary-dark);">ข้อที่ 1 / 5</span>
+              <span style="font-size: 14px; font-weight: bold; color: var(--primary-dark);"><i class="fa-solid fa-award"></i> คะแนนสะสม: 1</span>
+            </div>
+            
+            <div class="app-card" style="border-left: 6px solid #eab308; background-color: ${isDark ? '#1e293b' : '#fffbeb'}; margin-top: 6px;">
+              <strong style="color: #a16207; font-size: 16px; display: block; margin-bottom: 4px;">🎯 โจทย์วิเคราะห์เหตุการณ์:</strong>
+              <span style="font-size: 17px; line-height: 1.5; display: block;">
+                "มีข้อความจากไปรษณีย์ส่งเข้ามาว่า พัสดุของท่านเสียหายชำรุด ให้คลิกลิงก์เพื่อกดยืนยันชดเชยค่าเสียหาย" ท่านจะปฏิบัติอย่างไร?
+              </span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+              <div class="app-option-item" onclick="submitSimAnswer(false, this)">
+                <div class="app-radio-circle"><div class="app-radio-dot"></div></div>
+                <span style="font-size: 16px;">ก. กดเข้าไปทันทีเพื่อขอเงินเคลมพัสดุ</span>
+              </div>
+              <div class="app-option-item" onclick="submitSimAnswer(true, this)">
+                <div class="app-radio-circle"><div class="app-radio-dot"></div></div>
+                <span style="font-size: 16px; font-weight: bold;">ข. ห้ามกด, โทรเช็กที่ทำการไปรษณีย์สาขา</span>
+              </div>
+            </div>
+
+            <!-- Result Feedback Box -->
+            <div id="simFeedback" style="display:none; padding: 12px 16px; border-radius: 12px; text-align: center; margin-top: 8px;">
+              <span id="simFeedbackText" style="font-weight:bold; font-size:16px;"></span>
+            </div>
+          </div>
+
+          <div style="margin-top: auto; display: flex; gap: 8px;">
+            <button class="app-btn app-btn-outline" style="min-height:48px;" onclick="changeSimScreen('selector')">
+              ออก
+            </button>
+            <button class="app-btn app-btn-primary" style="min-height:48px;" onclick="changeSimScreen('selector')">
+              ข้ามข้อ
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    // Interactive option toggler inside simulation mockup
+    function toggleSimRadio(selectedItem) {
+      const list = selectedItem.parentElement.querySelectorAll('.app-option-item');
+      list.forEach(item => {
+        item.classList.remove('selected');
+      });
+      selectedItem.classList.add('selected');
+    }
+
+    // Submit answer logic inside simulator game tab
+    function submitSimAnswer(isCorrect, element) {
+      toggleSimRadio(element);
+      
+      const feedback = document.getElementById('simFeedback');
+      const text = document.getElementById('simFeedbackText');
+      
+      feedback.style.display = 'block';
+      if (isCorrect) {
+        feedback.style.backgroundColor = 'rgba(22, 163, 74, 0.15)';
+        feedback.style.border = '1px solid #16a34a';
+        text.style.color = '#16a34a';
+        text.innerHTML = '<i class="fa-solid fa-circle-check"></i> ตอบถูกเก่งมากวัยเก๋า! ปลอดภัย 100%';
+      } else {
+        feedback.style.backgroundColor = 'rgba(220, 38, 38, 0.15)';
+        feedback.style.border = '1px solid #dc2626';
+        text.style.color = '#dc2626';
+        text.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ผิดนะครับ! ลิงก์ดังกล่าวอาจเป็นฟิชชิ่งดูดข้อมูล';
+      }
+    }
+
+    // Copy block function
+    function copyCSSCode() {
+      const code = document.getElementById('integrationCssBlock').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.textContent = 'คัดลอกสำเร็จ!';
+        btn.style.backgroundColor = '#10b981';
+        setTimeout(() => {
+          btn.textContent = 'คัดลอกโค้ด';
+          btn.style.backgroundColor = '#374151';
+        }, 1500);
+      });
+    }
+
+    // Initial setups
+    window.onload = function() {
+      changeSimTheme('teal');
+      changeSimTextSize('large');
+      changeSimMode('light');
+      changeSimScreen('landing');
+    };
+  </script>
+</body>
+</html>

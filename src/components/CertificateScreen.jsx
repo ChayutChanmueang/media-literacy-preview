@@ -26,61 +26,42 @@ export default function CertificateScreen({ onBackToDashboard }) {
   return (
     <div className="screen-container">
       {/* Header bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}>
-        <button 
+      <div className="flex items-center gap-2 text-left">
+        <button
           onClick={onBackToDashboard}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--primary-dark)',
-            cursor: 'pointer',
-            padding: '4px',
-            display: 'flex',
-            alignItems: 'center'
-          }}
+          className="bg-transparent border-none text-[var(--primary-dark)] cursor-pointer p-1 flex items-center"
         >
           <ChevronLeft size={24} />
-          <span style={{ fontSize: '18px', fontWeight: 'bold' }}>กลับหน้าหลัก</span>
+          <span className="text-[18px] font-bold">กลับหน้าหลัก</span>
         </button>
       </div>
 
       {!submittedName ? (
         /* Step 1: Input Name */
-        <div className="content-area" style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', color: '#eab308', marginBottom: '12px' }}>
-            <Award size={64} style={{ filter: 'drop-shadow(0 0 8px rgba(234, 179, 8, 0.4))' }} />
+        <div className="content-area my-auto">
+          <div className="flex justify-center text-[#eab308] mb-3">
+            <Award size={64} className="[filter:drop-shadow(0_0_8px_rgba(234,179,8,0.4))]" />
           </div>
-          
+
           <h2>ยินดีด้วยอย่างยิ่งครับ!</h2>
           <p className="text-lead">
             ท่านเรียนครบถ้วนทั้ง 3 วิชาแล้ว กรุณาพิมพ์ชื่อของท่านเพื่อใช้สร้างใบประกาศความสำเร็จ
           </p>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
-            <input 
-              type="text" 
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+            <input
+              type="text"
               placeholder="พิมพ์ชื่อเล่น หรือ ชื่อจริงที่นี่..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={25}
-              style={{
-                width: '100%',
-                minHeight: '60px',
-                fontSize: '22px',
-                padding: '12px 16px',
-                borderRadius: 'var(--radius-lg)',
-                border: '3px solid var(--primary)',
-                textAlign: 'center',
-                fontWeight: 'bold',
-                outline: 'none'
-              }}
+              className="w-full min-h-[60px] text-[22px] px-4 py-3 rounded-[var(--radius-lg)] border-[3px] border-[var(--primary)] text-center font-bold outline-none"
               required
             />
-            
-            <button 
+
+            <button
               type="submit"
-              className="btn btn-primary"
-              style={{ fontSize: '22px', minHeight: '64px' }}
+              className="btn btn-primary text-[22px] min-h-[64px]"
             >
               <span>สร้างใบประกาศทองคำ</span>
             </button>
@@ -88,117 +69,84 @@ export default function CertificateScreen({ onBackToDashboard }) {
         </div>
       ) : (
         /* Step 2: Render Premium Certificate */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
-          <div className="content-area" style={{ flex: 1 }}>
-            
+        <div className="flex flex-col gap-5 flex-1 min-h-0">
+          <div className="content-area">
+
             {/* The Certificate Frame */}
-            <div style={{
-              border: '10px double #eab308',
-              borderRadius: 'var(--radius-lg)',
-              padding: '24px 16px',
-              backgroundColor: '#fffbeb', // cream color paper look
-              color: '#1e293b', // dark gray for paper text
-              boxShadow: '0 15px 30px rgba(0, 0, 0, 0.15)',
-              position: 'relative',
-              textAlign: 'center',
-              margin: '0 auto',
-              width: '100%',
-              maxWidth: '400px'
-            }}>
+            <div className="relative text-center mx-auto w-full max-w-[400px] px-4 py-6 rounded-[var(--radius-lg)] shadow-[0_15px_30px_rgba(0,0,0,0.15)] [border:10px_double_#eab308] bg-[#fffbeb] text-[#1e293b]">
               {/* Corner Ornaments */}
-              <div style={{ position: 'absolute', top: '8px', left: '8px', color: '#eab308', fontSize: '18px' }}>✦</div>
-              <div style={{ position: 'absolute', top: '8px', right: '8px', color: '#eab308', fontSize: '18px' }}>✦</div>
-              <div style={{ position: 'absolute', bottom: '8px', left: '8px', color: '#eab308', fontSize: '18px' }}>✦</div>
-              <div style={{ position: 'absolute', bottom: '8px', right: '8px', color: '#eab308', fontSize: '18px' }}>✦</div>
+              <div className="absolute top-2 left-2 text-[#eab308] text-[18px]">✦</div>
+              <div className="absolute top-2 right-2 text-[#eab308] text-[18px]">✦</div>
+              <div className="absolute bottom-2 left-2 text-[#eab308] text-[18px]">✦</div>
+              <div className="absolute bottom-2 right-2 text-[#eab308] text-[18px]">✦</div>
 
               {/* Certificate content */}
-              <Award size={48} color="#eab308" style={{ margin: '0 auto 8px auto' }} />
-              
-              <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '24px', fontWeight: '800', color: '#b45309', margin: '4px 0' }}>
+              <Award size={48} color="#eab308" className="mx-auto mb-2" />
+
+              <h3 className="[font-family:var(--font-sans)] text-[24px] font-extrabold text-[#b45309] my-1">
                 ใบประกาศเกียรติคุณ
               </h3>
-              <p style={{ fontSize: '14px', fontStyle: 'italic', color: '#78350f', margin: '0' }}>
+              <p className="text-[14px] italic text-[#78350f] m-0">
                 หลักสูตร รู้เท่าทันภัยสื่อออนไลน์วัยเก๋า
               </p>
 
-              <div style={{ margin: '16px 0', borderBottom: '1px solid rgba(180, 83, 9, 0.2)', paddingBottom: '8px' }}>
-                <span style={{ fontSize: '15px', color: '#78350f' }}>ขอมอบเกียรติบัตรทองคำนี้เพื่อแสดงว่า</span>
-                <h2 style={{ fontSize: '28px', color: '#1e3a8a', fontWeight: '900', margin: '10px 0', textDecoration: 'underline' }}>
+              <div className="my-4 pb-2 border-b border-[rgba(180,83,9,0.2)]">
+                <span className="text-[15px] text-[#78350f]">ขอมอบเกียรติบัตรทองคำนี้เพื่อแสดงว่า</span>
+                <h2 className="text-[28px] text-[#1e3a8a] font-black my-2.5 underline">
                   {submittedName}
                 </h2>
               </div>
 
-              <p style={{ fontSize: '16px', lineHeight: '1.5', color: '#451a03', fontWeight: 'bold' }}>
+              <p className="text-[16px] leading-relaxed text-[#451a03] font-bold">
                 ได้ผ่านการศึกษาอบรมและทดสอบเกณฑ์สมรรถนะครบ 3 บทเรียน <br />
                 มีความสามารถจับสังเกตข่าวปลอม สัญญาณสแกม และสื่อ AI <br />
                 เพียบพร้อมสำหรับการรู้เท่าทันสื่ออย่างดีเด่น
               </p>
 
               {/* Signatures */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '0 8px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '14px', fontStyle: 'italic', fontFamily: 'cursive', color: '#b45309' }}>NAPLAB Dev</div>
-                  <div style={{ width: '80px', height: '1px', borderBottom: '1px solid #78350f', margin: '4px auto' }} />
-                  <span style={{ fontSize: '11px', color: '#78350f' }}>ผู้ตรวจประเมิน</span>
+              <div className="flex justify-between items-center mt-6 px-2">
+                <div className="text-center">
+                  <div className="text-[14px] italic [font-family:cursive] text-[#b45309]">NAPLAB Dev</div>
+                  <div className="w-20 h-px border-b border-[#78350f] mx-auto my-1" />
+                  <span className="text-[11px] text-[#78350f]">ผู้ตรวจประเมิน</span>
                 </div>
-                
+
                 {/* Stamp */}
-                <div style={{
-                  width: '54px',
-                  height: '54px',
-                  borderRadius: '50%',
-                  border: '3px double #dc2626',
-                  color: '#dc2626',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  transform: 'rotate(-15deg)',
-                  zIndex: 2,
-                  boxShadow: '0 0 3px rgba(220, 38, 38, 0.2)'
-                }}>
+                <div className="w-[54px] h-[54px] rounded-full flex items-center justify-center text-[11px] font-bold text-[#dc2626] rotate-[-15deg] z-[2] shadow-[0_0_3px_rgba(220,38,38,0.2)] [border:3px_double_#dc2626]">
                   ผ่านเกณฑ์
                 </div>
 
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '14px', fontStyle: 'italic', fontFamily: 'cursive', color: '#b45309' }}>รู้ทันสื่อวัยเก๋า</div>
-                  <div style={{ width: '80px', height: '1px', borderBottom: '1px solid #78350f', margin: '4px auto' }} />
-                  <span style={{ fontSize: '11px', color: '#78350f' }}>ผู้อำนวยการโครงการ</span>
+                <div className="text-center">
+                  <div className="text-[14px] italic [font-family:cursive] text-[#b45309]">รู้ทันสื่อวัยเก๋า</div>
+                  <div className="w-20 h-px border-b border-[#78350f] mx-auto my-1" />
+                  <span className="text-[11px] text-[#78350f]">ผู้อำนวยการโครงการ</span>
                 </div>
               </div>
             </div>
 
             {/* Instruction note */}
-            <p className="text-small" style={{ color: 'var(--text-secondary)', marginTop: '12px', fontStyle: 'italic' }}>
+            <p className="text-small text-[var(--text-secondary)] mt-3 italic">
               💡 วิธีเซฟเก็บไว้: คุณลุงคุณป้าสามารถ **แคปหน้าจอ** โทรศัพท์มือถือ <br />
               เพื่อบันทึกรูปภาพเกียรติบัตรไว้อวดลูกหลานได้เลยครับ!
             </p>
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-            <button 
+          <div className="flex flex-col gap-3 w-full">
+            <button
               onClick={handleShareLine}
-              className="btn"
-              style={{
-                backgroundColor: '#06c755',
-                color: '#ffffff',
-                fontSize: '22px',
-                minHeight: '64px',
-              }}
+              className="btn bg-[#06c755] text-white text-[22px] min-h-[64px]"
             >
               <Share2 size={24} />
               <span>แชร์ลิงก์ให้เพื่อนร่วมเรียนใน LINE</span>
             </button>
 
-            <button 
+            <button
               onClick={() => {
                 setName('');
                 setSubmittedName('');
               }}
-              className="btn btn-outline"
-              style={{ fontSize: '18px', minHeight: '52px' }}
+              className="btn btn-outline text-[18px] min-h-[52px]"
             >
               <RefreshCw size={18} />
               <span>พิมพ์ชื่อเพื่อออกใบประกาศใหม่</span>

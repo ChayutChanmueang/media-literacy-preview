@@ -1,14 +1,18 @@
 # รู้ทันสื่อ Interactive — Data Schema
 
-**Version:** 1.2 | **Last Updated:** 2026-07-03
-**สถานะ:** 🟢 Stack ยืนยันแล้ว — Geolocation ผ่าน Cloudflare (`request.cf.*`) แทนบริการภายนอก
+**Version:** 1.8 | **Last Updated:** 2026-08-18
+**สถานะ:** 🟢 Stack ยืนยันแล้ว — Next.js (TypeScript) + Supabase (PostgreSQL) / เลือกพื้นที่แมนนวลผ่าน UI / เชื่อมต่อฐานข้อมูลผ่าน `pg` Pool ทั้งบน Cloud Supabase และ Docker Container Environments (`DATABASE_URL`)
+
+> ℹ️ **การติดตั้ง Schema บน Docker Container:**
+> - **Production (Portainer Stack):** แอปพลิเคชันเชื่อมต่อไปยัง Supabase Cloud PostgreSQL โดยตรงผ่านตัวแปร `DATABASE_URL`
+> - **Local Testing (`docker/docker-compose.yml`):** มีตัวเลือกเปิดคอนเทนเนอร์ Postgres 15 local (`media-literacy-db`) ซึ่งจะ mount สคริปต์ [docs/supabase-schema.sql](../supabase-schema.sql) ในโฟลเดอร์ `/docker-entrypoint-initdb.d/` เพื่อรันสร้าง Schema ตารางและคีย์เริ่มต้นให้อัตโนมัติ
 
 ## หลักการ (Data Minimization & Privacy-First)
 
 Requirement ระบุให้เก็บ **อายุ** และ **ตำแหน่งที่เปิดเล่นแอป** — ออกแบบให้เก็บน้อยที่สุดที่ตอบโจทย์การประเมินโครงการและสอดคล้องกับ PDPA:
 
-- ❌ ไม่เก็บ: ชื่อ, เบอร์โทร, LINE ID, ข้อมูลระบุตัวบุคคล หรือ Raw IP Address (IP ดิบจะถูกแปลงเป็นพิกัดภูมิศาสตร์แล้วทำลายทิ้งทันที)
-- ✅ เก็บ: ช่วงอายุ (ไม่ใช่วันเกิด), ตำแหน่งระดับหยาบ (จังหวัด/ตำบล), ความคืบหน้าการเล่นแบบ anonymous, และบันทึกกิจกรรมการกดใช้งานฟังก์ชันต่างๆ
+- ❌ ไม่เก็บ: ชื่อจริง-นามสกุล, เบอร์โทร, LINE ID หรือเลขระบุตัวตนทางราชการ
+- ✅ เก็บ: ชื่อเล่นที่ผู้ใช้ยินยอมให้แสดงบน Leaderboard, UUID แบบ local ที่ไม่ผูกกับบัญชี, ช่วงอายุ (ไม่ใช่วันเกิด), ตำแหน่งที่ผู้เรียนเลือกเอง (จังหวัด/อำเภอ/ตำบล), ความคืบหน้าการเล่นแบบ anonymous และบันทึกกิจกรรมการกดใช้งาน
 - ⚠️ **PDPA:** ต้องมีหน้าขอความยินยอมภาษาง่ายก่อนเก็บ; ผู้ปฏิเสธการแชร์ตำแหน่งต้องใช้งานแอปได้ครบทุกฟีเจอร์ โดยระบบจะบันทึกสถานะยินยอมหรือไม่ยินยอมไว้ด้วย
 
 ## Entities
@@ -16,11 +20,15 @@ Requirement ระบุให้เก็บ **อายุ** และ **ต�
 ```mermaid
 erDiagram
     SESSION ||--o{ LESSON_PROGRESS : has
-    SESSION ||--o{ GAME_ANSWER : has
     SESSION ||--o{ ACTION_LOG : performs
+    SESSION ||--o{ PAGE_VIEW : accesses
+    SESSION ||--o{ QUIZ_ATTEMPT : performs
+    GAME_ID ||--o{ PLAYER_INFO : categorizes
     LESSON ||--o{ LESSON_PROGRESS : tracked_by
-    LESSON ||--|| GAME : contains
-    GAME ||--o{ GAME_ANSWER : answered_in
+    QUIZ_ATTEMPT ||--o{ QUIZ_ANSWER : contains
+    QUIZ_QUESTION ||--o{ QUIZ_OPTION : has
+    QUIZ_QUESTION ||--o{ QUIZ_ANSWER : answered_for
+    QUIZ_OPTION ||--o{ QUIZ_ANSWER : selected_in
 ```
 
 ### `sessions`
@@ -30,12 +38,22 @@ erDiagram
 | age_range | text | เช่น `"60-69"` — เลือกจากปุ่มช่วงอายุ |
 | role | text | `elder` / `leader` (leader เมื่อเข้าผ่าน facilitator link) |
 | location_consent | boolean | สถานะการยินยอมแชร์ตำแหน่ง |
-| ip_province | text (nullable) | จังหวัดที่แปลงมาจาก IP Address (ไม่เก็บ Raw IP ในฐานข้อมูล) |
-| ip_district | text (nullable) | อำเภอที่แปลงมาจาก IP Address (ถ้าจับได้ละเอียดพอ เช่นผ่าน IP Geolocation) |
-| selected_district | text (nullable) | อำเภอที่ผู้ใช้เลือกเอง (กรณี IP คลาดเคลื่อน หรือต้องการความถูกต้องระดับพื้นที่) |
-| selected_sub_district | text (nullable) | ตำบลที่ผู้ใช้เลือกเอง (กรณี IP คลาดเคลื่อน หรือต้องการข้อมูลระดับตำบล) |
+| selected_district | text (nullable) | อำเภอที่ผู้ใช้เลือกเอง |
+| selected_sub_district | text (nullable) | ตำบลที่ผู้ใช้เลือกเอง |
+| gps_latitude | numeric (nullable) | คอลัมน์เดิม เก็บละติจูด — **UI ปัจจุบันไม่เติมค่านี้แล้ว** (ถอด GPS ตาม [FB-2026-08-18](../agile/feedback/FB-2026-08-18-gps-consent.md)) |
+| gps_longitude | numeric (nullable) | คอลัมน์เดิม เก็บลองจิจูด — **UI ปัจจุบันไม่เติมค่านี้แล้ว** |
 | user_agent | text | ข้อมูล Browser/Device เพื่อวิเคราะห์ประสิทธิภาพบน Mobile browser / LINE In-App browser |
 | created_at | timestamptz | |
+
+### `page_views` (ตารางบันทึกการเข้าถึงหน้าจอและระยะเวลาการเข้าชม)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | uuid (PK) | |
+| session_id | uuid (FK) | อ้างอิงตาราง sessions |
+| page_path | text | พาร์ทหน้าจอที่มีการเข้าถึง (เช่น `/lessons` หรือ `/pretest`) |
+| referrer | text (nullable) | แหล่งที่มาก่อนหน้า (เช่น `https://line.me/` หรือลิงก์ภายนอก) |
+| duration_seconds | integer | ระยะเวลาที่อยู่บนหน้านั้นๆ (หน่วยวินาที, ค่าเริ่มต้น 0) |
+| created_at | timestamptz | เวลาที่เริ่มเข้าสู่หน้านี้ |
 
 ### `action_logs` (ตารางบันทึกกิจกรรมการกดใช้งานฟังก์ชันต่างๆ ในระบบ)
 | Field | Type | Notes |
@@ -47,15 +65,6 @@ erDiagram
 | payload | jsonb (nullable) | ข้อมูลเสริมเฉพาะเหตุการณ์ (เช่น `{"video_seconds": 12.5}` หรือ `{"hint_id": "h1"}`) |
 | created_at | timestamptz | เวลาที่เกิดการกระทำนั้นๆ (Client Timestamp) |
 
-### `lessons` (content config — อาจเป็น JSON ฝั่ง client)
-| Field | Type | Notes |
-|-------|------|-------|
-| id | text (PK) | เช่น `t1-mil` |
-| title | text | |
-| youtube_video_id | text | ⏳ รอรายการคลิปจากทีมเนื้อหา |
-| game_id | text | เกมประจำบท (G1–G5) |
-| order | int | ลำดับใน sequence |
-
 ### `lesson_progress`
 | Field | Type | Notes |
 |-------|------|-------|
@@ -64,14 +73,85 @@ erDiagram
 | video_completed_at | timestamptz | จาก YouTube IFrame API event |
 | game_completed_at | timestamptz | ได้ดาวเมื่อ field นี้ไม่ null |
 
-### `game_answers`
+### `game_id` (ทะเบียนเกมที่เปิดใช้บน Leaderboard)
 | Field | Type | Notes |
 |-------|------|-------|
-| session_id | uuid (FK) | |
-| game_id / question_id | text | |
-| answer | text | |
-| is_correct | boolean | ใช้วัดว่าโจทย์ไหนคนพลาดเยอะ → ปรับสื่อ |
-| answered_at | timestamptz | |
+| gid | varchar (PK) | รหัสเกม เช่น `G1`, `G3`, `G6`, `G13` |
+| name | varchar | ชื่อเกมที่แสดงบนหัวหน้า Leaderboard |
+| created_at | timestamptz | วันที่เพิ่มเกมเข้าสู่ registry |
+
+### `player_info` (ประวัติคะแนน Leaderboard)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | uuid (PK) | รหัสรายการคะแนนแต่ละรอบ สร้างใหม่ทุกครั้งที่บันทึก |
+| attempt_uuid | uuid (Unique) | รหัสรอบจาก client สำหรับ idempotency ป้องกัน React Strict Mode/การ retry สร้างคะแนนซ้ำ |
+| player_uuid | uuid | UUID ประจำ local player profile; ใช้ไฮไลท์ประวัติของเครื่องปัจจุบัน ไม่ใช่บัญชีหรือหลักฐานยืนยันตัวตน |
+| name | varchar | ชื่อเล่นที่ผู้ใช้ยินยอมให้แสดงสาธารณะ ความยาว 1–30 ตัวอักษร |
+| gid | varchar (FK) | อ้างอิง `game_id.gid`; ทุก query Leaderboard ต้องกรองด้วย field นี้ |
+| score | integer | คะแนนของรอบนั้น ต้องไม่เป็น null และต้องไม่ติดลบ |
+| created_at | timestamptz | เวลาที่ server รับและบันทึกคะแนน |
+
+> **ข้อกำหนดก่อนเริ่ม implementation (US-CF-50):** DDL ล่าสุดที่ผู้ใช้จัดเตรียมมี `id`, `name`, `gid`, `score`, `created_at` และ FK ของ `gid` แล้ว แต่ยังต้องเพิ่ม `player_uuid uuid not null` เพื่อแยกตัวผู้เล่นออกจากรหัสรายการคะแนน หากใช้ `id` เป็น UUID ผู้เล่น จะไม่สามารถเก็บ history หลายรอบต่อผู้เล่นได้ นอกจากนี้ต้องปรับ `score` เป็น `not null`, เพิ่ม `check (score >= 0)`, name length constraint และ index `(gid, score desc, created_at asc)`
+
+**พฤติกรรมการเก็บข้อมูล:**
+- หนึ่งรอบที่เล่นจบ = หนึ่งแถวใหม่ ไม่ upsert และไม่ deduplicate ด้วยชื่อหรือ `player_uuid`
+- ชื่อซ้ำและคะแนนซ้ำเป็นข้อมูล history ที่ยอมรับได้
+- หน้า Leaderboard แสดง Top 10 แยกตาม `gid` เท่านั้น ห้ามนำคะแนนต่างเกมมาเรียงรวมกัน
+- Browser ห้ามอ่านหรือเขียนตารางโดยตรง; Next.js Route Handler เชื่อม Supabase PostgreSQL ผ่าน `DATABASE_URL`
+- เปิด RLS โดยไม่ให้ policy แก่ `anon`/`authenticated`; API ฝั่ง server เป็นผู้ตรวจและบันทึกข้อมูล
+
+**ข้อมูลตั้งต้นที่ต้องมีใน `game_id`:**
+```sql
+insert into public.game_id (gid, name)
+values
+  ('G1', 'จริงหรือมั่ว?'),
+  ('G2', 'จับสัญญาณมิจ'),
+  ('G3', 'AI หรือ คน?'),
+  ('G5', 'กางโล่กู้ชีพ'),
+  ('G6', 'จำลองแชท LINE'),
+  ('G13', 'ต่อไอติมรู้ทันสื่อ')
+on conflict (gid) do update set name = excluded.name;
+```
+
+### `quiz_questions` (ตารางคลังข้อสอบ Pretest / Posttest)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | text (PK) | ตัวระบุคำถาม (เช่น `"pre-q1"`, `"post-q1"`) |
+| test_type | text | ประเภทการทดสอบ (`"pretest"` หรือ `"posttest"`) |
+| question_text | text | ข้อความโจทย์คำถาม |
+| media_url | text (nullable) | ลิงก์ไฟล์สื่อรูปภาพหรือคลิปแนบประกอบ |
+| explanation | text (nullable) | ข้อความคำอธิบายเฉลย (แสดงหลังจากตรวจคำตอบทั้งหมดแล้ว) |
+| sort_order | integer | ลำดับการเรียงในการแสดงผลแบบทดสอบ |
+| created_at | timestamptz | |
+
+### `quiz_options` (ตารางตัวเลือกคำตอบของแต่ละคำถาม)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | uuid (PK) | |
+| question_id | text (FK) | อ้างอิงตาราง quiz_questions |
+| option_text | text | ข้อความของตัวเลือกคำตอบ |
+| is_correct | boolean | แฟล็กบอกว่าเป็นคำตอบที่ถูกต้องใช่หรือไม่ |
+| created_at | timestamptz | |
+
+### `quiz_attempts` (ตารางบันทึกการทำแบบทดสอบแยกแต่ละรอบ)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | uuid (PK) | |
+| session_id | uuid (FK) | อ้างอิงตาราง sessions |
+| test_type | text | ประเภทการทดสอบ (`"pretest"` หรือ `"posttest"`) |
+| score | integer | คะแนนรวมที่ทำได้ (คำนวณฝั่ง client และ sync ขึ้น backend) |
+| completed_at | timestamptz | วันเวลาที่ส่งแบบทดสอบสำเร็จ |
+| created_at | timestamptz | วันเวลาที่เริ่มทำแบบทดสอบ |
+
+### `quiz_answers` (ตารางบันทึกการตอบข้อสอบรายข้อของผู้เข้าสอบแต่ละเซสชัน)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | uuid (PK) | |
+| attempt_id | uuid (FK) | อ้างอิงตาราง quiz_attempts |
+| question_id | text (FK) | อ้างอิงตาราง quiz_questions |
+| selected_option_id | uuid (FK) | อ้างอิงตาราง quiz_options ที่ผู้เล่นเลือกตอบ |
+| is_correct | boolean | คำตอบนั้นถูกต้องหรือไม่ (ช่วยวิเคราะห์รายข้อความเข้าใจผิด) |
+| created_at | timestamptz | วันเวลาที่กดส่งคำตอบ |
 
 ### Game content files (JSON, ไม่อยู่ใน DB)
 ```json
@@ -105,17 +185,19 @@ erDiagram
   3. หากไม่พบในทั้งสองที่ ระบบจึงจะถือว่าเป็น Session ใหม่ และนำไปสู่หน้ายินยอมเงื่อนไขและเลือกช่วงอายุต่อไป
 - **Facilitator Link Helper:** สำหรับกรณีใช้งานในชุมชนผ่านผู้นำชุมชน จะสามารถแชร์ URL ในลักษณะ Deep Link ที่ฝังพารามิเตอร์พื้นที่ (เช่น `?province=ChiangMai&district=Muang`) เพื่อเป็น Fallback ในกรณีที่ระบบตรวจจับพิกัดไม่ได้หรือผู้ใช้ล้างแคชทั้งหมด
 
-### 2. การจัดการตำแหน่งและข้อมูล IP ภายใต้ PDPA (PDPA & IP Geolocation Compliance)
-เพื่ออำนวยความสะดวกในการวิเคราะห์ระดับจังหวัด/ตำบลโดยที่ไม่ละเมิดความเป็นส่วนตัวของผู้สูงอายุ ระบบได้ออกแบบขั้นตอนการจัดการ IP Address และพิกัดภูมิศาสตร์ (Geolocation) ดังนี้:
+### 1.1 Local Player Profile สำหรับ Leaderboard
+- เก็บ `{ player_uuid, name }` เป็น object เดียวใน `localStorage` ภายใต้ key ที่กำหนดร่วมกัน เช่น `naplab_ml_leaderboard_player`
+- เมื่อเปิด `/lessons/[id]/leaderboard` และพบ object ที่ถูกต้อง ให้ข้ามหน้ากรอกชื่อ; หากไม่พบหรือข้อมูลเสีย ให้แสดงฟอร์มชื่อและสร้าง UUID ใหม่
+- UUID นี้แยกจาก primary key `player_info.id`: UUID ผู้เล่นคงเดิมในเครื่อง แต่ `id` ของประวัติคะแนนสร้างใหม่ทุกครั้ง
+- การล้างข้อมูลเว็บไซต์หรือเปลี่ยน browser/device จะสร้าง local player profile ใหม่ ซึ่งเป็นข้อจำกัดที่ยอมรับในระบบแบบไม่มีบัญชี
 
-- **ขั้นตอนการแปลงข้อมูลตำแหน่ง (IP Geolocation Flow):**
-  1. Cloudflare Pages อ่านค่า `request.cf.country` / `request.cf.region` / `request.cf.city` ให้อัตโนมัติที่ edge สำหรับทุก request — **ไม่มีการอ่าน IP ดิบในโค้ดแอปเลย** จึงไม่ต้องพึ่งบริการภายนอก (MaxMind/3rd-party API)
-  2. ส่งค่าที่แปลงแล้ว (จังหวัด/ภูมิภาค/เมือง) ไปยัง Supabase Edge Function เพื่อ map เป็นชื่อจังหวัด (`ip_province`) และอำเภอ (`ip_district`) ที่ใช้ในระบบ
-  3. บันทึกเฉพาะค่าที่แปลงแล้วลงในตาราง `sessions` — ไม่มี IP ดิบผ่านเข้าสู่ระบบแอปหรือฐานข้อมูลเลยตั้งแต่ต้น (privacy by design)
-- **การคัดเลือกอำเภอ/ตำบล (Hybrid Manual Dropdown):**
-  - เนื่องจาก IP Geolocation มักไม่มีความแม่นยำเพียงพอในระดับอำเภอหรือตำบล (พิกัดมือถืออาจจะชี้ไปที่เสาส่งสัญญาณในอำเภออื่น)
-  - หลังจากได้จังหวัดเริ่มต้นจาก IP แล้ว ระบบจะนำไปใช้เพื่อกรองค่าเริ่มต้นในหน้าต่างยินยอม โดยจะแสดงคำแนะนำ เช่น *"ดูเหมือนว่าคุณจะอยู่ที่จังหวัด [เชียงใหม่] ใช่หรือไม่?"*
-  - หากใช่/ไม่ใช่ ผู้ใช้สามารถกดเลือกหรือแก้ไข **อำเภอ** และ **ตำบล** จาก Dropdown รายการในจังหวัดนั้นๆ ได้อย่างสะดวกสบาย ซึ่งทำให้ได้ข้อมูลตำบลที่ถูกต้องที่สุดสำหรับการประเมินโครงการโดยไม่ต้องพิมพ์ข้อมูลเอง
+### 2. การจัดการตำแหน่งและข้อมูลพิกัด (PDPA & Geolocation Compliance)
+เพื่อความสะดวกในการวิเคราะห์รายพื้นที่โดยไม่ละเมิดสิทธิ์ความเป็นส่วนตัวของผู้ใช้ ระบบให้ผู้เรียนเลือกพื้นที่เอง:
+
+- **การระบุตำแหน่งผ่าน UI (Manual Location Selector):**
+  1. **เลือกจังหวัด/อำเภอ/ตำบลเอง:** หน้า Consent มีรายการท้องถิ่น (ครอบคลุมพื้นที่จัดกิจกรรมเป้าหมาย: เชียงใหม่ แพร่ น่าน และตัวเลือกอื่น ๆ) ผู้เรียนเลือกได้ตามที่อยู่ที่ต้องการใช้ เช่น บ้านเกิด หรือที่อยู่ปัจจุบันที่เล่นเกม
+  2. **ไม่ดึงพิกัด GPS:** ถอดปุ่ม "ดึงพิกัดจาก GPS" และ Reverse Geocode แล้ว เพราะพิกัดมักไม่ตรง และไม่ตอบโจทย์กรณีที่ผู้เรียนอยากกรอกที่อยู่อื่นที่ไม่ใช่ตำแหน่งเครื่อง — ดู [FB-2026-08-18](../agile/feedback/FB-2026-08-18-gps-consent.md)
+  3. **หลักความปลอดภัย:** ระบบไม่มีการจัดเก็บไอพีแอดเดรส (IP Address) พิกัดละติจูด/ลองจิจูดจากเบราว์เซอร์ หรือช่องข้อมูลส่วนตัวของผู้เข้าชมเพื่อตัดความเชื่อมโยงในการเข้าถึงตัวตนที่แท้จริง
 
 ---
 
@@ -125,6 +207,46 @@ erDiagram
 - **อัตราการเรียนจบต่อบท (Funnel Analysis):** สัดส่วนการไหลของกลุ่มผู้ใช้ตั้งแต่เริ่มเข้าหน้าแรก -> ดูวิดีโอจบ -> ทำเกมตอบคำถามสำเร็จในแต่ละบทเรียน
 - **โจทย์ที่ตอบผิดมากที่สุด (Error Rate per Question):** สัดส่วนและจำนวนการตอบผิดแยกตามข้อคำถามของเกม G1-G5 เพื่อประเมินว่าเรื่องใดที่ผู้สูงอายุยังขาดความเข้าใจ
 
+### Analytics API: `GET /api/action-logs`
+
+รองรับหัวข้อ "เวลาและจำนวนการกดใช้งานฟังก์ชัน (Event Engagement)" ด้านบน — ดึงข้อมูลสรุป (aggregate) จากตาราง `action_logs` **ไม่ใช่ raw rows** ถ้าต้องการข้อมูลรายแถวดิบเพื่อวิเคราะห์เพิ่มเอง ให้เพิ่ม endpoint/ฟังก์ชันแยกต่างหาก
+
+**Query params (ทุกตัว optional ใส่ร่วมกันได้):**
+
+| Param | ชนิด | ความหมาย |
+|-------|------|----------|
+| `from` | ISO date string | กรอง `created_at >= from` |
+| `to` | ISO date string | กรอง `created_at <= to` |
+| `event_name` | text | กรองเฉพาะ event เดียว เช่น `tap_hotspot` |
+| `session_id` | uuid | กรองเฉพาะ session เดียว |
+
+ถ้า `from`/`to` ไม่ใช่วันที่ที่ parse ได้ จะตอบกลับ `400 Bad Request`
+
+**ตัวอย่างเรียกใช้:**
+```bash
+curl "https://<domain>/api/action-logs?event_name=tap_hotspot&from=2026-07-01&to=2026-07-19"
+```
+
+**รูปแบบ Response:**
+```json
+{
+  "totalEvents": 195,
+  "byEventName": [{ "event_name": "tap_hotspot", "count": 25 }],
+  "byPageUrl": [{ "page_url": "/lessons", "count": 39 }],
+  "byDay": [{ "day": "2026-07-19", "count": 195 }]
+}
+```
+
+**เรียกจากโค้ดฝั่ง server โดยตรง** (ไม่ผ่าน HTTP) ได้ผ่านฟังก์ชัน `getActionLogAnalytics()` ใน `src/lib/analytics.ts` — ใช้ได้เฉพาะไฟล์ที่รันฝั่ง server (Server Component, Route Handler) เท่านั้น เพราะต่อ DB pool ตรงผ่าน `src/lib/database.ts`:
+```ts
+import { getActionLogAnalytics } from "@/lib/analytics";
+
+const stats = await getActionLogAnalytics({ eventName: "certificate_download" });
+```
+
+---
+
 ## Related Documents
 - System: [System Design](./01-system-design.md)
+- Architecture: [System Architecture](./02-architecture.md)
 - Concept: [Concept & Architecture](../gdd/00-concept.md)

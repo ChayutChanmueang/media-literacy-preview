@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#fbfbfb" />
+    <meta
+      name="description"
+      data-i18n-content="document.description"
+      content="เกมยิงลูกแก้วแก้วเกาหลีแบบเว็บเล่นได้ลื่นไหล"
+    />
+    <meta property="og:title" data-i18n-content="document.title" content="Goosl Glass Marbles (구슬치기)" />
+    <meta property="og:description" data-i18n-content="document.ogDescription" content="ยิง 6 ครั้งเพื่อเคาะลูกแก้ว 7 ลูกออกจากวงกลม" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./thumbnail.png" />
+    <title>Goosl Glass Marbles (구슬치기)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="stage" data-mode="game">
+      <canvas id="marble-canvas" data-i18n-aria-label="canvas.label" aria-label="กระดานเกมลูกแก้ว"></canvas>
+
+      <div id="target-ring" class="target-ring" aria-hidden="true"></div>
+      <svg id="aim-layer" class="aim-layer" aria-hidden="true">
+        <line id="aim-line" x1="0" y1="0" x2="0" y2="0"></line>
+        <circle id="aim-dot" cx="0" cy="0" r="4"></circle>
+      </svg>
+      <div
+        id="power-meter"
+        class="power-meter"
+        role="meter"
+        data-i18n-aria-label="power.label"
+        aria-label="แรงยิง"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+        hidden
+      >
+        <span>POWER</span>
+        <div class="power-track" aria-hidden="true"><i id="power-fill"></i></div>
+        <strong id="power-output">0</strong>
+      </div>
+
+      <header class="topbar">
+        <a class="brand" href="./" data-i18n-aria-label="brand.open" aria-label="เริ่มเกมลูกแก้วใหม่">
+          <span aria-hidden="true"></span>
+          <strong data-i18n="brand.name">Goosl (구슬치기)</strong>
+        </a>
+
+        <nav class="mode-switcher" data-i18n-aria-label="mode.group" aria-label="โหมดเกม">
+          <button type="button" data-mode-button="game" data-i18n="mode.game" aria-pressed="true">ยิงลูกแก้ว</button>
+          <button type="button" data-mode-button="free" data-i18n="mode.free" aria-pressed="false">เล่นอิสระ</button>
+        </nav>
+
+        <div class="top-actions">
+          <button
+            id="help-button"
+            class="help-button"
+            type="button"
+            data-i18n-aria-label="help.open"
+            aria-label="เปิดวิธีเล่น"
+            aria-haspopup="dialog"
+            aria-controls="help-dialog"
+            aria-expanded="false"
+          >
+            ?
+          </button>
+          <button
+            id="sound-toggle"
+            class="compact-button"
+            type="button"
+            data-i18n-aria-label="sound.enable"
+            aria-label="เปิดเสียงลูกแก้ว"
+            aria-pressed="false"
+          >
+            <span class="sound-icon" aria-hidden="true">♪</span>
+            <span class="button-label" data-i18n="sound.enableShort">เปิดเสียง</span>
+          </button>
+          <button
+            id="menu-toggle"
+            class="compact-button menu-toggle"
+            type="button"
+            data-i18n-aria-label="menu.hide"
+            aria-label="ซ่อนเมนู"
+            aria-pressed="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <g class="menu-collapse">
+                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                <path d="M15 4v16M8 9l3 3-3 3"></path>
+              </g>
+              <g class="menu-expand">
+                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                <path d="M15 4v16M11 9l-3 3 3 3"></path>
+              </g>
+            </svg>
+            <span class="button-label" data-i18n="menu.hide">ซ่อนเมนู</span>
+          </button>
+        </div>
+      </header>
+
+      <section id="game-hud" class="game-hud" data-i18n-aria-label="game.hud" aria-label="สถานะเกมลูกแก้ว">
+        <div class="game-stat">
+          <span data-i18n="game.targets">ออกนอกวง</span>
+          <strong id="target-score">0/7</strong>
+        </div>
+        <i aria-hidden="true"></i>
+        <div class="game-stat">
+          <span data-i18n="game.shots">โอกาสคงเหลือ</span>
+          <strong id="shots-left">6</strong>
+        </div>
+        <button id="restart-game" type="button"><span aria-hidden="true">↻</span> <span data-i18n="game.restart">เริ่มใหม่</span></button>
+        <button id="share-result" type="button">
+          <svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path>
+          </svg>
+          <span data-i18n="game.share">แชร์ผลลัพธ์</span>
+        </button>
+      </section>
+
+      <section id="free-controls" class="controls" data-i18n-aria-label="free.controls" aria-label="ควบคุมโหมดอิสระ" hidden>
+        <div class="background-switcher" role="group" data-i18n-aria-label="background.group" aria-label="เลือกพื้นหลัง">
+          <span data-i18n="background.label">พื้นหลัง</span>
+          <button type="button" data-background="0" data-i18n="background.white" aria-pressed="true">สีขาว</button>
+          <button type="button" data-background="1" data-i18n="background.grid" aria-pressed="false">ตาราง</button>
+        </div>
+        <div class="control-row">
+          <button id="tilt-toggle" type="button" data-i18n-aria-label="tilt.enable" aria-label="เปิดการเอียง" aria-pressed="false" hidden>
+            <span class="button-icon tilt-icon" aria-hidden="true"></span>
+            <span class="button-label" data-i18n="tilt.enable">เปิดการเอียง</span>
+          </button>
+          <button id="motion-toggle" type="button" data-i18n-aria-label="motion.stop" aria-label="หยุดการเคลื่อนที่" aria-pressed="false">
+            <span class="button-icon pause-icon" aria-hidden="true"></span>
+            <span class="button-label" data-i18n="motion.stop">หยุดการเคลื่อนที่</span>
+          </button>
+          <button id="scatter" type="button" data-i18n-aria-label="free.scatter" aria-label="กระจายลูกแก้วใหม่">
+            <span class="button-icon scatter-icon" aria-hidden="true">✦</span>
+            <span class="button-label" data-i18n="free.scatter">กระจายลูกแก้วใหม่</span>
+          </button>
+          <label class="count-control" for="marble-count">
+            <span data-i18n="free.count">จำนวนลูกแก้ว</span>
+            <input id="marble-count" type="range" min="6" max="72" step="1" value="12" />
+            <output id="count-output" for="marble-count">12</output>
+          </label>
+        </div>
+      </section>
+
+      <section id="result-panel" class="result-panel" aria-labelledby="result-title" hidden>
+        <h1 id="result-title" data-i18n="result.defaultTitle">ผลการแข่งขัน</h1>
+        <div id="result-stars" class="result-stars" data-i18n-aria-label="result.stars" aria-label="0 ดาว">☆☆☆</div>
+        <strong id="result-score">0/7</strong>
+        <div class="result-actions">
+          <button id="result-continue" class="result-continue" type="button" data-i18n="result.continue" hidden>เล่นด่านต่อไป</button>
+          <button id="result-restart" type="button" data-i18n="result.retry">เล่นอีกครั้ง</button>
+          <button id="result-share" type="button">
+            <svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path>
+            </svg>
+            <span data-i18n="game.share">แชร์ผลลัพธ์</span>
+          </button>
+        </div>
+      </section>
+
+      <div id="help-backdrop" class="help-backdrop" hidden>
+        <section
+          id="help-dialog"
+          class="help-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="help-title"
+          aria-describedby="help-description"
+          tabindex="-1"
+        >
+          <button id="help-close" class="help-close" type="button" data-i18n-aria-label="help.close" aria-label="ปิดวิธีเล่น">×</button>
+          <p class="help-eyebrow">HOW TO PLAY</p>
+          <h1 id="help-title" data-i18n="help.title">วิธีเล่น</h1>
+          <div id="help-description" class="help-content">
+            <section class="help-mode">
+              <h2 data-i18n-html="help.game.title"><span aria-hidden="true">◎</span> ยิงลูกแก้ว (Goosl)</h2>
+              <p data-i18n-html="help.game.instruction">ลากลูกแก้วยิง <strong>ไปในทิศทางที่ต้องการแล้วปล่อย</strong> เคาะลูกแก้ว 7 ลูกออกจากวงให้หมดภายใน 6 ครั้ง</p>
+              <p class="help-note" data-i18n="help.game.fail">คุณจะแพ้หากลูกแก้วยิงหยุดอยู่ภายในวงกลมก่อนที่ลูกแก้วเป้าหมายจะถูกเคาะออกหมด</p>
+              <p class="help-note" data-i18n="help.game.continue">เมื่อผ่านรอบโดยลูกแก้วยิงอยู่นอกวงกลม คุณสามารถเล่นต่อในรอบถัดไปเพื่อสะสมคะแนนเพิ่มขึ้นได้</p>
+            </section>
+            <section class="help-mode">
+              <h2 data-i18n-html="help.free.title"><span aria-hidden="true">✦</span> โหมดเล่นอิสระ</h2>
+              <p data-i18n="help.free.instruction">ลากและขว้างลูกแก้วอย่างอิสระ ปรับจำนวนลูกแก้วและเปลี่ยนพื้นหลังได้ตามต้องการ</p>
+              <p class="help-note" data-i18n="help.free.tilt">บนมือถือ เปิดใช้งาน 'เอียงเครื่อง' เพื่อกลิ้งลูกแก้วตามความเอียงของอุปกรณ์</p>
+            </section>
+          </div>
+          <button id="help-confirm" class="help-confirm" type="button" data-i18n="help.confirm">เข้าใจแล้ว</button>
+        </section>
+      </div>
+
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+      <span id="motion-state" class="sr-only" data-i18n="motion.stopped" aria-live="polite">หยุดนิ่ง</span>
+
+      <div class="performance" aria-live="polite" hidden>
+        <span class="pulse"></span>
+        <span id="fps">60 FPS</span>
+        <i></i>
+        <span id="draw-count">8 MARBLES</span>
+      </div>
+
+      <div id="webgl-error" class="error" data-i18n="error.webgl" hidden>
+        เกมนี้ต้องการเบราว์เซอร์ที่รองรับ WebGL 2
+      </div>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

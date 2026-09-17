@@ -1,108 +1,55 @@
-import React, { useState } from 'react';
-import { CheckCircle2, AlertTriangle, ArrowRight, Eye, ZoomIn, ZoomOut, Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import Button3D from './Button3D';
+import FullscreenImageViewer from './FullscreenImageViewer';
+import GameAnswerButton from './GameAnswerButton';
+import GameIntro from './GameIntro';
+import GameSolutionCard from './GameSolutionCard';
+import QUESTION_POOL from '@/data/g3-questions.json';
 
-const QUESTIONS = [
-  {
-    id: 'g3-q1',
-    media: '/images/g3-q1.png',
-    claim: 'ภาพโฆษณา: แพทย์หญิงผู้เชี่ยวชาญชวนซื้อยาบำรุงหัวใจสูตรพิเศษช่วยลดความดันทันที',
-    isAi: true,
-    aiDisclosure: '⚠️ ภาพนี้จำลองขึ้นโดย AI เพื่อการศึกษา',
-    explanation: 'สังเกตนิ้วมือของแพทย์ที่มีความบิดเบี้ยวและเรียงนิ้วผิดปกติ (มี 6 นิ้ว) รวมถึงตัวอักษรภาษาอังกฤษจำลองบนกระดานด้านหลังสะกดสับสนอ่านไม่ออก มิจฉาชีพชอบใช้เทคโนโลยีนี้แอบอ้างใบหน้าบุคลากรแพทย์เพื่อสร้างความน่าเชื่อถือปลอมครับ',
-    speakerText: 'ภาพโฆษณาแพทย์ชวนซื้อยาบำรุงหัวใจ ภาพนี้สร้างด้วย AI ครับ สังเกตนิ้วมือแพทย์ขวาที่มีหกนิ้ว และตัวหนังสือบนกระดานฉากหลังบิดเบี้ยวอ่านไม่เป็นภาษา มิจฉาชีพสร้างภาพขึ้นเพื่อแอบอ้างความน่าเชื่อถือครับ',
-    hotspots: [
-      { x: '46%', y: '68%', w: '60px', h: '60px', label: 'นิ้วมือมี 6 นิ้ว บิดเบี้ยว' },
-      { x: '25%', y: '25%', w: '80px', h: '50px', label: 'ตัวหนังสือฉากหลังเบลอบิดเบี้ยว' }
-    ]
-  },
-  {
-    id: 'g3-q2',
-    media: '/images/g3-q2.png',
-    claim: 'ภาพถ่าย: บรรยากาศแผงผักในตลาดสดเช้าวิถีชุมชนต่างจังหวัดของไทย',
-    isAi: false,
-    aiDisclosure: '',
-    explanation: 'ภาพนี้เป็นภาพถ่ายจริง สังเกตตัวเลขราคาไทยสะกดถูกต้องชัดเจน รายละเอียดเนื้อผิวผัก แสงเงาธรรมชาติสะท้อนกับพื้นปูนเปียกชื้น และสัดส่วนใบหน้าของผู้คนที่ดูสมจริงไม่เบลอเลอะเทอะ',
-    speakerText: 'ภาพแผงผักในตลาดสด ภาพนี้คือภาพถ่ายจริงครับ รายละเอียดแสงเงาสมดุล ตัวหนังสือไทยบนป้ายสะกดถูกต้องชัดเจน และพื้นผิวของผักสมจริงเป็นธรรมชาติครับ',
-    hotspots: []
-  },
-  {
-    id: 'g3-q3',
-    media: '/images/g3-q3.png',
-    claim: 'ภาพประกาศข่าว: โฆษกกรมพัฒนาสังคมฯ ออกโรงแถลงข่าวแจกของขวัญเบี้ยพิเศษผู้สูงอายุ',
-    isAi: true,
-    aiDisclosure: '⚠️ ภาพนี้จำลองขึ้นโดย AI เพื่อการศึกษา',
-    explanation: 'สังเกตจุดผิดปกติของฟันของโฆษกที่มีลักษณะเรียงตัวมากซ้อนทับกันเกินจริง ผิวหน้ามันเงาไร้รูขุมขนเหมือนตุ๊กตายางพารา และตัวสะกดอักษรบนแถบรายงานข่าวด้านล่างโย้เย้แปลกประหลาด',
-    speakerText: 'ภาพโฆษกประกาศแจกสิทธิพิเศษ ภาพนี้สร้างด้วย AI ครับ สังเกตฟันของผู้ประกาศข่าวมีลักษณะเรียงซ้อนมากเกินจริง ผิวหน้าสะท้อนเงาเหมือนพลาสติก และตัวอักษรด้านล่างโย้เย้อ่านไม่ออกครับ',
-    hotspots: [
-      { x: '48%', y: '42%', w: '40px', h: '30px', label: 'ฟันเรียงซ้อนเยอะเกินธรรมชาติ' },
-      { x: '20%', y: '82%', w: '120px', h: '40px', label: 'แถบข่าวด้านล่างตัวหนังสือสะกดบิดเบี้ยว' }
-    ]
-  },
-  {
-    id: 'g3-q4',
-    media: '/images/g3-q4.png',
-    claim: 'ภาพถ่าย: คุณตาคุณยายชาวนาไทยกำลังช่วยกันผูกมัดฟ่อนข้าวท่ามกลางท้องทุ่งนาสีเขียว',
-    isAi: false,
-    aiDisclosure: '',
-    explanation: 'ภาพนี้เป็นภาพถ่ายของจริง สังเกตรายละเอียดฟางข้าวและรวงข้าวแยกเส้นชัดเจน ริ้วรอยแววตาของคุณตาคุณยายสอดคล้องตามช่วงวัย เสื้อผ้ามีฝุ่นเปื้อนตามธรรมชาติและแสงเงาแดดบ่ายมีความถูกต้องสอดคล้องกัน',
-    speakerText: 'ภาพคุณตาคุณยายทำนา ภาพนี้คือภาพถ่ายจริงครับ รายละเอียดรอยย่นบนใบหน้าเป็นธรรมชาติ รวงข้าวแยกเส้นชัดเจน แสงเงาแดดที่ทอดลงมาสอดคล้องกันดีครับ',
-    hotspots: []
-  },
-  {
-    id: 'g3-q5',
-    media: '/images/g3-q5.png',
-    claim: 'ภาพข่าวสังคม: กิจกรรมเฉลิมฉลองวันปีใหม่ของผู้สูงอายุที่ร่วมรำวงในตำบล',
-    isAi: true,
-    aiDisclosure: '⚠️ ภาพนี้จำลองขึ้นโดย AI เพื่อการศึกษา',
-    explanation: 'สังเกตคนในฉากหลังที่หน้าตายุบยับบิดเบี้ยว ไม่มีจมูกหรือตาชัดเจน (เนื่องจาก AI วาดรายละเอียดขนาดย่อยด้านหลังไม่สมบูรณ์) และลวดลายเสื้อลายดอกมีการซ้อนทับกันอย่างไร้ทิศทางธรรมชาติ',
-    speakerText: 'ภาพกิจกรรมรำวงวันปีใหม่ ภาพนี้สร้างด้วย AI ครับ สังเกตใบหน้าของคนในฉากหลังบิดเบี้ยว ตาและจมูกขาดหายไป และลวดลายเสื้อผ้าแปลกประหลาดซ้อนทับไม่เป็นธรรมชาติครับ',
-    hotspots: [
-      { x: '72%', y: '32%', w: '50px', h: '50px', label: 'ใบหน้าฉากหลังไม่มีตารูปร่างบิดเบี้ยว' },
-      { x: '35%', y: '55%', w: '70px', h: '70px', label: 'ลวดลายผ้าซ้อนทับอย่างไร้ทิศทาง' }
-    ]
-  },
-  {
-    id: 'g3-q6',
-    media: '/images/g3-q6.png',
-    claim: 'ภาพถ่าย: หญิงสูงอายุชาวไทยกำลังใช้เตาถ่านปรุงขนมหวานโบราณในครัวหลังบ้าน',
-    isAi: false,
-    aiDisclosure: '',
-    explanation: 'ภาพนี้เป็นภาพถ่ายจริง สังเกตละอองขี้เถ้าและควันลอยฟุ้งเป็นธรรมชาติไม่เนียนจนเกินไป พื้นหลังมีอุปกรณ์ทำครัววางรกตามครรลองครัวไทยของจริงที่ผ่านการใช้งานมานาน ปราศจากความสมมาตรบิดเบี้ยว',
-    speakerText: 'ภาพปรุงขนมไทยด้วยเตาถ่าน ภาพนี้คือภาพถ่ายจริงครับ ควันไฟกระจายตัวธรรมชาติ เครื่องใช้ในครัวมีฝุ่นผงคราบเขม่าจริง ไม่มีจุดผิดธรรมชาติของสัดส่วนครับ',
-    hotspots: []
+// US-GAME-03-R2: สุ่มโจทย์จากคลัง (pool) — คุมสัดส่วนภาพปลอม (AI/ตัดต่อ) กับภาพจริงให้สมดุลต่อรอบ
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-];
+  return a;
+};
+
+// เลือกโจทย์ 1 รอบ: แบ่งครึ่งภาพปลอม/ภาพจริง แล้วสลับลำดับ; เผื่อ pool ฝั่งใดไม่พอก็เติมจากที่เหลือ
+const pickRoundQuestions = () => {
+  const { questionsPerRound, pool } = QUESTION_POOL;
+  const n = Math.min(questionsPerRound, pool.length);
+  const fake = pool.filter((q) => q.isAi);
+  const real = pool.filter((q) => !q.isAi);
+  const nFake = Math.min(Math.ceil(n / 2), fake.length);
+  const nReal = Math.min(n - nFake, real.length);
+  let picked = [...shuffle(fake).slice(0, nFake), ...shuffle(real).slice(0, nReal)];
+  if (picked.length < n) {
+    const rest = shuffle(pool.filter((q) => !picked.includes(q))).slice(0, n - picked.length);
+    picked = picked.concat(rest);
+  }
+  return shuffle(picked);
+};
 
 export default function G3AIOrNot({ onFinish, logEvent }) {
+  const [showIntro, setShowIntro] = useState(true); // US-CF-03: หน้าแนะนำก่อนเริ่มเกม
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selected, setSelected] = useState(null); // 'ai' or 'real'
   const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [zoomMode, setZoomMode] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
-  const synthRef = React.useRef(window.speechSynthesis);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [autoPaused, setAutoPaused] = useState(false); // US-UX-07: หยุดตัวนับ auto-advance ระหว่างผู้ใช้อ่าน/เลื่อนเฉลย
+  // US-GAME-03-R2: สุ่มชุดโจทย์ครั้งเดียวตอนเริ่มเกม (mount) — เล่นซ้ำ = ชุด/ลำดับใหม่
+  const [questions] = useState(pickRoundQuestions);
 
-  const currentQuestion = QUESTIONS[currentIdx];
+  const currentQuestion = questions[currentIdx];
 
-  const handleSpeak = (text) => {
-    if (!synthRef.current) return;
-
-    if (speaking) {
-      synthRef.current.cancel();
-      setSpeaking(false);
-      logEvent('toggle_audio', { action: 'mute', question_id: currentQuestion.id });
-      return;
+  // US-FLOW-02: รายงานความคืบหน้าต่อโจทย์ให้ progress bar (AppLayout ฟัง event นี้)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('flowStepProgress', { detail: currentIdx / questions.length }));
     }
-
-    logEvent('toggle_audio', { action: 'play', question_id: currentQuestion.id });
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'th-TH';
-    utterance.rate = 0.9;
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-
-    setSpeaking(true);
-    synthRef.current.speak(utterance);
-  };
+  }, [currentIdx, questions.length]);
 
   const handleAnswer = (choice) => {
     setSelected(choice);
@@ -121,20 +68,20 @@ export default function G3AIOrNot({ onFinish, logEvent }) {
   };
 
   const handleNext = () => {
-    if (synthRef.current) {
-      synthRef.current.cancel();
-      setSpeaking(false);
-    }
-    setZoomMode(false);
+    setFullscreen(false);
+    setAutoPaused(false); // US-UX-07: โจทย์ถัดไปให้ตัวนับ auto-advance เริ่มนับใหม่เสมอ
 
-    if (currentIdx < QUESTIONS.length - 1) {
+    if (currentIdx < questions.length - 1) {
       const nextIdx = currentIdx + 1;
       setCurrentIdx(nextIdx);
       setSelected(null);
-      logEvent('enter_question', { game_id: 'G3', question_id: QUESTIONS[nextIdx].id });
+      logEvent('enter_question', { game_id: 'G3', question_id: questions[nextIdx].id });
     } else {
-      const starRating = correctAnswers >= 6 ? 3 : correctAnswers >= 4 ? 2 : 1;
-      logEvent('game_complete', { game_id: 'G3', score: correctAnswers, stars: starRating });
+      // US-GAME-03-R2: เกณฑ์ดาวคิดเป็นสัดส่วนของจำนวนข้อที่เล่นจริง (ไม่ hardcode 6)
+      const total = questions.length;
+      const ratio = total > 0 ? correctAnswers / total : 0;
+      const starRating = ratio >= 0.9 ? 3 : ratio >= 0.6 ? 2 : 1;
+      logEvent('game_complete', { game_id: 'G3', score: correctAnswers, total, stars: starRating });
       onFinish(starRating);
     }
   };
@@ -142,256 +89,108 @@ export default function G3AIOrNot({ onFinish, logEvent }) {
   const isAnswered = selected !== null;
   const isCurrentCorrect = (selected === 'ai') === currentQuestion.isAi;
 
+  // US-CF-03: หน้าแนะนำวัตถุประสงค์ + วิธีเล่น ก่อนเริ่มโจทย์แรก
+  if (showIntro) {
+    return (
+      <GameIntro
+        title="เอไอ หรือ ของจริง"
+        objective="ดูภาพแล้วช่วยกันสังเกตว่าเป็นภาพถ่ายจริง หรือภาพที่ AI สร้างขึ้น"
+        choices="จริง · ปลอม · ไม่แน่ใจ"
+        imageSrc="/assets/icon-game/g3-icon.png"
+        onStart={() => {
+          setShowIntro(false);
+          logEvent('game_intro_start', { game_id: 'G3' });
+        }}
+      />
+    );
+  }
+
+  // Figma node 2065:7190 (โจทย์: ภาพเต็มความกว้างบนพื้นดำ) / 2065:7021, 2065:7033 (เฉลย)
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        
-        {/* Header toolbar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {QUESTIONS.map((q, idx) => (
-              <div 
-                key={q.id} 
-                style={{ 
-                  width: '14px', 
-                  height: '14px', 
-                  borderRadius: '50%', 
-                  backgroundColor: idx === currentIdx 
-                    ? 'var(--primary)' 
-                    : idx < currentIdx 
-                      ? 'var(--primary-dark)' 
-                      : 'var(--border)'
-                }}
-              />
-            ))}
-          </div>
+    <div className={`flex flex-col flex-1 min-h-0 ${isAnswered ? 'bg-white' : 'bg-[#D9D9D9]'}`}>
+      {fullscreen && (
+        <FullscreenImageViewer
+          src={currentQuestion.media}
+          alt={currentQuestion.claim}
+          onClose={() => setFullscreen(false)}
+        />
+      )}
 
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {/* Zoom Button for Seniors */}
-            <button
-              onClick={() => {
-                setZoomMode(!zoomMode);
-                logEvent('toggle_zoom', { question_id: currentQuestion.id, zoom: !zoomMode });
-              }}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-pill)',
-                backgroundColor: 'var(--bg-app)',
-                border: '2px solid var(--border)',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                minHeight: '44px'
-              }}
-            >
-              {zoomMode ? <ZoomOut size={18} /> : <ZoomIn size={18} />}
-              <span>{zoomMode ? 'ขนาดปกติ' : 'ซูมขยาย'}</span>
-            </button>
-
-            {/* Audio Button */}
-            <button
-              onClick={() => handleSpeak(isAnswered ? currentQuestion.explanation : currentQuestion.speakerText)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-pill)',
-                backgroundColor: speaking ? 'var(--primary-light)' : 'var(--bg-app)',
-                border: '2px solid var(--primary)',
-                color: 'var(--primary-dark)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                minHeight: '44px'
-              }}
-            >
-              {speaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
-              <span>เสียงอ่าน</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Question claim */}
-        <div style={{ textAlign: 'left' }}>
-          <span style={{ fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>หัวข้อวิเคราะห์:</span>
-          <p style={{ fontSize: '20px', fontWeight: 'bold', lineHeight: '1.4' }}>{currentQuestion.claim}</p>
-        </div>
-
-        {/* Zoomable Image Container */}
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          aspectRatio: '4 / 3',
-          backgroundColor: '#000000',
-          borderRadius: 'var(--radius-lg)',
-          overflow: 'hidden',
-          border: '3px solid var(--border)',
-          boxShadow: 'var(--shadow-md)'
-        }}>
-          <img 
-            src={currentQuestion.media} 
-            alt="Question media" 
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: zoomMode ? 'none' : 'cover',
-              objectPosition: 'center',
-              transform: zoomMode ? 'scale(1.5)' : 'scale(1)',
-              transition: 'transform 0.3s ease-out'
+      {!isAnswered ? (
+        <>
+          {/* object-contain: เห็นภาพเต็มใบเสมอ (จุดสังเกตว่าเป็นภาพ AI มักอยู่ริมภาพ); แตะเพื่อดูเต็มจอ */}
+          <div
+            className="flex-1 min-h-0 overflow-hidden bg-black cursor-zoom-in"
+            onClick={() => {
+              setFullscreen(true);
+              logEvent('open_fullscreen_image', { question_id: currentQuestion.id });
             }}
-          />
-
-          {/* AI Disclosure Label Overlay (US-GAME-03 AC 3) */}
-          {currentQuestion.aiDisclosure && (
-            <div style={{
-              position: 'absolute',
-              top: '12px',
-              left: '12px',
-              backgroundColor: 'rgba(15, 23, 42, 0.85)',
-              color: '#ffffff',
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-pill)',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              zIndex: 5
-            }}>
-              {currentQuestion.aiDisclosure}
-            </div>
-          )}
-
-          {/* Hotspot Circles on Answered (US-GAME-03 AC 2) */}
-          {isAnswered && currentQuestion.isAi && currentQuestion.hotspots.map((spot, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                left: spot.x,
-                top: spot.y,
-                width: spot.w,
-                height: spot.h,
-                transform: 'translate(-50%, -50%)',
-                border: '4px solid var(--accent-error)',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(220, 38, 38, 0.25)',
-                boxShadow: '0 0 0 8px rgba(220, 38, 38, 0.2), 0 0 15px rgba(220, 38, 38, 0.5)',
-                animation: 'pulse 1.5s infinite',
-                cursor: 'pointer',
-                zIndex: 4
-              }}
-              title={spot.label}
-            >
-              {/* Small popup tooltip for hotspot */}
-              <div style={{
-                position: 'absolute',
-                bottom: '110%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'var(--accent-error)',
-                color: '#ffffff',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                whiteSpace: 'nowrap',
-                fontWeight: 'bold',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                {spot.label}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <style>{`
-          @keyframes pulse {
-            0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.9; }
-            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.5; }
-            100% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.9; }
-          }
-        `}</style>
-
-        {/* Options Selection */}
-        {!isAnswered ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-            <button 
-              onClick={() => handleAnswer('ai')} 
-              className="btn btn-outline"
-              style={{ fontSize: '22px', minHeight: '64px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
-            >
-              🤖 สร้างโดย AI
-            </button>
-            <button 
-              onClick={() => handleAnswer('real')} 
-              className="btn btn-outline"
-              style={{ fontSize: '22px', minHeight: '64px', borderColor: 'var(--text-secondary)', color: 'var(--text-secondary)' }}
-            >
-              📸 ภาพถ่ายจริง
-            </button>
-            <button 
-              onClick={() => handleAnswer('unsure')} 
-              className="btn btn-outline"
-              style={{ fontSize: '22px', minHeight: '64px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
-            >
-              🤷 ไม่แน่ใจ / ต้องเช็กก่อน
-            </button>
+          >
+            <img
+              src={currentQuestion.media}
+              alt="Question media"
+              className="w-full h-full object-contain"
+            />
           </div>
-        ) : (
-          /* Answer feedback with explanation */
-          <div style={{ marginTop: '8px', animation: 'fadeIn 0.3s ease-out' }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '12px', 
-              color: isCurrentCorrect ? 'var(--accent-success)' : selected === 'unsure' ? 'var(--primary-dark)' : 'var(--accent-error)', 
-              justifyContent: 'center', 
-              marginBottom: '12px' 
-            }}>
-              {isCurrentCorrect ? (
-                <>
-                  <CheckCircle2 size={28} />
-                  <strong style={{ fontSize: '22px' }}>เก่งมากครับ ถูกต้อง!</strong>
-                </>
-              ) : selected === 'unsure' ? (
-                <>
-                  <CheckCircle2 size={28} color="var(--primary)" />
-                  <strong style={{ fontSize: '22px' }}>เป็นทางเลือกที่รอบคอบมากครับ!</strong>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle size={28} />
-                  <strong style={{ fontSize: '22px' }}>ยังไม่ถูกนะครับ มาดูเฉลยกัน</strong>
-                </>
-              )}
-            </div>
-            
-            <div className="premium-card" style={{ backgroundColor: 'var(--primary-light)', padding: '16px', textAlign: 'left' }}>
-              <strong style={{ fontSize: '18px', display: 'block', marginBottom: '6px', color: 'var(--primary-dark)' }}>
-                วิเคราะห์ชี้จุดสังเกต:
-              </strong>
-              <p style={{ fontSize: '18px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
-                {selected === 'unsure' ? 'การหยุดดูและไม่แน่ใจไว้ก่อนเมื่อเห็นสิ่งผิดปกติ คือทักษะการรู้เท่าทันสื่อที่ยอดเยี่ยมครับ! ' : ''}
-                {currentQuestion.explanation}
+
+          <div className="shrink-0 flex gap-[8px] px-[24px] pb-[64px] pt-[48px]">
+            <GameAnswerButton
+              tone="green"
+              iconSrc="/images/games/answer-true.svg"
+              label="จริง"
+              onClick={() => handleAnswer('real')}
+            />
+            <GameAnswerButton
+              tone="red"
+              iconSrc="/images/games/answer-fake.svg"
+              label="ปลอม"
+              onClick={() => handleAnswer('ai')}
+            />
+            <GameAnswerButton
+              tone="yellow"
+              iconSrc="/images/games/answer-unsure.svg"
+              label="ไม่แน่ใจ"
+              onClick={() => handleAnswer('unsure')}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Reveal — Figma nodes 2065:7021 / 2065:7033 (การ์ดเฉลยกลาง ใช้ร่วมทุกเกม) */}
+          <GameSolutionCard
+            tone={isCurrentCorrect || selected === 'unsure' ? 'correct' : 'wrong'}
+            banner={isCurrentCorrect ? 'ถูกต้อง' : selected === 'unsure' ? 'รอบคอบมาก' : 'ไม่ถูกต้อง'}
+            heading={
+              currentQuestion.isAi
+                ? /* US-GAME-03-R2: บอกชัดว่าปลอมแบบไหน — AI สร้าง หรือ ภาพตัดต่อ */
+                  currentQuestion.category === 'edited'
+                  ? 'ทำไมภาพนี้ถึงเป็นภาพตัดต่อ?'
+                  : 'ทำไมภาพนี้ถึงเป็นภาพที่ AI สร้าง?'
+                : 'ทำไมภาพนี้เป็นของจริง'
+            }
+            onReadingChange={setAutoPaused}
+          >
+            {selected === 'unsure' && (
+              <p className="mb-[16px] font-semibold">
+                การหยุดดูและไม่แน่ใจไว้ก่อนเมื่อเห็นสิ่งผิดปกติ คือทักษะการรู้เท่าทันสื่อที่ยอดเยี่ยม!
               </p>
-            </div>
-          </div>
-        )}
-      </div>
+            )}
+            <p>{currentQuestion.explanation}</p>
+          </GameSolutionCard>
 
-      {/* Action Navigation Button */}
-      <button 
-        onClick={handleNext} 
-        className="btn btn-primary"
-        disabled={!isAnswered}
-        style={{ fontSize: '22px', minHeight: '64px', marginTop: '24px' }}
-      >
-        <span>{currentIdx < QUESTIONS.length - 1 ? 'ข้อถัดไป' : 'เสร็จสิ้นบทเรียน'}</span>
-        <ArrowRight size={24} />
-      </button>
+          <div className="shrink-0 px-[24px] pb-[64px] pt-[22px]">
+            <Button3D
+              key={`g3-next-${currentIdx}`}
+              onClick={handleNext}
+              onAutoAdvance={handleNext}
+              autoAdvanceMs={30000}
+              autoAdvancePaused={autoPaused}
+            >
+              กดเพื่อไปต่อ
+            </Button3D>
+          </div>
+        </>
+      )}
     </div>
   );
 }

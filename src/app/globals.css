@@ -1,0 +1,730 @@
+@import "tailwindcss";
+
+/* Design Tokens for Senior Accessibility & Premium Look */
+:root {
+  --primary: #0d9488;
+  --primary-hover: #0f766e;
+  --primary-light: #ccfbf1;
+  --primary-dark: #115e59;
+  --primary-rgb: 13, 148, 136;
+  
+  /* Button-specific tokens — change these to re-skin all action buttons */
+  --btn-bg: #429FD7;
+  --btn-bg-hover: #318ac7;
+  --btn-text: #ffffff;
+  
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border: #e2e8f0;
+  
+  --accent-success: #16a34a;
+  --accent-error: #dc2626;
+  
+  --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-content: 'Sarabun', 'Inter', system-ui, sans-serif;
+  
+  /* Senior Accessibility defaults (data-size="normal") */
+  --font-size-base: 20px;
+  --font-size-title: 32px;
+  --font-size-subtitle: 24px;
+  --font-size-small: 18px;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-premium: 0 20px 25px -5px rgba(var(--primary-rgb), 0.1), 0 8px 10px -6px rgba(var(--primary-rgb), 0.1);
+  
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+  
+  font-family: var(--font-content);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Keep the authored type scale stable in mobile browsers/WebViews.
+ * Some engines inflate text independently from the viewport when the device
+ * display/font scale is high; that breaks the minigame's zero-scroll layout.
+ * We lock text at 100% (the authored size) rather than `none`: Chrome/Android
+ * honours the explicit `100%` value more reliably than `none` for suppressing
+ * the OS "large font" multiplier, and it's applied to `body` too because some
+ * builds only pick up the property from the element that actually holds text.
+ * Component clamp() rules still respond to viewport width; browser page zoom
+ * remains a separate, user-controlled feature.
+ */
+html,
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Accessibility Font Scale based on data-size attribute */
+[data-size="normal"] {
+  --font-size-base: 20px;
+  --font-size-title: 32px;
+  --font-size-subtitle: 24px;
+  --font-size-small: 18px;
+}
+
+[data-size="large"] {
+  --font-size-base: 24px;
+  --font-size-title: 38px;
+  --font-size-subtitle: 28px;
+  --font-size-small: 22px;
+}
+
+[data-size="xlarge"] {
+  --font-size-base: 28px;
+  --font-size-title: 44px;
+  --font-size-subtitle: 32px;
+  --font-size-small: 26px;
+}
+
+/* Theme Overrides */
+[data-theme="teal"] {
+  --primary: #0d9488;
+  --primary-hover: #0f766e;
+  --primary-light: #ccfbf1;
+  --primary-dark: #115e59;
+  --primary-rgb: 13, 148, 136;
+}
+
+[data-theme="purple"] {
+  --primary: #7b2cbf;
+  --primary-hover: #5a189a;
+  --primary-light: #f3e5f5;
+  --primary-dark: #4a148c;
+  --primary-rgb: 123, 44, 191;
+}
+
+[data-theme="orange"] {
+  --primary: #e65100;
+  --primary-hover: #bf360c;
+  --primary-light: #fff3e0;
+  --primary-dark: #b23c00;
+  --primary-rgb: 230, 81, 0;
+}
+
+[data-theme="green"] {
+  --primary: #2e7d32;
+  --primary-hover: #1b5e20;
+  --primary-light: #e8f5e9;
+  --primary-dark: #1b5e20;
+  --primary-rgb: 46, 125, 50;
+}
+
+[data-theme="mint"] {
+  --primary: #00796b;
+  --primary-hover: #004d40;
+  --primary-light: #e0f2f1;
+  --primary-dark: #004d40;
+  --primary-rgb: 0, 121, 107;
+}
+
+/* Dark mode styles (Activated via data-mode="dark") */
+[data-mode="dark"] {
+  --bg-app: #0f172a;
+  --bg-card: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --border: #334155;
+  --primary-light: #115e59;
+}
+
+[data-mode="dark"], [data-mode="dark"] [data-theme="teal"] {
+  --primary-light: #115e59;
+}
+[data-mode="dark"] [data-theme="purple"] {
+  --primary-light: #4a148c;
+}
+[data-mode="dark"] [data-theme="orange"] {
+  --primary-light: #b23c00;
+}
+[data-mode="dark"] [data-theme="green"] {
+  --primary-light: #1b5e20;
+}
+[data-mode="dark"] [data-theme="mint"] {
+  --primary-light: #004d40;
+}
+
+/* Component classes live in the `components` layer so Tailwind utility
+   classes (in `utilities`) can always override them without needing
+   `!important` — Tailwind v4 registers layer priority as
+   theme < base < components < utilities regardless of source order. */
+@layer components {
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  height: 100dvh; /* iOS Safari address bar doesn't shrink the vh unit; dvh does */
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  overflow: hidden; /* the app shell itself never scrolls — only .scroll-region panes do */
+  font-family: var(--font-content);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+#root-container {
+  width: 100%;
+  max-width: 480px; /* Mobile-first maximum width */
+  height: 100vh;
+  height: 100dvh;
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-lg);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Common Layouts and Containers */
+.screen-container {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* required so a flex child can shrink below its content size and let .scroll-region children actually scroll instead of overflowing the page */
+  justify-content: space-between;
+  gap: 24px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.content-area {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Generic bounded-scroll pane */
+.scroll-region {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ซ่อน native scrollbar (ใช้กับ CustomScrollArea ที่วาด scroll bar เองให้แสดงตลอดเวลาบนมือถือ) */
+.no-native-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge เก่า */
+  -webkit-overflow-scrolling: touch;
+}
+.no-native-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* WebKit/Blink */
+}
+
+/* แถบ progress บนปุ่ม "ถัดไป" ที่กดเองอัตโนมัติเมื่อครบเวลา (AutoAdvanceButton) */
+@keyframes autoAdvanceProgress {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* Typography with senior adjustments */
+h1 {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-title);
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-subtitle);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-lead {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+}
+
+.text-small {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+}
+
+/* High accessibility buttons (min height 56px) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 24px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.1s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+}
+
+.btn-primary:hover {
+  background-color: var(--btn-bg-hover);
+}
+
+.btn-primary:disabled {
+  background-color: var(--border);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--btn-bg);
+  border: 2px solid var(--btn-bg);
+  box-shadow: none;
+}
+
+.btn-outline:hover {
+  background-color: var(--primary-light);
+}
+
+/* Glassmorphism card container */
+.premium-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-premium);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+}
+
+[data-mode="dark"] .premium-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Form inputs & custom radio buttons */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  user-select: none;
+  text-align: left;
+}
+
+.option-item.selected {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.option-item input[type="radio"] {
+  width: 24px;
+  height: 24px;
+  margin-right: 16px;
+  accent-color: var(--primary);
+}
+
+/* Dropdowns */
+.select-input {
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 16px;
+  font-size: var(--font-size-base);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+.select-input:focus {
+  border-color: var(--primary);
+}
+
+/* Progress indicator */
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: var(--border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--primary);
+  transition: width 0.3s ease-out;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-float-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-float-up {
+  animation: toast-float-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* -----------------------------------------------------------------------
+   GameChoiceButton — Raised 3D pill button (US-CF-04)
+   Derived from Figma design spec: white border + gradient + bottom shadow bar.
+   Size is driven entirely by the parent flex layout (no fixed w/h here) so
+   the button is naturally resizable while preserving the visual treatment.
+   ----------------------------------------------------------------------- */
+
+.choice-btn {
+  /* 3D raised effect: solid bottom-shadow bar creates the "depth" look */
+  position: relative;
+  border: 4px solid #ffffff;
+  border-radius: 16px; /* rectangular */
+  font-family: var(--font-content);
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+  /* bottom shadow bar + ambient drop shadow */
+  box-shadow:
+    0 6px 0 0 var(--choice-shadow-color, #41861D),
+    0 10px 18px rgba(0, 0, 0, 0.18);
+  /* press + hover transitions ≤ 100ms per AC #3 */
+  transition: transform 80ms ease, box-shadow 80ms ease;
+  /* Prevent double-tap zoom on touch — common on mobile WebViews */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Depress animation: scale down ~5% and shift down into the shadow */
+.choice-btn:active:not(:disabled) {
+  transform: scale(0.95) translateY(4px);
+  box-shadow:
+    0 2px 0 0 var(--choice-shadow-color, #41861D),
+    0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Honour system reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .choice-btn {
+    transition: none;
+  }
+  .choice-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* Green — accept / จริง (matches Figma "Green Gra") */
+.choice-btn--green {
+  background: linear-gradient(180deg, #7DD74C 0%, #4A9D1D 100%);
+  --choice-shadow-color: #41861D;
+}
+
+/* Red — refuse / ปลอม / ปฏิเสธ */
+.choice-btn--red {
+  background: linear-gradient(180deg, #F87171 0%, #DC2626 100%);
+  --choice-shadow-color: #991B1B;
+}
+
+/* Yellow — ignore / ไม่แน่ใจ / นิ่งเฉย
+   Uses dark text to meet WCAG contrast ratio ≥ 4.5:1 on yellow */
+.choice-btn--yellow {
+  background: linear-gradient(180deg, #FDE047 0%, #EAB308 100%);
+  --choice-shadow-color: #A16207;
+  color: #422006;
+}
+
+} /* end @layer components */
+
+/* ---------------------------------------------------------------
+   G8 — กระโดดแพรู้ทันมิจ (Raft Crossing) prototype
+   Placeholder art: CSS gradients + emoji, no external assets yet.
+   Motion is deliberately slow and never camera-driven — elderly players
+   report dizziness with continuous scrolling backgrounds (design-g8.md §8)
+   --------------------------------------------------------------- */
+
+.g8-lake {
+  background:
+    linear-gradient(180deg, #bae6fd 0%, #7dd3fc 18%, #38bdf8 55%, #0ea5e9 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gentle water sheen — the only ambient motion in the scene */
+.g8-lake::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0px,
+    rgba(255, 255, 255, 0.14) 2px,
+    transparent 2px,
+    transparent 26px
+  );
+  animation: g8-ripple 9s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes g8-ripple {
+  from { transform: translateY(0); }
+  to { transform: translateY(26px); }
+}
+
+.g8-raft {
+  animation: g8-bob 4.5s ease-in-out infinite;
+}
+
+.g8-raft:nth-child(even) {
+  animation-delay: 1.1s;
+}
+
+@keyframes g8-bob {
+  0%, 100% { transform: translateY(-4px); }
+  50% { transform: translateY(4px); }
+}
+
+.g8-hop {
+  animation: g8-hop 0.6s ease-out;
+}
+
+@keyframes g8-hop {
+  0% { transform: translateY(64px) scale(0.9); }
+  45% { transform: translateY(-26px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.g8-splash {
+  animation: g8-splash 0.7s ease-in;
+}
+
+@keyframes g8-splash {
+  0% { transform: translateY(0); opacity: 1; }
+  60% { transform: translateY(26px); opacity: 0.75; }
+  100% { transform: translateY(10px); opacity: 1; }
+}
+
+.g8-scene-shift {
+  animation: g8-scene-shift 1.5s ease-in-out;
+}
+
+@keyframes g8-scene-shift {
+  from { transform: translateY(28px); opacity: 0.25; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Respect players who ask the OS for less motion: no bobbing, no hop arc,
+   scene changes become a plain fade */
+@media (prefers-reduced-motion: reduce) {
+  .g8-lake::after,
+  .g8-raft,
+  .g8-hop,
+  .g8-splash {
+    animation: none;
+  }
+
+  .g8-scene-shift {
+    animation: g8-fade 0.5s ease-out;
+  }
+
+  @keyframes g8-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* ========================================================================= */
+/* G11: STOP THE FINGER (PROTOTYPE)                                           */
+/* ========================================================================= */
+
+.g11-phone-mockup {
+  border: 12px solid #1e293b; /* slate-800 */
+  border-radius: 36px;
+  background-color: #f8fafc; /* slate-50 */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.g11-phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 24px;
+  background-color: #1e293b;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  z-index: 10;
+}
+
+.g11-button-pulse {
+  animation: g11-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes g11-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.g11-hand-retract {
+  transition: transform 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.g11-button-press {
+  animation: g11-press 0.3s ease-out forwards;
+}
+
+@keyframes g11-press {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.92); background-color: var(--primary-dark); }
+  100% { transform: scale(1); }
+}
+
+/* Skip-button slide-up (US-CF-49) */
+@keyframes skip-btn-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.skip-btn-enter {
+  animation: skip-btn-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.g11-overlay-enter {
+  animation: g11-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes g11-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g11-button-pulse,
+  .g11-button-press {
+    animation: none;
+  }
+  
+  .g11-overlay-enter,
+  .skip-btn-enter,
+  .toast-float-up {
+    animation: g8-fade 0.3s ease-out forwards; /* reuse fade */
+  }
+}
+
+/* —— G12 match-ring prototype —— */
+.g12-finger {
+  transition: left 50ms linear;
+}
+
+.g12-tile {
+  transition: transform 40ms linear, box-shadow 120ms ease;
+  cursor: grab;
+  touch-action: none;
+}
+
+.g12-tile:active {
+  cursor: grabbing;
+}
+
+.g12-link-shatter {
+  animation: g12-shatter 0.45s ease-out forwards;
+}
+
+@keyframes g12-shatter {
+  0% { transform: scale(1); opacity: 1; filter: none; }
+  40% { transform: scale(1.03) rotate(-1deg); }
+  100% { transform: scale(0.92) rotate(2deg); opacity: 0.35; filter: grayscale(0.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g12-finger {
+    transition: none;
+  }
+  .g12-tile {
+    transition: none;
+  }
+  .g12-link-shatter {
+    animation: none;
+    opacity: 0.4;
+  }
+}

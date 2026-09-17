@@ -11,6 +11,7 @@ gantt
     dateFormat  YYYY-MM-DD
     section Development
     Chiang Mai Feedback Fixes    :a1, 2026-08-10, 5d
+    US-03-01 User Testing        :a3, 2026-08-11, 6d
     US-LEAD-02 Facilitator Mode  :a2, 2026-08-14, 7d
 ```
 
@@ -18,6 +19,7 @@ gantt
 | ID | Story / Task | Estimate | Status |
 |----|--------------|----------|--------|
 | [US-LEAD-02](../01-product-backlog.md#should-have-ภายใน-ตค-2569) | ในฐานะผู้นำชุมชน ฉันต้องการ Facilitator Mode เพื่อใช้จัดกิจกรรมกลุ่มในชุมชน | L | [ ] |
+| [US-03-01](../user-stories/US-03-01.md) | **User Testing** — ทดสอบกับผู้สูงอายุจริงอย่างน้อย 3 คน และปรับปรุงระบบตามผลทดสอบจริงเพื่อความง่ายในการเล่น (เลื่อนมาจาก Sprint 03) | M | [ ] |
 | Task-04-01 | ปรับปรุงและแก้ไขปัญหาตาม Feedback จากงานอบรมเชียงใหม่ | M | [ ] |
 
 ## 🛠 Sprint Specifics

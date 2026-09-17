@@ -15,21 +15,21 @@ const SCENARIOS = [
         text: 'ผู้ส่ง: DLT-Alert',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: หน่วยงานรัฐส่วนใหญ่ เช่น กรมการขนส่งทางบก จะส่ง SMS ในนามที่เป็นทางการ หรือจะไม่ส่งเลยหากไม่มีธุรกรรมตรง และจะไม่ตั้งชื่อชวนสับสนเพื่อแนบลิงก์',
-        speakerText: 'จุดผิดสังเกตแรกคือชื่อผู้ส่ง ดี แอล ที อะเลิร์ต หน่วยงานรัฐไม่มีนโยบายส่งข้อความแบบนี้หาคนทั่วไปโดยตรงครับ'
+        speakerText: 'จุดผิดสังเกตแรกคือชื่อผู้ส่ง ดี แอล ที อะเลิร์ต หน่วยงานรัฐไม่มีนโยบายส่งข้อความแบบนี้หาคนทั่วไปโดยตรง'
       },
       {
         id: 's1-b2',
         text: 'ข้อความด่วน: "บัญชีใบอนุญาตขับขี่ตลอดชีพของท่านถูกยกเลิกแล้ว เนื่องจากไม่เข้ามายืนยันตัวตน"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: มิจฉาชีพนิยมใช้ข้อความขู่ให้ตกใจ (ใบขับขี่ถูกยกเลิก) เพื่อให้รีบดำเนินการโดยขาดความยั้งคิด',
-        speakerText: 'จุดสังเกตที่สองคือข้อความขู่ให้ตกใจว่าใบขับขี่ตลอดชีพถูกยกเลิก ซึ่งใบขับขี่ตลอดชีพไม่มีการยกเลิกกลางคันเช่นนี้ครับ'
+        speakerText: 'จุดสังเกตที่สองคือข้อความขู่ให้ตกใจว่าใบขับขี่ตลอดชีพถูกยกเลิก ซึ่งใบขับขี่ตลอดชีพไม่มีการยกเลิกกลางคันเช่นนี้'
       },
       {
         id: 's1-b3',
         text: 'ลิงก์เว็บ: "แตะยืนยันสิทธิ์ด่วนที่ http://dlt-portal-th.xyz"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: ลิงก์ปลอมสะกดเลียนแบบของจริง และลงท้ายด้วยชื่อโดเมนแปลกๆ เช่น .xyz หรือ .net ของจริงต้องเป็นเว็บลงท้ายด้วย .go.th เสมอ',
-        speakerText: 'จุดสังเกตที่สามคือลิงก์แปลกปลอม ลงท้ายด้วย ดอท เอ็กซ์ วาย แซด ของจริงต้องเป็น ดอท โก ดอท ทีเอช เท่านั้น ห้ามแตะลิงก์เด็ดขาดครับ'
+        speakerText: 'จุดสังเกตที่สามคือลิงก์แปลกปลอม ลงท้ายด้วย ดอท เอ็กซ์ วาย แซด ของจริงต้องเป็น ดอท โก ดอท ทีเอช เท่านั้น ห้ามแตะลิงก์เด็ดขาด'
       }
     ],
     redFlagsCount: 3,
@@ -49,26 +49,26 @@ const SCENARIOS = [
         text: 'ชื่อผู้ส่ง: สรรพากร (ฝ่ายตรวจสอบ) - ใช้บัญชีบุคคลทั่วไป',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: เจ้าหน้าที่สรรพากรจริงจะไม่ใช้แชท LINE บัญชีส่วนบุคคลติดต่อหาประชาชน บัญชีทางการต้องมีตราโล่สีเขียวหรือสีน้ำเงินเท่านั้น',
-        speakerText: 'แชทไลน์คนทั่วไปแอบอ้างเป็นกรมสรรพากร ถือเป็นสัญญาณอันตรายแรก เจ้าหน้าที่ตัวจริงจะไม่แอดไลน์มาทวงเงินคุณแบบส่วนตัวครับ'
+        speakerText: 'แชทไลน์คนทั่วไปแอบอ้างเป็นกรมสรรพากร ถือเป็นสัญญาณอันตรายแรก เจ้าหน้าที่ตัวจริงจะไม่แอดไลน์มาทวงเงินคุณแบบส่วนตัว'
       },
       {
         id: 's2-b2',
         text: 'เนื้อความ: "ตรวจพบภาษีค้างจ่าย 45,000 บาท หากไม่โอนมาชำระเพื่อตรวจสอบภายใน 2 ชั่วโมงนี้ จะถูกระงับบัญชีธนาคารทั้งหมด"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: เป็นการขู่บังคับให้โอนเงินเร็วที่สุด (ภายใน 2 ชั่วโมง) เพื่อปิดโอกาสในการไตร่ตรองหรือสอบถามครอบครัว',
-        speakerText: 'การข่มขู่ว่าจะระงับบัญชีธนาคารภายในสองชั่วโมง สรรพากรไม่มีอำนาจระงับบัญชีด่วนผ่านไลน์แบบนี้ เป็นวิธีบีบบังคับของมิจฉาชีพครับ'
+        speakerText: 'การข่มขู่ว่าจะระงับบัญชีธนาคารภายในสองชั่วโมง สรรพากรไม่มีอำนาจระงับบัญชีด่วนผ่านไลน์แบบนี้ เป็นวิธีบีบบังคับของมิจฉาชีพ'
       },
       {
         id: 's2-b3',
         text: 'ข้อเสนอ: "ให้แอดไลน์คุยกับรองอธิบดีกรมฯ เพื่อเจรจาลดหย่อนค่าปรับได้"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: หน่วยงานรัฐมีขั้นตอนทางกฎหมายที่เป็นเอกสารทางราชการส่งไปที่บ้าน ไม่ใช่การให้คุยลับหลังผ่านโปรแกรมไลน์',
-        speakerText: 'การเสนอให้เจรจาหลังไมค์ลดหย่อนผ่านไลน์ไม่มีจริงในระบบราชการครับ เอกสารต้องเป็นหนังสือตราครุฑส่งถึงบ้านเท่านั้น'
+        speakerText: 'การเสนอให้เจรจาหลังไมค์ลดหย่อนผ่านไลน์ไม่มีจริงในระบบราชการ เอกสารต้องเป็นหนังสือตราครุฑส่งถึงบ้านเท่านั้น'
       }
     ],
     redFlagsCount: 3,
     summary: 'สรุปบทเรียน: กรมสรรพากรไม่มีนโยบายติดต่อประชาชนผ่าน LINE เพื่อแจ้งภาษีค้างจ่ายหรือทวงถามเงินโอนเด็ดขาด',
-    speakerSummary: 'สรุปก็คือ สรรพากรไม่มีวันทวงเงินหรืออายัดบัญชีคุณผ่านทางไลน์เด็ดขาดครับ อย่าโอนอย่าเชื่อเด็ดขาด'
+    speakerSummary: 'สรุปก็คือ สรรพากรไม่มีวันทวงเงินหรืออายัดบัญชีคุณผ่านทางไลน์เด็ดขาด อย่าโอนอย่าเชื่อเด็ดขาด'
   },
   {
     id: 'g2-s3',
@@ -83,26 +83,26 @@ const SCENARIOS = [
         text: 'ชื่อเพจ: "โครงการลงทุนวัยเกษียณสุขใจ" (สปอนเซอร์โฆษณา)',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: เพจสร้างขึ้นใหม่ไม่มีเครื่องหมายยืนยันตัวตน (ติ๊กถูกสีฟ้า) มักใช้การจ่ายเงินค่าโฆษณาเพื่อยิงเข้าหาผู้สูงอายุโดยเฉพาะ',
-        speakerText: 'โฆษณาเพจลงทุนวัยเกษียณสุขใจ เป็นเพจแอบอ้างที่เพิ่งสร้างใหม่เพื่อหลอกคุณลุงคุณป้าโดยเฉพาะ สังเกตว่ามักจะแฝงโฆษณาชวนเชื่อครับ'
+        speakerText: 'โฆษณาเพจลงทุนวัยเกษียณสุขใจ เป็นเพจแอบอ้างที่เพิ่งสร้างใหม่เพื่อหลอกคุณลุงคุณป้าโดยเฉพาะ สังเกตว่ามักจะแฝงโฆษณาชวนเชื่อ'
       },
       {
         id: 's3-b2',
         text: 'ข้อเสนอสุดคุ้ม: "เริ่มต้นลงทุนเพียง 1,000 บาท ได้รับเงินปันผล 15% ทุกสัปดาห์ รับประกันไม่มีความเสี่ยง"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: อัตราเงินปันผล 15% ต่อสัปดาห์สูงเกินความเป็นจริงอย่างมาก และการลงทุนทุกชนิดต้องมีความเสี่ยง ไม่มีทางที่ใครจะรับประกันไม่ขาดทุนได้',
-        speakerText: 'ข้อเสนอให้เงินปันผลสิบห้าเปอร์เซ็นต์ทุกสัปดาห์และไม่มีความเสี่ยง เรื่องนี้มั่วครับ ผลตอบแทนสูงเกินจริงแถมไม่มีความเสี่ยงคือแชร์ลูกโซ่แน่นอนครับ'
+        speakerText: 'ข้อเสนอให้เงินปันผลสิบห้าเปอร์เซ็นต์ทุกสัปดาห์และไม่มีความเสี่ยง เรื่องนี้มั่ว ผลตอบแทนสูงเกินจริงแถมไม่มีความเสี่ยงคือแชร์ลูกโซ่แน่นอน'
       },
       {
         id: 's3-b3',
         text: 'วิธีดำเนินการ: "คลิกลิงก์ไลน์กลุ่มลับเพื่อรับคำปรึกษาจากโค้ชการเงินชั้นนำฟรี"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: การลากเข้ากลุ่มไลน์ปิดเพื่อหลีกเลี่ยงการตรวจสอบของเจ้าหน้าที่รัฐ และใช้หน้าม้าในห้องกลุ่มเพื่อหว่านล้อมให้ลงทุนเพิ่มขึ้น',
-        speakerText: 'การชวนเข้าห้องไลน์กลุ่มลับเพื่อปรึกษาโค้ช เป็นการปิดกั้นไม่ให้ญาติรู้เพื่อโดนหลอกล่อได้ง่าย อย่าแตะลิงก์เพื่อเข้ากลุ่มเหล่านั้นครับ'
+        speakerText: 'การชวนเข้าห้องไลน์กลุ่มลับเพื่อปรึกษาโค้ช เป็นการปิดกั้นไม่ให้ญาติรู้เพื่อโดนหลอกล่อได้ง่าย อย่าแตะลิงก์เพื่อเข้ากลุ่มเหล่านั้น'
       }
     ],
     redFlagsCount: 3,
     summary: 'สรุปบทเรียน: ผลตอบแทนที่สูงเกินจริงและอ้างว่า "ไม่มีความเสี่ยง" คือสัญญาณกลโกงแชร์ลูกโซ่และการหลอกล่อให้สูญเงิน',
-    speakerSummary: 'สรุปง่ายๆ การลงทุนปันผลสูงมากแบบไม่มีเสี่ยงคือโกงแน่นอนครับ อย่ากดเข้ากลุ่มชวนลงทุนพวกนี้'
+    speakerSummary: 'สรุปง่ายๆ การลงทุนปันผลสูงมากแบบไม่มีเสี่ยงคือโกงแน่นอน อย่ากดเข้ากลุ่มชวนลงทุนพวกนี้'
   },
   {
     id: 'g2-s4',
@@ -117,26 +117,26 @@ const SCENARIOS = [
         text: 'ข้อความด่วน: "เธอๆ ยุ่งอยู่ไหม พอดีเรามีเรื่องด่วนขอยืมเงิน 6,000 บาทหน่อยสิ เดี๋ยวค่ำนี้โอนคืนให้ด่วนเลยนะ"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: การทักขอยืมเงินทางไลน์ทันทีโดยไม่โทรศัพท์มาแจ้งก่อน มักเป็นสัญญานเตือนว่าบัญชีไลน์ของเพื่อนถูกมิจฉาชีพแฮกเข้าสวมสิทธิ์',
-        speakerText: 'แชทจากย้ายปิ่นทักขอยืมเงินด่วนหกพันบาท เมื่อมีการทักยืมเงินกระทันหันในแชท อย่าเพิ่งเชื่อครับ อาจเป็นมิจฉาชีพแอบแฮกไลน์เพื่อนมาหลอกลวง'
+        speakerText: 'แชทจากย้ายปิ่นทักขอยืมเงินด่วนหกพันบาท เมื่อมีการทักยืมเงินกระทันหันในแชท อย่าเพิ่งเชื่อ อาจเป็นมิจฉาชีพแอบแฮกไลน์เพื่อนมาหลอกลวง'
       },
       {
         id: 's4-b2',
         text: 'บัญชีธนาคารปลายทาง: "โอนเข้าบัญชี นายสมชาย แซ่ลี้ ธนาคารออมสิน เลขบัญชี 0201..."',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: เลขบัญชีธนาคารปลายทางเป็นชื่อคนอื่น (บัญชีม้า) ไม่ใช่ชื่อจริงของยายปิ่นเพื่อนเราเอง',
-        speakerText: 'จุดสังเกตสำคัญคือชื่อบัญชีปลายทางเป็นนายสมชาย ไม่ใช่ชื่อของยายปิ่นเพื่อนเรา นี่คือบัญชีม้าของคนร้ายอย่างชัดเจนครับ'
+        speakerText: 'จุดสังเกตสำคัญคือชื่อบัญชีปลายทางเป็นนายสมชาย ไม่ใช่ชื่อของยายปิ่นเพื่อนเรา นี่คือบัญชีม้าของคนร้ายอย่างชัดเจน'
       },
       {
         id: 's4-b3',
         text: 'เมื่อเราพิมพ์ถามกลับ ยายปิ่นในแชทตอบว่า: "พอดีตอนนี้ไม่สะดวกคุยสาย เสียงไม่มี เจ็บคอมาก พิมพ์บอกดีกว่า"',
         isRedFlag: true,
         desc: '🚩 จุดสังเกต: บ่ายเบี่ยงไม่ยอมโทรสายสนทนาเพื่อหลีกเลี่ยงไม่ให้ได้ยินเสียงจริง หรือกลัวเราสอบถามข้อมูลส่วนตัวเพื่อพิสูจน์ตัวตน',
-        speakerText: 'การบ่ายเบี่ยงไม่ยอมโทรคุย อ้างว่าเจ็บคอ เป็นข้ออ้างหลักของคนร้ายที่แฝงตัวมา ถ้าพบเหตุการณ์แบบนี้ให้โทรติดต่อเบอร์มือถือจริงของเพื่อนทันทีครับ'
+        speakerText: 'การบ่ายเบี่ยงไม่ยอมโทรคุย อ้างว่าเจ็บคอ เป็นข้ออ้างหลักของคนร้ายที่แฝงตัวมา ถ้าพบเหตุการณ์แบบนี้ให้โทรติดต่อเบอร์มือถือจริงของเพื่อนทันที'
       }
     ],
     redFlagsCount: 3,
     summary: 'สรุปบทเรียน: เมื่อมีเพื่อนหรือญาติทักแชทยืมเงิน ห้ามโอนเด็ดขาดจนกว่าจะได้โทรคุยยินยอมหรือได้ยินเสียงจริงของเจ้าตัว',
-    speakerSummary: 'สรุปสั้นๆ เมื่อเพื่อนยืมเงินในแชท ให้โทรศัพท์หาตัวจริงก่อนเสมอ อย่าพึ่งโอนเด็ดขาดครับ'
+    speakerSummary: 'สรุปสั้นๆ เมื่อเพื่อนยืมเงินในแชท ให้โทรศัพท์หาตัวจริงก่อนเสมอ อย่าพึ่งโอนเด็ดขาด'
   }
 ];
 
@@ -249,45 +249,29 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
   const hasSelectedAny = Object.values(selectedBlocks).some(v => v);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        
+    <div className="flex flex-col flex-1 min-h-0 justify-between">
+      <div className="scroll-region flex flex-col gap-4">
+
         {/* Progress & Speaker Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
             {SCENARIOS.map((s, idx) => (
-              <div 
-                key={s.id} 
-                style={{ 
-                  width: '14px', 
-                  height: '14px', 
-                  borderRadius: '50%', 
-                  backgroundColor: idx === currentIdx 
-                    ? 'var(--primary)' 
-                    : idx < currentIdx 
-                      ? 'var(--primary-dark)' 
-                      : 'var(--border)'
-                }}
+              <div
+                key={s.id}
+                className={`w-3.5 h-3.5 rounded-full ${
+                  idx === currentIdx
+                    ? 'bg-[var(--primary)]'
+                    : idx < currentIdx
+                      ? 'bg-[var(--primary-dark)]'
+                      : 'bg-[var(--border)]'
+                }`}
               />
             ))}
           </div>
 
           <button
-            onClick={() => handleSpeak(showSummary ? scenario.summary + ' ' + scenario.speakerSummary : 'กรุณาแตะจุดสีฟ้าหรือข้อความที่ท่านคิดว่าแปลกๆ น่าสงสัยเพื่อเลือก จากนั้นกดปุ่มดูเฉลยด้านล่างครับ')}
-            style={{
-              padding: '10px 16px',
-              borderRadius: 'var(--radius-pill)',
-              backgroundColor: speaking ? 'var(--primary-light)' : 'var(--bg-app)',
-              border: '2px solid var(--primary)',
-              color: 'var(--primary-dark)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '18px',
-              fontWeight: 'bold',
-              minHeight: '48px'
-            }}
+            onClick={() => handleSpeak(showSummary ? scenario.summary + ' ' + scenario.speakerSummary : 'กรุณาแตะจุดสีฟ้าหรือข้อความที่ท่านคิดว่าแปลกๆ น่าสงสัยเพื่อเลือก จากนั้นกดปุ่มดูเฉลยด้านล่าง')}
+            className={`px-4 py-2.5 rounded-[var(--radius-pill)] border-2 border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer flex items-center gap-2 text-[clamp(13px,3.91vw,18px)] font-bold min-h-[48px] ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[var(--bg-app)]'}`}
           >
             {speaking ? <VolumeX size={20} /> : <Volume2 size={20} />}
             <span>ฟังเสียงนำทาง</span>
@@ -295,78 +279,40 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
         </div>
 
         {/* Info label */}
-        <div style={{ textAlign: 'left' }}>
-          <h3 style={{ fontSize: '22px', fontWeight: 'bold' }}>{scenario.title}</h3>
-          <p className="text-small" style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+        <div className="text-left">
+          <h3 className="text-[clamp(15px,4.78vw,22px)] font-bold">{scenario.title}</h3>
+          <p className="text-small text-[var(--text-secondary)] mt-1">
             {!showSummary ? '👉 แตะกล่องข้อความหรือชื่อผู้ส่งจุดที่ท่านรู้สึกสงสัย (เลือกได้มากกว่า 1 จุด)' : '❌ แถบสีแดงคือจุดที่มิจฉาชีพใช้หลอกลวง'}
           </p>
         </div>
 
         {/* Mock Screen Interface */}
-        <div style={{
-          border: '3px solid var(--border)',
-          borderRadius: 'var(--radius-xl)',
-          overflow: 'hidden',
-          backgroundColor: '#ffffff',
-          boxShadow: 'var(--shadow-md)'
-        }}>
-          {/* Simulated App Header */}
-          <div style={{
-            backgroundColor: scenario.headerBg,
-            color: '#ffffff',
-            padding: '16px',
-            fontSize: '20px',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px'
-            }}>
+        <div className="border-[3px] border-[var(--border)] rounded-[var(--radius-xl)] overflow-hidden bg-white shadow-[var(--shadow-md)]">
+          {/* Simulated App Header — headerBg comes from the scenario data, so it stays an inline style (Tailwind can't statically see a runtime string) */}
+          <div
+            className="text-white p-4 text-[clamp(14px,4.35vw,20px)] font-bold flex items-center gap-3"
+            style={{ backgroundColor: scenario.headerBg }}
+          >
+            <div className="w-[38px] h-[38px] rounded-full bg-white/20 flex items-center justify-center text-[clamp(14px,4.35vw,20px)]">
               {scenario.avatarLetter}
             </div>
             <span>{scenario.sender}</span>
           </div>
 
           {/* Interactive blocks */}
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="p-4 flex flex-col gap-3">
             {scenario.blocks.map((block) => (
               <div
                 key={block.id}
                 onClick={() => handleBlockTap(block)}
-                style={{
-                  padding: '16px',
-                  border: '2px solid',
-                  borderRadius: 'var(--radius-lg)',
-                  cursor: showSummary ? 'default' : 'pointer',
-                  textAlign: 'left',
-                  fontSize: '18px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease',
-                  ...getBlockStyle(block)
-                }}
+                className={`p-4 border-2 rounded-[var(--radius-lg)] text-left text-[clamp(13px,3.91vw,18px)] font-medium transition-all duration-200 ${showSummary ? 'cursor-default' : 'cursor-pointer'}`}
+                style={getBlockStyle(block)}
               >
                 <div>{block.text}</div>
-                
+
                 {/* Individual Explanations on ShowSummary */}
                 {showSummary && (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    paddingTop: '8px', 
-                    borderTop: '1px dashed #fca5a5', 
-                    fontSize: '17px', 
-                    color: 'var(--accent-error)',
-                    fontWeight: 'bold',
-                    lineHeight: '1.4'
-                  }}>
+                  <div className="mt-2 pt-2 border-t border-dashed border-[#fca5a5] text-[clamp(12px,3.7vw,17px)] text-[var(--accent-error)] font-bold leading-snug">
                     {block.desc}
                   </div>
                 )}
@@ -377,32 +323,16 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
 
         {/* Big Stop Think Ask Act summary box */}
         {showSummary && (
-          <div className="premium-card" style={{ 
-            border: '2px solid var(--primary)', 
-            backgroundColor: 'var(--primary-light)', 
-            textAlign: 'left',
-            animation: 'fadeIn 0.4s ease-out',
-            padding: '20px'
-          }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: 'var(--primary-dark)', marginBottom: '8px' }}>
+          <div className="premium-card border-2 border-[var(--primary)] bg-[var(--primary-light)] text-left p-5 [animation:fadeIn_0.4s_ease-out]">
+            <div className="flex gap-3 items-center text-[var(--primary-dark)] mb-2">
               <ShieldAlert size={28} />
-              <strong style={{ fontSize: '20px' }}>เกราะป้องกันภัย: หยุด คิด ถาม ทำ</strong>
+              <strong className="text-[clamp(14px,4.35vw,20px)]">เกราะป้องกันภัย: หยุด คิด ถาม ทำ</strong>
             </div>
-            <p style={{ fontSize: '18px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+            <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-primary)] leading-relaxed">
               {scenario.summary}
             </p>
-            
-            <div style={{ 
-              marginTop: '12px', 
-              paddingTop: '12px', 
-              borderTop: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '17px',
-              fontWeight: 'bold',
-              color: 'var(--text-secondary)'
-            }}>
+
+            <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center gap-2.5 text-[clamp(12px,3.7vw,17px)] font-bold text-[var(--text-secondary)]">
               <HeartHandshake size={20} color="var(--primary)" />
               <span>แจ้งสายด่วนตำรวจไซเบอร์ โทร. 1441 ทันทีเมื่อสงสัย</span>
             </div>
@@ -411,21 +341,19 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
       </div>
 
       {/* Button Panel */}
-      <div style={{ marginTop: '24px' }}>
+      <div className="mt-6">
         {!showSummary ? (
           <button
             onClick={handleCheck}
-            className="btn btn-primary"
+            className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px]"
             disabled={!hasSelectedAny}
-            style={{ fontSize: '22px', minHeight: '64px' }}
           >
             <span>ตรวจหาจุดสัญญาณมิจ</span>
           </button>
         ) : (
           <button
             onClick={handleNext}
-            className="btn btn-primary"
-            style={{ fontSize: '22px', minHeight: '64px' }}
+            className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px]"
           >
             <span>{currentIdx < SCENARIOS.length - 1 ? 'สถานการณ์ถัดไป' : 'จบบทเรียนและรับดาว'}</span>
             <ArrowRight size={24} />

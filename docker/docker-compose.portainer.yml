@@ -1,0 +1,45 @@
+# Stack file สำหรับ deploy ผ่าน Portainer (เครื่องแม่ข่าย CAMT)
+# วิธีใช้เต็มรูปแบบ: docs/wiki/deploy-camt/docker-portainer-guide.md
+#
+# ⚠️ ห้ามใส่ user/password/token ลงไฟล์นี้ตรง ๆ — ค่าทั้งหมดอ้างผ่าน ${VAR}
+# แล้วไปตั้งค่าจริงที่ Portainer > Stacks > (stack นี้) > Environment variables
+# (หรืออัปโหลด .env แยกตอนสร้าง stack) ไม่ใช่ commit ไว้ในไฟล์นี้
+
+services:
+  # -----------------------------------------------------------------------------
+  # หมายเหตุ: กรณีใช้งาน Supabase Serverless (Cloud Database)
+  # ไม่ต้องสปินอัป Container db ภายใน Stack — สามารถระบุ DATABASE_URL ของ Supabase 
+  # ใน Environment Variables ของ Portainer ได้เลย
+  # -----------------------------------------------------------------------------
+  # db:
+  #   image: postgres:15-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #     POSTGRES_DB: ${POSTGRES_DB:-media_literacy}
+  #   ports:
+  #     - "${DB_PORT:-5432}:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ../docs/supabase-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
+
+  media-literacy:
+    container_name: ageconnect-ml-318
+    image: ${DOCKERHUB_IMAGE:-naplabstudio/media-literacy:latest}
+    restart: unless-stopped
+    ports:
+      - 10980:8080
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      # เปิด /dev/games บน production ได้โดยไม่ต้อง rebuild (อ่านฝั่ง server ตอน runtime)
+      - ENABLE_DEV_HUB=${ENABLE_DEV_HUB:-false}
+      - NEXT_PUBLIC_ENABLE_DEV_HUB=${NEXT_PUBLIC_ENABLE_DEV_HUB:-false}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+# volumes:
+#   postgres_data:

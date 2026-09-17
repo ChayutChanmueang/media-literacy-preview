@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd)",
+      "Bash(docker --version)",
+      "Bash(docker info *)",
+      "Bash(docker build *)",
+      "Bash(powershell -Command \"Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(node -e \"const p=require\\('./package-lock.json'\\); console.log\\(p.lockfileVersion\\)\")",
+      "Bash(npm ci *)",
+      "Bash(docker rmi *)",
+      "Bash(docker builder *)",
+      "Bash(mkdir -p docker)",
+      "Bash(git mv *)",
+      "Bash(python -c ' *)",
+      "Bash(python \"C:\\\\Users\\\\noppon\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-noppon-source-03-NAPLAB-media-literacy\\\\83baaa88-82a0-41ff-a489-a953ee352310\\\\scratchpad\\\\extract_docx.py\" \"docs/wiki/tor/TOR พัฒนา web application v.1.docx\" \"C:\\\\Users\\\\noppon\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-noppon-source-03-NAPLAB-media-literacy\\\\83baaa88-82a0-41ff-a489-a953ee352310\\\\scratchpad\\\\tor_v1_extracted.txt\")",
+      "Bash(python \"C:\\\\Users\\\\noppon\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-noppon-source-03-NAPLAB-media-literacy\\\\83baaa88-82a0-41ff-a489-a953ee352310\\\\scratchpad\\\\extract_docx2.py\" \"docs/wiki/tor/TOR พัฒนา web application v.1.docx\" \"C:\\\\Users\\\\noppon\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-noppon-source-03-NAPLAB-media-literacy\\\\83baaa88-82a0-41ff-a489-a953ee352310\\\\scratchpad\\\\tor_v1_yellow.txt\")",
+      "Bash(python \"C:\\\\Users\\\\noppon\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-noppon-source-03-NAPLAB-media-literacy\\\\83baaa88-82a0-41ff-a489-a953ee352310\\\\scratchpad\\\\resolve_numbering.py\" \"docs/wiki/tor/TOR พัฒนา web application v.1.docx\" \"C:\\\\Users\\\\noppon\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-noppon-source-03-NAPLAB-media-literacy\\\\83baaa88-82a0-41ff-a489-a953ee352310\\\\scratchpad\\\\numbering_resolved.txt\")"
+    ]
+  }
+}

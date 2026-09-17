@@ -1,67 +1,58 @@
 import React from 'react';
-import { ShieldAlert, BookOpen, Sparkles } from 'lucide-react';
+import { BookOpen, Sparkles } from 'lucide-react';
 
 export default function LandingScreen({ onNext }) {
   return (
     <div className="screen-container">
-      <div className="content-area" style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+      <div className="content-area my-auto">
         {/* Decorative Badge */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--primary-light)', padding: '6px 16px', borderRadius: 'var(--radius-pill)', color: 'var(--primary-dark)', margin: '0 auto 16px auto', fontSize: 'var(--font-size-small)', fontWeight: '600' }}>
+        <div className="inline-flex items-center gap-2 bg-[var(--primary-light)] px-4 py-1.5 rounded-[var(--radius-pill)] text-[var(--primary-dark)] mx-auto mb-4 text-[length:var(--font-size-small)] font-semibold">
           <Sparkles size={18} />
           <span>สำหรับวัยเก๋า & ผู้สูงอายุ</span>
         </div>
 
         {/* Title */}
-        <h1 style={{ fontSize: '40px', color: 'var(--primary)', marginBottom: '12px' }}>
+        <h1 className="text-[40px] text-[var(--primary)] mb-3">
           รู้ทันสื่อ Interactive
         </h1>
-        
-        {/* App Mock Icon */}
-        <div style={{ width: '120px', height: '120px', backgroundColor: 'var(--primary-light)', borderRadius: '30px', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', margin: '16px auto 24px auto', boxShadow: 'var(--shadow-premium)' }}>
-          <ShieldAlert size={64} color="var(--primary)" />
-        </div>
 
-        <h2 style={{ marginBottom: '12px' }}>ปลอดภัยภัยไซเบอร์ด้วยตัวคุณเอง</h2>
-        
-        <p className="text-lead" style={{ padding: '0 8px', fontSize: '20px', lineHeight: '1.6' }}>
-          ยินดีต้อนรับครับ! ชวนคุณพ่อคุณแม่และวัยเก๋าทุกท่านมาดูคลิปสั้นสนุกๆ และเล่นเกมฝึกจับกลโกงแยกแยะข่าวจริง-ข่าวปลอม และสังเกตสื่อ AI เพื่อป้องกันสแกมเมอร์ในมือถือกันครับ
+        <h2 className="mb-3">ปลอดภัยภัยไซเบอร์ด้วยตัวคุณเอง</h2>
+
+        <p className="text-lead px-2 text-[20px] leading-relaxed">
+          ยินดีต้อนรับครับ! ชวนคุณพ่อคุณแม่และวัยเก๋าทุกท่านมาดูคลิปสั้นสนุก ๆ และเล่นเกมฝึกจับกลโกงแยกแยะข่าวจริง-ข่าวปลอม และสังเกตสื่อ AI เพื่อป้องกันสแกมเมอร์ในมือถือกันครับ
         </p>
 
         {/* Feature List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', marginTop: '24px', padding: '0 8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: 'var(--border)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+        <div className="flex flex-col gap-3 text-left mt-6 px-2">
+          <div className="flex items-center gap-4">
+            <div className="bg-[var(--border)] w-10 h-10 rounded-full flex items-center justify-center text-[var(--primary)]">
               🎥
             </div>
             <div>
-              <strong style={{ fontSize: '18px' }}>1. ดูคลิปวิดีโอเข้าใจง่าย</strong>
-              <p style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>เนื้อหาสั้นกระชับ สอนข้อควรระวังภัยออนไลน์</p>
+              <strong className="text-[18px]">1. ดูคลิปวิดีโอเข้าใจง่าย</strong>
+              <p className="text-[16px] text-[var(--text-secondary)]">เนื้อหาสั้นกระชับ สอนข้อควรระวังภัยออนไลน์</p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: 'var(--border)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+          <div className="flex items-center gap-4">
+            <div className="bg-[var(--border)] w-10 h-10 rounded-full flex items-center justify-center text-[var(--primary)]">
               🎮
             </div>
             <div>
-              <strong style={{ fontSize: '18px' }}>2. เล่นเกมลับสมองประลองปัญญา</strong>
-              <p style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>ตอบโจทย์สถานการณ์จริงเพื่อฝึกทักษะ</p>
+              <strong className="text-[18px]">2. เล่นเกมลับสมองประลองปัญญา</strong>
+              <p className="text-[16px] text-[var(--text-secondary)]">ตอบโจทย์สถานการณ์จริงเพื่อฝึกทักษะ</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ width: '100%', marginTop: 'auto' }}>
-        <button 
-          onClick={onNext} 
-          className="btn btn-primary"
-          style={{ fontSize: '22px', minHeight: '64px' }}
+      <div className="w-full mt-auto">
+        <button
+          onClick={onNext}
+          className="btn btn-primary text-[22px] min-h-[64px]"
         >
           <BookOpen size={24} />
           <span>เริ่มต้นเรียนรู้</span>
         </button>
-        <p className="text-small" style={{ textAlign: 'center', marginTop: '12px' }}>
-          ไม่ต้องสมัครสมาชิก เปิดผ่าน LINE แล้วเล่นได้ทันที!
-        </p>
       </div>
     </div>
   );

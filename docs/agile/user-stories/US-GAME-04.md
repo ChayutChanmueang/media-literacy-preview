@@ -1,9 +1,10 @@
 # User Story: US-GAME-04 - เกม "แชร์ดีไหม?" (G4 - Privacy & Online Safety Game)
 
-**Status:** 🏗 Planned
+**Status:** 🔨 Prototype — โค้ดเสร็จ ผ่าน tsc/lint + route 200, **รอ QA playtest คลิกจริงในเบราว์เซอร์** (ยังไม่ mark AC เป็น done ตามกติกา AGENT ข้อ 1)
 **Epic:** [Product Backlog](../01-product-backlog.md)
 **Owner:** TBD
-**Version:** 1.0 | **Last Updated:** 2026-07-05
+**Design Doc:** [design-g4.md](../../gdd/design-g4.md)
+**Version:** 1.1 | **Last Updated:** 2026-07-21
 
 ---
 
@@ -31,7 +32,32 @@
 
 ---
 
+---
+
+## 🔨 Prototype Build (2026-07-21)
+
+รอบนี้ทำเป็น **prototype เพื่อทดสอบว่ากลไกเข้าใจง่ายและสอนได้จริงไหม** ยังไม่ใช่เวอร์ชันส่งมอบ:
+
+**ทำแล้ว (โค้ด):**
+- `src/components/G4ShareOrNot.tsx` — เกมตอบคำถาม 3 ตัวเลือก (✓ แชร์ได้ / ✗ ไม่ควรแชร์ / ❓ ไม่แน่ใจ), หน้าเฉลยอธิบายผลกระทบ + แท็ก impact + เกณฑ์วิเคราะห์ 3 ข้อ (บนการ์ด "ไม่แน่ใจ"), ปุ่มเสียงอ่าน (TTS th-TH), progress dots, คำนวณดาวเบื้องหลัง (safe-behaviour ratio)
+- `src/data/g4-privacy-items.json` — คลังโจทย์ 8 ข้อ (ไม่ควรแชร์ 5 / แชร์ได้ 3) มี `category`, `explain`, `impact_tags`, `ai_disclosure`
+- ลงทะเบียนใน [Dev Game Hub](./US-03-R4.md) (`/dev/games`) — G4 เปลี่ยนจาก "ยังไม่พัฒนา" เป็น badge "🏗️ Prototype" กดเข้าเล่นได้
+- **"ไม่แน่ใจ / ต้องเช็กก่อน" = ได้รับคำชม** (นับเป็นพฤติกรรมปลอดภัยในโจทย์กลุ่ม no_share) ตาม AC ข้อ 6
+
+**ขอบเขต prototype (ยังไม่ทำ):**
+- ใช้ **emoji เป็นภาพจำลองชั่วคราว** — ยังไม่มีภาพประกอบจริง (ฟิลด์ `image`/`image_alt` wire ไว้รอ assets)
+- ป้าย `ai_disclosure` เขียน rendering ไว้แล้วแต่ข้อมูลตั้ง `false` ทุกข้อ (emoji ไม่ใช่สื่อ AI) — จะแสดงเมื่อใส่ภาพ AI จริงแล้วตั้ง flag `true`
+- ยังไม่ผูกเข้า flow ผู้เรียน (`/lessons/[id]/game`) และยังไม่บันทึกดาวลงระบบจริง
+- **คลังโจทย์ยังไม่ผ่านทีมวิชาการ NAPLAB** — ต้องตรวจก่อนใช้จริง โดยเฉพาะเคส "แชร์ได้ปลอดภัย"
+
+**ตรวจแล้ว:** `npx tsc --noEmit` ผ่าน, `eslint` ผ่าน (ไม่มี error/warning), route `/dev/games` ตอบ HTTP 200 มีการ์ด G4, JSON ถูกต้อง 8 ข้อ
+**ยังไม่ได้ตรวจ:** playtest คลิกเล่นจริงในเบราว์เซอร์ (เล่นครบ 8 ข้อ, เช็คเสียงอ่าน, การ์ดเฉลยทั้ง 3 แบบ, ดาวถูกต้อง) — เป็นงาน QA รอบถัดไป
+
+---
+
 ## 🔗 Related Files
+- Design Doc: [design-g4.md](../../gdd/design-g4.md)
+- Component: `src/components/G4ShareOrNot.tsx` | Data: `src/data/g4-privacy-items.json`
 - Backlog: [Product Backlog](../01-product-backlog.md)
 - GDD: [Core Mechanics](../../gdd/01-mechanics.md)
 - GDD: [Concept & Architecture](../../gdd/00-concept.md)

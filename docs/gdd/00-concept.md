@@ -31,15 +31,21 @@ Web Application เชิง Interactive สำหรับ "โครงกา�
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| Frontend | **Vite + React** (+ `vite-plugin-pwa`) | เบา เร็ว เหมาะกับมือถือรุ่นเก่า/เน็ตช้า; ทำ Progressive Web App ได้โดยไม่ผูก framework หนัก |
-| Video | YouTube Embed (iframe) | ฝากไฟล์คลิปแนวตั้งบน YouTube ตาม Requirement เบื้องต้น |
+| Core Framework | **Next.js + TypeScript** (App Router) | จัดการทั้ง Frontend (Client Components) และ Backend (Route Handlers/Server API) ในโปรเจกต์เดียว (Monorepo) รองรับ SSR/SSG ช่วยลดขนาดไฟล์โหลดหน้าแรก |
+| UI & Styling | **Tailwind CSS + shadcn/ui** | จัดสไตล์แบบ Utility-first และนำเข้าคอมโพเนนต์พื้นฐานที่เข้าถึงง่าย (Radix UI Primitives) ปรับแต่งขนาดตัวอักษรและขอบโค้งมนเพื่อผู้สูงอายุได้สะดวก |
+| Form & Validation | **React Hook Form + Zod** | จัดการสเตตของฟอร์ม (Client-side State) อย่างลื่นไหล และควบคุมกฎความมั่นคงของข้อมูลผ่าน TypeScript Schema Validation ทั้งฝั่งหน้าบ้านและเซิร์ฟเวอร์ |
+| Video | YouTube Embed (iframe) | ฝากไฟล์คลิปแนวตั้งบน YouTube ตาม Requirement เบื้องต้น ดักจับสถานะจบผ่าน YouTube IFrame API |
 | Game Engine | Phaser 3 หรือ HTML/JS เบา ๆ ต่อเกม | เลือกตามความซับซ้อนของเกมแต่ละตัว |
-| Backend / Data | **Supabase** (Postgres + Edge Functions) | เก็บข้อมูลอายุ, ตำแหน่ง, ความคืบหน้า, `action_logs`; Edge Functions ใช้ทำ IP→geolocation |
-| Geolocation จาก IP | **Cloudflare** request headers (`cf.country/region/city`) | ได้จังหวัด/ภูมิภาคฟรีจากทุก request โดยไม่ต้องเก็บ IP ดิบ หรือเรียก MaxMind/API ภายนอก — ตรงกับนโยบาย PDPA |
-| Hosting | **Cloudflare Pages** | ฟรี เร็ว ลิงก์เดียวแชร์ผ่าน LINE ได้ทันที; ทำงานร่วมกับ geolocation ด้านบนในระบบเดียว |
+| Database, Auth & Storage | **Supabase** | รวบรวมบริการฐานข้อมูล (PostgreSQL), ระบบยืนยันตัวตน (Authentication), ระบบจัดเก็บไฟล์ (Storage) และระบบซิงก์ข้อมูล (Real-time) ไว้ครบครันในบริการเดียว |
+| Testing | **Vitest + Playwright** | Vitest สำหรับทดสอบฟังก์ชันประมวลผลตรรกะเบื้องหลังแบบรวดเร็ว และ Playwright สำหรับจำลอง E2E flows ทดสอบพฤติกรรมและการผ่านด่านในเบราว์เซอร์จริง |
+| Geolocation | **UI Location Selector** | ผู้เรียนเลือกจังหวัด/อำเภอ/ตำบลเองจากรายการ ไม่ดึงพิกัด GPS เพราะพิกัดมักไม่ตรง และที่อยู่ที่ต้องการบันทึกอาจเป็นบ้านเกิดหรือที่อยู่ปัจจุบันตามความประสงค์ |
+| Hosting / Deployment | **Docker Container** (CAMT VM + Portainer) | รันเฉพาะ Next.js Node.js runtime บน Virtual Machine ของ CAMT โดยเชื่อมต่อไปยังบริการ Supabase Cloud Backend ภายนอกเพื่อความรวดเร็วและปลอดภัย |
 
-### หมายเหตุเรื่อง PWA
-แอปทำเป็น Progressive Web App (มี manifest + service worker) แต่ **ไม่ใช่เส้นทางหลัก** สำหรับกลุ่มผู้สูงอายุ — เพราะ LINE in-app browser (webview) ไม่รองรับ PWA install prompt ผู้ใช้ต้องกดเปิดในเบราว์เซอร์ปกติ (Safari/Chrome) ก่อนถึงจะ "เพิ่มลงหน้าจอโฮม" ได้เอง ซึ่งซับซ้อนเกินไปสำหรับการใช้งานครั้งแรกผ่านลิงก์ LINE จึงมอง PWA เป็น **bonus สำหรับผู้ใช้ที่กลับมาใช้ซ้ำ** (เช่น ผู้นำชุมชน) ส่วนประโยชน์หลักที่ทุกคนได้แน่ ๆ คือ service worker ช่วย cache asset และ queue คำตอบเกมตอนเน็ตหลุด (ตาม NFR ใน [System Design](../software/01-system-design.md#non-functional-requirements))
+### หมายเหตุเรื่อง PWA และระบบ Offline
+แอปพลิเคชันจะถูกพัฒนาบนมาตรฐาน **Progressive Web App (PWA)** อย่างเต็มรูปแบบโดยมี Manifest และ Service Worker (ผ่าน `@ducanh2912/next-pwa`) เพื่อให้ระบบสามารถ**ทำงานออฟไลน์ (Offline Mode) ได้จริง** แม้จะเปิดเข้าใช้ผ่านลิงก์ **LINE In-App Browser (WebView)** ก็ตาม:
+* **สิ่งที่ทำงานได้ปกติใน LINE WebView:** การดาวน์โหลดและแคชทรัพยากรหน้าเว็บ (Static Assets), สไปรต์เอนจิ้นเกมย่อย G1–G6, ไฟล์เสียงอ่านโจทย์, และการดึงคำถามแบบทดสอบสำรองมาแสดงผลเมื่อเน็ตตัด รวมถึงการบันทึกคิวข้อมูลคะแนน/Log ออฟไลน์เพื่อซิงก์กลับเมื่อตรวจพบสัญญาณเน็ต
+* **ข้อจำกัดใน LINE WebView:** ไม่รองรับคุณสมบัติการดึงปุ่ม "ติดตั้งลงหน้าจอโฮม (Add to Home Screen)" ได้โดยตรงผ่านปุ่มในเว็บ หากต้องการติดตั้งผู้เล่นจำเป็นต้องเปิดผ่านเบราว์เซอร์หลัก (Safari หรือ Chrome) เท่านั้น
+*ดังนั้น PWA จึงทำหน้าที่หลักในการรักษาเสถียรภาพการเล่นออฟไลน์ใน LINE WebView และทำหน้าที่รอง (Bonus) สำหรับการติดตั้งเป็นแอปหลักบนหน้าจอโฮมเมื่อเปิดใช้ผ่านเบราว์เซอร์ปกติ*
 
 ---
 

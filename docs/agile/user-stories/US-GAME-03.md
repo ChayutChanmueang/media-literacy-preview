@@ -1,9 +1,9 @@
 # User Story: US-GAME-03 - เกม "AI หรือ คน?" (G3 - AI or Human Game)
 
-**Status:** 🏗 Planned
+**Status:** 🔍 In QA (โค้ด `G3AIOrNot.jsx` พัฒนาแล้ว รอตรวจสอบตาม Acceptance Criteria — ดู [Sprint 03 polishing](../sprint-backlog/sprint-03-polishing.md))
 **Epic:** [Product Backlog](../01-product-backlog.md)
 **Owner:** TBD
-**Version:** 1.0 | **Last Updated:** 2026-07-03
+**Version:** 1.2 | **Last Updated:** 2026-07-15
 
 ---
 

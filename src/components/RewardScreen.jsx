@@ -46,75 +46,64 @@ export default function RewardScreen({
 
   return (
     <div className="screen-container">
-      <div className="content-area" style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-        <h1 style={{ color: 'var(--primary)', fontSize: '38px', marginBottom: '8px' }}>🎉 ยินดีด้วยครับ!</h1>
-        <h2 style={{ fontSize: '26px' }}>{congrats.title}</h2>
-        <p className="text-lead" style={{ fontSize: '20px', marginTop: '8px' }}>{congrats.desc}</p>
+      <div className="content-area my-auto">
+        <h1 className="text-[var(--primary)] text-[38px] mb-2">🎉 ยินดีด้วยครับ!</h1>
+        <h2 className="text-[26px]">{congrats.title}</h2>
+        <p className="text-lead text-[20px] mt-2">{congrats.desc}</p>
 
         {/* Stars display with custom sizes and gold glow */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', margin: '32px 0' }}>
+        <div className="flex justify-center gap-4 my-8">
           {[1, 2, 3].map((s) => (
             <div key={s} style={{ animation: `bounce 0.5s ease-out ${s * 0.2}s both` }}>
-              <Star 
-                size={54} 
-                fill={s <= stars ? '#eab308' : 'none'} 
+              <Star
+                size={54}
+                fill={s <= stars ? '#eab308' : 'none'}
                 color={s <= stars ? '#eab308' : 'var(--border)'}
-                style={{
-                  filter: s <= stars ? 'drop-shadow(0 0 12px rgba(234, 179, 8, 0.6))' : 'none',
-                }}
+                className={s <= stars ? '[filter:drop-shadow(0_0_12px_rgba(234,179,8,0.6))]' : ''}
               />
             </div>
           ))}
         </div>
 
         {/* Reward Message Box */}
-        <div className="premium-card" style={{ padding: '20px' }}>
-          <strong style={{ fontSize: '22px', color: 'var(--primary-dark)', display: 'block', marginBottom: '6px' }}>
+        <div className="premium-card p-5">
+          <strong className="text-[22px] text-[var(--primary-dark)] block mb-1.5">
             คุณได้รับ {stars} ดาวความสำเร็จ!
           </strong>
-          <span style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>
+          <span className="text-[18px] text-[var(--text-secondary)]">
             ดาวดวงนี้บันทึกไว้ในเบราว์เซอร์ของท่านแล้วอย่างปลอดภัย เพื่อปลดล็อกเข้าสู่บทเรียนถัดไปครับ
           </span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: 'auto', width: '100%' }}>
+      <div className="flex flex-col gap-3 mt-auto w-full">
         {learningMode === 'flow' ? (
           <>
             {/* Primary Flow Action Button */}
-            <button 
+            <button
               onClick={onNextLessonFlow}
-              className="btn btn-primary"
-              style={{ fontSize: '22px', minHeight: '64px' }}
+              className="btn btn-primary text-[22px] min-h-[64px]"
             >
               <ArrowRight size={24} />
               <span>{lessonId === 'topic-6' ? 'รับเกียรติบัตรดีเด่น' : 'เรียนบทเรียนถัดไป'}</span>
             </button>
 
             {/* LINE Share Button (US-LEAD-01) */}
-            <a 
+            <a
               href={lineShareUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleShareClick}
-              className="btn"
-              style={{ 
-                backgroundColor: '#06c755', 
-                color: '#ffffff', 
-                fontSize: '22px', 
-                minHeight: '64px',
-                textDecoration: 'none'
-              }}
+              className="btn bg-[#06c755] text-white text-[22px] min-h-[64px] no-underline"
             >
               <Share2 size={24} />
               <span>แชร์ผลงานเข้าไลน์กลุ่ม</span>
             </a>
 
             {/* Secondary Exit Flow to Dashboard Button */}
-            <button 
+            <button
               onClick={handleDashboardClick}
-              className="btn btn-outline"
-              style={{ fontSize: '18px', minHeight: '52px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+              className="btn btn-outline text-[18px] min-h-[52px] border-[var(--primary)] text-[var(--primary)]"
             >
               <BookOpen size={20} />
               <span>ออกไปยังหน้าหลักแผนผัง</span>
@@ -123,29 +112,21 @@ export default function RewardScreen({
         ) : (
           <>
             {/* Go to Dashboard Button */}
-            <button 
+            <button
               onClick={handleDashboardClick}
-              className="btn btn-primary"
-              style={{ fontSize: '22px', minHeight: '64px' }}
+              className="btn btn-primary text-[22px] min-h-[64px]"
             >
               <BookOpen size={24} />
               <span>กลับหน้าหลักแผนผังเรียน</span>
             </button>
 
             {/* LINE Share Button (US-LEAD-01) */}
-            <a 
+            <a
               href={lineShareUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleShareClick}
-              className="btn"
-              style={{ 
-                backgroundColor: '#06c755', 
-                color: '#ffffff', 
-                fontSize: '22px', 
-                minHeight: '64px',
-                textDecoration: 'none'
-              }}
+              className="btn bg-[#06c755] text-white text-[22px] min-h-[64px] no-underline"
             >
               <Share2 size={24} />
               <span>แชร์ผลงานเข้าไลน์กลุ่ม</span>
@@ -154,13 +135,12 @@ export default function RewardScreen({
         )}
 
         {/* Play Again Button */}
-        <button 
+        <button
           onClick={() => {
             loggingService.logEvent('replay_lesson', { lesson_id: lessonId });
             onRestart();
           }}
-          className="btn btn-outline"
-          style={{ fontSize: '18px', minHeight: '52px' }}
+          className="btn btn-outline text-[18px] min-h-[52px]"
         >
           <RefreshCw size={18} />
           <span>ทบทวนเนื้อหาวิชานี้อีกครั้ง</span>

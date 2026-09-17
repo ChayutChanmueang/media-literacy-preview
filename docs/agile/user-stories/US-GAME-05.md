@@ -1,9 +1,9 @@
 # User Story: US-GAME-05 - เกม "หยุด คิด ถาม ทำ" (G5 - Stop Think Ask Act Digital Shield)
 
-**Status:** 🏗 Planned
+**Status:** 🔍 In QA (โค้ด `G5DigitalShield.jsx` พัฒนาแล้ว รอตรวจสอบตาม Acceptance Criteria — ดู [Sprint 03 polishing](../sprint-backlog/sprint-03-polishing.md))
 **Epic:** [Product Backlog](../01-product-backlog.md)
 **Owner:** TBD
-**Version:** 1.1 | **Last Updated:** 2026-07-05
+**Version:** 1.3 | **Last Updated:** 2026-07-15
 
 ---
 

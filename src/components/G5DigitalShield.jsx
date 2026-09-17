@@ -6,36 +6,36 @@ const HAZARDS = [
     id: 1,
     text: "โอนด่วน 500 บ. ค่าพัสดุตกค้าง!",
     type: "SMS แอบอ้างขนส่ง",
-    advice: "มิจฉาชีพมักเร่งเร้าให้โอนเงินเร็ว แต่การจงใจชะลอช้าและโทรเช็กศูนย์ขนส่งก่อน จะช่วยรักษาเงินในกระเป๋าได้ค่ะ",
-    speech: "โอนด่วน 500 บาท ค่าพัสดุตกค้าง! นี่คือข้อความแอบอ้างขนส่ง แนะนำให้หยุด คิด ถาม ทำ ก่อนโอนเงินค่ะ"
+    advice: "มิจฉาชีพมักเร่งเร้าให้โอนเงินเร็ว แต่การจงใจชะลอช้าและโทรเช็กศูนย์ขนส่งก่อน จะช่วยรักษาเงินในกระเป๋าได้",
+    speech: "โอนด่วน 500 บาท ค่าพัสดุตกค้าง! นี่คือข้อความแอบอ้างขนส่ง แนะนำให้หยุด คิด ถาม ทำ ก่อนโอนเงิน"
   },
   {
     id: 2,
     text: "ยินดีด้วย! คุณมีสิทธิ์ลุ้นรับโบนัสวัยเกษียณ",
     type: "เว็บลิงก์สแกม",
-    advice: "รางวัลใหญ่ที่ส่งมาทาง SMS หรือหน้าเว็บ มักเป็นเบ็ดล่อข้อมูล ห้ามกดลิงก์แปลกปลอมเด็ดขาดนะคะ",
-    speech: "ยินดีด้วยคุณมีสิทธิ์รับโบนัสวัยเกษียณ นี่คือเว็บลิงก์สแกม ห้ามแตะลิงก์แปลกปลอมเด็ดขาดค่ะ"
+    advice: "รางวัลใหญ่ที่ส่งมาทาง SMS หรือหน้าเว็บ มักเป็นเบ็ดล่อข้อมูล ห้ามกดลิงก์แปลกปลอมเด็ดขาดนะ",
+    speech: "ยินดีด้วยคุณมีสิทธิ์รับโบนัสวัยเกษียณ นี่คือเว็บลิงก์สแกม ห้ามแตะลิงก์แปลกปลอมเด็ดขาด"
   },
   {
     id: 3,
     text: "ลูกคุณเดือดร้อน ขอเลข OTP ด่วน!",
     type: "แชทแอบอ้างบุคคล",
     advice: "รหัส OTP คือกุญแจสำคัญ ห้ามบอกใครเด็ดขาด แม้ผู้นั้นจะอ้างเป็นญาติ ให้วางสายแล้วโทรกลับเบอร์จริงเพื่อยืนยัน",
-    speech: "ลูกคุณเดือดร้อน ขอเลขโอทีพี ด่วน! นี่คือแชทแอบอ้างบุคคล อย่าบอกรหัสโอทีพีกับใครเด็ดขาดค่ะ"
+    speech: "ลูกคุณเดือดร้อน ขอเลขโอทีพี ด่วน! นี่คือแชทแอบอ้างบุคคล อย่าบอกรหัสโอทีพีกับใครเด็ดขาด"
   },
   {
     id: 4,
     text: "โปรดแจ้งรหัสธนาคารเพื่อความปลอดภัย",
     type: "Social Phishing",
-    advice: "ธนาคารและหน่วยงานรัฐไม่มีนโยบายสอบถามรหัสผ่านหรือรหัส OTP ทางแชทหรือโทรศัพท์ ให้ปฏิเสธทันทีค่ะ",
-    speech: "โปรดแจ้งรหัสธนาคารเพื่อความปลอดภัย ธนาคารไม่มีนโยบายขอรหัสผ่านทางแชท ให้ปฏิเสธทันทีค่ะ"
+    advice: "ธนาคารและหน่วยงานรัฐไม่มีนโยบายสอบถามรหัสผ่านหรือรหัส OTP ทางแชทหรือโทรศัพท์ ให้ปฏิเสธทันที",
+    speech: "โปรดแจ้งรหัสธนาคารเพื่อความปลอดภัย ธนาคารไม่มีนโยบายขอรหัสผ่านทางแชท ให้ปฏิเสธทันที"
   },
   {
     id: 5,
     text: "แชร์ต่อข่าวนี้เพื่อป้องกันโรคภัยร้ายแรง",
     type: "ข่าวปลอม (MIL)",
     advice: "ข้อมูลสุขภาพปาฏิหาริย์มักไม่ได้รับการยืนยันทางการแพทย์ ควรเช็กผ่านศูนย์ชัวร์ก่อนแชร์ หรือไม่แชร์ต่อเพื่อความปลอดภัย",
-    speech: "แชร์ต่อข่าวนี้เพื่อป้องกันโรคภัยร้ายแรง นี่คือข่าวปลอมด้านสุขภาพ ควรเช็กก่อนแชร์เพื่อความปลอดภัยค่ะ"
+    speech: "แชร์ต่อข่าวนี้เพื่อป้องกันโรคภัยร้ายแรง นี่คือข่าวปลอมด้านสุขภาพ ควรเช็กก่อนแชร์เพื่อความปลอดภัย"
   }
 ];
 
@@ -200,207 +200,86 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
   const currentHazard = HAZARDS[activeHazardIdx];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', fontFamily: 'system-ui, sans-serif' }}>
-      
+    <div className="flex flex-col flex-1 min-h-0 justify-between [font-family:var(--font-content)]">
+
       {/* 1. CONFIDENCE BAR HEADER */}
-      <div style={{ 
-        padding: '16px', 
-        backgroundColor: 'var(--bg-card)', 
-        borderRadius: 'var(--radius-md)', 
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)',
-        marginBottom: '12px'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary-dark)' }}>🛡️ ระดับพลังสะกัดภัยไซเบอร์</span>
-          <span style={{ fontSize: '22px', fontWeight: '900', color: 'var(--primary)' }}>{confidence}%</span>
+      <div className="p-4 bg-[var(--bg-card)] rounded-[var(--radius-md)] border border-[var(--border)] shadow-[var(--shadow-sm)] mb-3">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[clamp(13px,3.91vw,18px)] font-extrabold text-[var(--primary-dark)]">🛡️ ระดับพลังสะกัดภัยไซเบอร์</span>
+          <span className="text-[clamp(15px,4.78vw,22px)] font-black text-[var(--primary)]">{confidence}%</span>
         </div>
-        <div style={{ width: '100%', height: '24px', backgroundColor: '#e2e8f0', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-          <div style={{ 
-            width: `${confidence}%`, 
-            height: '100%', 
-            backgroundColor: 'var(--primary)', 
+        <div className="w-full h-6 bg-[#e2e8f0] rounded-xl overflow-hidden border border-[var(--border)]">
+          {/* Width is driven by game state (confidence), and the striped texture needs a raw gradient — both stay inline */}
+          <div style={{
+            width: `${confidence}%`,
+            height: '100%',
+            backgroundColor: 'var(--primary)',
             backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)',
             backgroundSize: '1rem 1rem',
             transition: 'width 0.4s ease',
             borderRadius: '12px'
           }}></div>
         </div>
-        <p style={{ fontSize: '14px', margin: '6px 0 0 0', color: 'var(--text-secondary)', textAlign: 'center' }}>
+        <p className="text-[clamp(10px,3.04vw,14px)] mt-1.5 text-[var(--text-secondary)] text-center">
           สะกัดกั้นข้อความล่อลวงสำเร็จ {confidence / 20} จาก 5 ด่าน
         </p>
       </div>
 
       {/* 2. PLAYING FIELD AREA */}
       {gameState !== 'finished' && (
-        <div 
+        <div
           ref={playBoxRef}
-          style={{
-            position: 'relative',
-            flex: 1,
-            minHeight: '380px',
-            backgroundColor: '#0f172a', // Sleek dark space
-            borderRadius: 'var(--radius-lg)',
-            border: '2px solid #334155',
-            overflow: 'hidden',
-            userSelect: 'none'
-          }}
+          className="relative flex-1 min-h-0 bg-[#0f172a] rounded-[var(--radius-lg)] border-2 border-[#334155] overflow-hidden select-none"
         >
           {/* Background Grid Accent */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-            opacity: 0.5
-          }}></div>
+          <div className="absolute inset-0 opacity-50 [background-image:radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px]"></div>
 
           {/* Safety Line at the bottom */}
-          <div style={{
-            position: 'absolute',
-            bottom: '22%',
-            left: 0,
-            right: 0,
-            height: '4px',
-            backgroundColor: 'rgba(239, 68, 68, 0.4)',
-            borderTop: '1px dashed #ef4444',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1
-          }}>
-            <span style={{ 
-              fontSize: '11px', 
-              color: '#f87171', 
-              backgroundColor: '#1e293b', 
-              padding: '2px 8px', 
-              borderRadius: '4px',
-              border: '1px solid #7f1d1d',
-              fontWeight: 'bold',
-              letterSpacing: '1px'
-            }}>ขอบเขตความปลอดภัย (SAFETY BASELINE)</span>
+          <div className="absolute left-0 right-0 bottom-[22%] h-1 bg-[rgba(239,68,68,0.4)] border-t border-dashed border-[#ef4444] flex items-center justify-center z-[1]">
+            <span className="text-[clamp(8px,2.39vw,11px)] text-[#f87171] bg-[#1e293b] px-2 py-0.5 rounded border border-[#7f1d1d] font-bold tracking-[1px]">ขอบเขตความปลอดภัย (SAFETY BASELINE)</span>
           </div>
 
           {/* User Instructions Overlay */}
           {gameState === 'playing' && isFalling && (
-            <div style={{
-              position: 'absolute',
-              top: '12px',
-              left: '12px',
-              right: '12px',
-              textAlign: 'center',
-              backgroundColor: 'rgba(15, 23, 42, 0.7)',
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid #334155',
-              pointerEvents: 'none',
-              animation: 'pulse 2s infinite',
-              zIndex: 2
-            }}>
-              <span style={{ color: '#38bdf8', fontWeight: 'bold', fontSize: '15px' }}>
+            <div className="absolute top-3 left-3 right-3 text-center bg-[rgba(15,23,42,0.7)] px-3 py-2 rounded-[var(--radius-md)] border border-[#334155] pointer-events-none [animation:pulse_2s_infinite] z-[2]">
+              <span className="text-[#38bdf8] font-bold text-[clamp(10px,3.26vw,15px)]">
                 👉 แตะจิ้มลงไปที่กล่องข้อความสีแดงเพื่อสกัดภัย!
               </span>
             </div>
           )}
 
-          {/* Tap Shield Wave Visual Effect */}
+          {/* Tap Shield Wave Visual Effect — position comes from the click coordinates, so it stays inline */}
           {showShieldWave && (
-            <div style={{
-              position: 'absolute',
-              left: `${shieldWavePos.x}%`,
-              top: `${shieldWavePos.y}%`,
-              width: '100px',
-              height: '100px',
-              marginLeft: '-50px',
-              marginTop: '-50px',
-              borderRadius: '50%',
-              border: '3px solid #0ea5e9',
-              backgroundColor: 'rgba(14, 165, 233, 0.2)',
-              pointerEvents: 'none',
-              transform: 'scale(1.2)',
-              animation: 'ping 0.3s ease-out forwards',
-              zIndex: 3
-            }}></div>
+            <div
+              className="absolute w-[100px] h-[100px] -ml-[50px] -mt-[50px] rounded-full border-[3px] border-[#0ea5e9] bg-[rgba(14,165,233,0.2)] pointer-events-none scale-[1.2] [animation:ping_0.3s_ease-out_forwards] z-[3]"
+              style={{ left: `${shieldWavePos.x}%`, top: `${shieldWavePos.y}%` }}
+            ></div>
           )}
 
-          {/* Falling Hazard Bubble inside a generous target wrapper */}
+          {/* Falling Hazard Bubble inside a generous target wrapper — left/top/transition are driven by the fall animation state machine, so they stay inline */}
           {(gameState === 'playing' || gameState === 'slogan') && (
-            <div 
+            <div
               ref={bubbleRef}
               onTransitionEnd={handleTransitionEnd}
               onClick={handleBlock}
+              className="absolute -translate-x-1/2 px-8 py-6 flex items-center justify-center cursor-pointer z-[5]"
               style={{
-                position: 'absolute',
                 left: `${bubbleX}%`,
                 top: bubbleYStyle,
-                transform: 'translateX(-50%)',
-                // Smooth CSS transition handled by browser GPU
-                transition: isFalling && gameState === 'playing' ? 'top 8.5s linear' : 'none',
-                // Large transparent padding around bubble for senior accessibility target area
-                padding: '24px 32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 5
+                transition: isFalling && gameState === 'playing' ? 'top 8.5s linear' : 'none'
               }}
             >
               {/* Visible Bubble */}
-              <div style={{
-                backgroundColor: 'rgba(30, 41, 59, 0.95)',
-                border: '3px solid #ef4444', // Danger border
-                boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)',
-                borderRadius: '24px',
-                padding: '14px 18px',
-                width: '280px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pointerEvents: 'none', // Let wrapper capture clicks
-                animation: 'bounceBubble 1.5s infinite alternate'
-              }}>
-                <span style={{ 
-                  fontSize: '11px', 
-                  fontWeight: 'bold', 
-                  color: '#ef4444', 
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                  padding: '2px 8px', 
-                  borderRadius: '8px',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase'
-                }}>
+              <div className="bg-[rgba(30,41,59,0.95)] border-[3px] border-[#ef4444] shadow-[0_0_15px_rgba(239,68,68,0.4)] rounded-3xl py-3.5 px-[18px] w-[280px] flex flex-col items-center justify-center pointer-events-none [animation:bounceBubble_1.5s_infinite_alternate]">
+                <span className="text-[clamp(8px,2.39vw,11px)] font-bold text-[#ef4444] bg-[rgba(239,68,68,0.1)] px-2 py-0.5 rounded-lg mb-1.5 uppercase">
                   ⚠️ {currentHazard.type}
                 </span>
-                <p style={{ 
-                  fontSize: '17px', 
-                  fontWeight: 'bold', 
-                  color: '#f8fafc', 
-                  margin: 0, 
-                  textAlign: 'center',
-                  lineHeight: 1.4
-                }}>
+                <p className="text-[clamp(12px,3.7vw,17px)] font-bold text-[#f8fafc] m-0 text-center leading-snug">
                   "{currentHazard.text}"
                 </p>
-                
+
                 {/* Assist circle indicator */}
-                <div style={{
-                  marginTop: '8px',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  border: '2px dashed #f87171',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#f87171',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}>
+                <div className="mt-2 w-8 h-8 rounded-full bg-[rgba(239,68,68,0.2)] border-2 border-dashed border-[#f87171] flex items-center justify-center text-[#f87171] text-[clamp(8px,2.61vw,12px)] font-bold">
                   แตะ
                 </div>
               </div>
@@ -409,64 +288,32 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
           {/* Slogan Screen Freeze Overlay */}
           {gameState === 'slogan' && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.88)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '24px',
-              zIndex: 10
-            }}>
-              <div style={{ 
-                width: '90%', 
-                maxWidth: '320px', 
-                textAlign: 'center',
-                padding: '24px',
-                backgroundColor: '#1e293b',
-                borderRadius: '24px',
-                border: '2px solid var(--primary)',
-                boxShadow: '0 0 25px rgba(14, 165, 233, 0.4)'
-              }}>
-                <Shield size={64} color="var(--primary)" style={{ animation: 'pulse 1s infinite', marginBottom: '16px' }} />
-                
-                <h3 style={{ fontSize: '20px', color: '#38bdf8', margin: '0 0 16px 0', fontWeight: 'bold' }}>
+            <div className="absolute inset-0 bg-[rgba(15,23,42,0.88)] flex flex-col items-center justify-center p-6 z-10">
+              <div className="w-[90%] max-w-[320px] text-center p-6 bg-[#1e293b] rounded-3xl border-2 border-[var(--primary)] shadow-[0_0_25px_rgba(14,165,233,0.4)]">
+                <Shield size={64} color="var(--primary)" className="[animation:pulse_1s_infinite] mb-4" />
+
+                <h3 className="text-[clamp(14px,4.35vw,20px)] text-[#38bdf8] mb-4 font-bold">
                   🛡️ กางโล่สะกดภัยสำเร็จ!
                 </h3>
 
                 {/* Slogan Sequence Display */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                <div className="flex flex-col gap-3 items-center">
                   {SLOGANS.map((s, idx) => {
                     const isVisible = idx <= sloganStep;
                     const isCurrent = idx === sloganStep;
                     return (
-                      <div 
+                      <div
                         key={s.text}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '12px',
-                          opacity: isVisible ? 1 : 0.15,
-                          transform: isCurrent ? 'scale(1.15)' : 'scale(1)',
-                          transition: 'all 0.3s ease',
-                          padding: '6px 16px',
-                          borderRadius: '12px',
-                          backgroundColor: isCurrent ? 'rgba(14,165,233,0.15)' : 'transparent',
-                          width: '100%',
-                          justifyContent: 'center'
-                        }}
+                        className={`flex items-center gap-3 transition-all duration-300 ease-in-out py-1.5 px-4 rounded-xl w-full justify-center ${
+                          isVisible ? 'opacity-100' : 'opacity-[0.15]'
+                        } ${isCurrent ? 'scale-[1.15] bg-[rgba(14,165,233,0.15)]' : 'scale-100 bg-transparent'}`}
                       >
-                        <span style={{ fontSize: '32px' }}>{s.icon}</span>
-                        <span style={{ fontSize: '28px', fontWeight: '900', color: isCurrent ? 'var(--primary)' : '#f1f5f9' }}>
+                        <span className="text-[clamp(22px,6.96vw,32px)]">{s.icon}</span>
+                        <span className={`text-[clamp(20px,6.09vw,28px)] font-black ${isCurrent ? 'text-[var(--primary)]' : 'text-[#f1f5f9]'}`}>
                           {s.text}
                         </span>
                         {isCurrent && (
-                          <span style={{ fontSize: '13px', color: 'var(--primary-light)', fontStyle: 'italic' }}>
+                          <span className="text-[clamp(9px,2.83vw,13px)] text-[var(--primary-light)] italic">
                             ({s.detail})
                           </span>
                         )}
@@ -480,58 +327,30 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
           {/* Miss Advice Card Modal */}
           {gameState === 'advice' && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.85)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px',
-              zIndex: 10
-            }}>
-              <div style={{
-                width: '100%',
-                maxWidth: '340px',
-                backgroundColor: 'var(--bg-card)',
-                borderRadius: '24px',
-                border: '3px solid #ef4444',
-                padding: '24px',
-                boxShadow: 'var(--shadow-xl)',
-                textAlign: 'center'
-              }}>
-                <div style={{ display: 'inline-flex', padding: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', marginBottom: '16px' }}>
+            <div className="absolute inset-0 bg-[rgba(15,23,42,0.85)] flex items-center justify-center p-5 z-10">
+              <div className="w-full max-w-[340px] bg-[var(--bg-card)] rounded-3xl border-[3px] border-[#ef4444] p-6 shadow-[var(--shadow-xl)] text-center">
+                <div className="inline-flex p-3 bg-[rgba(239,68,68,0.1)] rounded-full mb-4">
                   <AlertTriangle size={48} color="#ef4444" />
                 </div>
-                
-                <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#991b1b', margin: '0 0 4px 0' }}>
+
+                <h3 className="text-[clamp(15px,4.78vw,22px)] font-extrabold text-[#991b1b] mb-1">
                   ฟองภัยสแกมหลุดรอด!
                 </h3>
-                <span style={{ fontSize: '13px', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '3px 8px', borderRadius: '8px', fontWeight: 'bold' }}>
+                <span className="text-[clamp(9px,2.83vw,13px)] text-[#b91c1c] bg-[#fee2e2] px-2 py-[3px] rounded-lg font-bold">
                   ภัยเงียบ: {currentHazard.type}
                 </span>
 
                 {/* Question Quote */}
-                <div style={{ 
-                  margin: '16px 0', 
-                  padding: '12px', 
-                  backgroundColor: 'var(--bg-app)', 
-                  borderRadius: '12px', 
-                  borderLeft: '4px solid #ef4444',
-                  textAlign: 'left'
-                }}>
-                  <p style={{ fontSize: '15px', color: 'var(--text-primary)', fontStyle: 'italic', margin: 0 }}>
+                <div className="my-4 p-3 bg-[var(--bg-app)] rounded-xl border-l-4 border-l-[#ef4444] text-left">
+                  <p className="text-[clamp(10px,3.26vw,15px)] text-[var(--text-primary)] italic m-0">
                     "{currentHazard.text}"
                   </p>
                 </div>
 
                 {/* Positive Advice Text */}
-                <div style={{ textAlign: 'left', marginBottom: '20px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--primary-dark)' }}>💡 คำแนะนำเสริมสติ:</span>
-                  <p style={{ fontSize: '16px', color: 'var(--text-secondary)', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                <div className="text-left mb-5">
+                  <span className="text-[clamp(10px,3.04vw,14px)] font-bold text-[var(--primary-dark)]">💡 คำแนะนำเสริมสติ:</span>
+                  <p className="text-[clamp(11px,3.48vw,16px)] text-[var(--text-secondary)] mt-1 leading-relaxed">
                     {currentHazard.advice}
                   </p>
                 </div>
@@ -539,20 +358,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                 {/* Accessibility Speaker button */}
                 <button
                   onClick={() => handleSpeak(currentHazard.speech)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-pill)',
-                    backgroundColor: speaking ? 'var(--primary-light)' : '#f8fafc',
-                    border: '1px solid var(--primary)',
-                    color: 'var(--primary-dark)',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: 'bold',
-                    marginBottom: '16px'
-                  }}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-[var(--radius-pill)] border border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer text-[clamp(10px,3.26vw,15px)] font-bold mb-4 ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[#f8fafc]'}`}
                 >
                   {speaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   {speaking ? 'หยุดฟังเสียงบรรยาย' : '🔊 ฟังเสียงพูดแนะนำ'}
@@ -561,19 +367,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                 {/* Resume Button */}
                 <button
                   onClick={handleCloseAdvice}
-                  className="btn btn-primary"
-                  style={{
-                    width: '100%',
-                    fontSize: '20px',
-                    padding: '14px',
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    boxShadow: 'var(--shadow-md)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
+                  className="btn btn-primary w-full text-[clamp(14px,4.35vw,20px)] p-3.5 rounded-[var(--radius-md)] shadow-[var(--shadow-md)]"
                 >
                   <Play size={20} fill="currentColor" />
                   เข้าใจแล้วและเล่นต่อ
@@ -586,81 +380,29 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
       {/* 3. GAME COMPLETED SCREEN */}
       {gameState === 'finished' && (
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          padding: '24px',
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius-lg)',
-          border: '2px solid var(--primary-light)',
-          boxShadow: 'var(--shadow-lg)'
-        }}>
-          <div style={{
-            position: 'relative',
-            marginBottom: '20px'
-          }}>
-            <div style={{
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(14, 165, 233, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              animation: 'pulse 2s infinite'
-            }}>
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-[var(--bg-card)] rounded-[var(--radius-lg)] border-2 border-[var(--primary-light)] shadow-[var(--shadow-lg)]">
+          <div className="relative mb-5">
+            <div className="w-[120px] h-[120px] rounded-full bg-[rgba(14,165,233,0.1)] flex items-center justify-center [animation:pulse_2s_infinite]">
               <CheckCircle size={72} color="var(--primary)" />
             </div>
           </div>
 
-          <h2 style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary-dark)', margin: '0 0 8px 0' }}>
+          <h2 className="text-[clamp(20px,6.09vw,28px)] font-black text-[var(--primary-dark)] mb-2">
             🎉 ผ่านการทดสอบกางโล่!
           </h2>
-          <span style={{ 
-            fontSize: '15px', 
-            color: '#0f766e', 
-            backgroundColor: '#ccfbf1', 
-            padding: '4px 16px', 
-            borderRadius: 'var(--radius-pill)', 
-            fontWeight: 'bold',
-            marginBottom: '16px'
-          }}>
+          <span className="text-[clamp(10px,3.26vw,15px)] text-[#0f766e] bg-[#ccfbf1] px-4 py-1 rounded-[var(--radius-pill)] font-bold mb-4">
             ระดับเกราะป้องกัน: สมบูรณ์ร้อยเปอร์เซ็นต์
           </span>
 
-          <p style={{ 
-            fontSize: '18px', 
-            color: 'var(--text-secondary)', 
-            lineHeight: 1.6,
-            maxWidth: '360px',
-            margin: '0 0 28px 0'
-          }}>
-            ยอดเยี่ยมมากค่ะ! คุณลุงคุณป้ามีความคุ้นชินและเตรียมพร้อมรับมือภัยออนไลน์ด้วยหลักคิด 
-            <strong> "หยุด คิด ถาม ทำ"</strong> อย่างเต็มร้อย นำความรู้ไปประยุกต์ใช้เพื่อความสุขไซเบอร์นะคะ
+          <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-secondary)] leading-relaxed max-w-[360px] mb-7">
+            ยอดเยี่ยมมาก! คุณลุงคุณป้ามีความคุ้นชินและเตรียมพร้อมรับมือภัยออนไลน์ด้วยหลักคิด
+            <strong> "หยุด คิด ถาม ทำ"</strong> อย่างเต็มร้อย นำความรู้ไปประยุกต์ใช้เพื่อความสุขไซเบอร์นะ
           </p>
 
           {/* Finish Button */}
           <button
             onClick={handleFinish}
-            className="btn btn-primary"
-            style={{
-              width: '100%',
-              maxWidth: '300px',
-              fontSize: '22px',
-              fontWeight: 'bold',
-              padding: '16px 24px',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-              boxShadow: 'var(--shadow-md)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
+            className="btn btn-primary w-full max-w-[300px] text-[clamp(15px,4.78vw,22px)] py-4 px-6 rounded-[var(--radius-md)] shadow-[var(--shadow-md)]"
           >
             ไปต่อเพื่อรับคะแนนความมั่นใจ
           </button>
@@ -669,37 +411,16 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
       {/* 4. FOOTER OPTIONS BAR */}
       {gameState === 'playing' && (
-        <div style={{ 
-          marginTop: '12px', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          padding: '12px 16px',
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+        <div className="mt-3 flex justify-between items-center py-3 px-4 bg-[var(--bg-card)] rounded-[var(--radius-md)] border border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <span className="text-[clamp(10px,3.26vw,15px)] font-bold text-[var(--text-primary)]">
               ด่านสกัดภัยที่: {activeHazardIdx + 1}/5
             </span>
           </div>
 
           <button
-            onClick={() => handleSpeak("บทเรียนนี้ให้ผู้เรียนสังเกตและแตะข้อความที่ค่อยๆ ร่วงหล่นลงมาเพื่อสะกัดสแกมเมอร์ ด้วยการเปิดเกราะกำบังโล่กู้ชีพค่ะ")}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-pill)',
-              backgroundColor: speaking ? 'var(--primary-light)' : '#f8fafc',
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
+            onClick={() => handleSpeak("บทเรียนนี้ให้ผู้เรียนสังเกตและแตะข้อความที่ค่อยๆ ร่วงหล่นลงมาเพื่อสะกัดสแกมเมอร์ ด้วยการเปิดเกราะกำบังโล่กู้ชีพ")}
+            className={`px-3 py-2 rounded-[var(--radius-pill)] border border-[var(--border)] text-[var(--text-secondary)] cursor-pointer text-[clamp(10px,3.04vw,14px)] font-bold flex items-center gap-1 ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[#f8fafc]'}`}
           >
             {speaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
             วิธีเล่น

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Figma Component Export"
+  short_description: "Phase-gated Figma component export"
+  default_prompt: "Use $figma-component-export; run figma-export help for quick prompts or figma-export setup to scaffold a Vue demo export project."

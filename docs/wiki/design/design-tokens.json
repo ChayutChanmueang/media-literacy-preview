@@ -1,0 +1,129 @@
+{
+  "$schema": "internal/media-literacy-design-tokens",
+  "meta": {
+    "collected": "2026-07-15",
+    "sources": {
+      "brand_logo": "docs/wiki/design/_logo.jpg",
+      "greentravel_ui": "docs/wiki/design/_idea-1.jpg",
+      "website_index_css": "src/index.css"
+    }
+  },
+  "brand": {
+    "concept": {
+      "shapes": ["heart", "sprout leaves", "mountain", "wave"],
+      "regionalFocus": ["Chiang Mai", "Nan", "Phrae"],
+      "primaryAudience": "Seniors / Community"
+    },
+    "colors": {
+      "chiangmaiPurple": { "hex": "#7B2CBF", "meaning": "wisdom, spiritual, reliable, elderly man" },
+      "phraeOrange": { "hex": "#E65100", "meaning": "warmth, family, energy, children" },
+      "nanGreen": { "hex": "#2E7D32", "meaning": "nature, peaceful, community, elderly woman" },
+      "tealDefault": { "hex": "#0D9488", "meaning": "health, balance, modern default" },
+      "waveBlue": { "hex": "#0288D1", "meaning": "water waves, geography, secondary decoration" },
+      "goldPagoda": { "hex": "#FFB300", "meaning": "temple, reward coins, success alert" }
+    },
+    "font": { "defaultThai": "Sarabun", "source": "Senior accessibility standard" }
+  },
+  "website": {
+    "colors": {
+      "light": {
+        "primary": "#0D9488",
+        "primaryHover": "#0F766E",
+        "primaryLight": "#CCFBF1",
+        "primaryDark": "#115E59",
+        "bgApp": "#F8FAFC",
+        "bgCard": "#FFFFFF",
+        "textPrimary": "#0F172A",
+        "textSecondary": "#475569",
+        "border": "#E2E8F0",
+        "success": "#16A34A",
+        "error": "#DC2626"
+      },
+      "dark": {
+        "primary": "#0D9488",
+        "primaryHover": "#0F766E",
+        "primaryLight": "#115E59",
+        "primaryDark": "#CCFBF1",
+        "bgApp": "#0F172A",
+        "bgCard": "#1E293B",
+        "textPrimary": "#F8FAFC",
+        "textSecondary": "#CBD5E1",
+        "border": "#334155",
+        "success": "#16A34A",
+        "error": "#DC2626"
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "base": ["Outfit", "Inter", "system-ui", "sans-serif"],
+        "thaiContent": ["Sarabun", "Inter", "sans-serif"]
+      },
+      "baseLineHeight": 1.6,
+      "weights": {
+        "normal": 400,
+        "subtitle": 600,
+        "title": 700
+      },
+      "scales": {
+        "normal": {
+          "title": 28,
+          "subtitle": 22,
+          "body": 18,
+          "small": 16
+        },
+        "large": {
+          "title": 32,
+          "subtitle": 24,
+          "body": 20,
+          "small": 18
+        },
+        "xlarge": {
+          "title": 36,
+          "subtitle": 28,
+          "body": 24,
+          "small": 20
+        }
+      }
+    },
+    "layout": {
+      "maxWidthMobile": 480,
+      "paddingScreen": 24,
+      "paddingCard": 24,
+      "radiusLg": 16,
+      "radiusXl": 24,
+      "radiusPill": 9999
+    },
+    "components": {
+      "button": {
+        "minHeight": 56,
+        "padding": "12px 24px",
+        "borderRadius": "var(--radius-lg)"
+      },
+      "premiumCard": {
+        "borderRadius": "var(--radius-xl)",
+        "borderLeftWidth": 6,
+        "boxShadow": "0 20px 25px -5px rgba(var(--primary-rgb), 0.08)"
+      },
+      "locationBox": {
+        "minHeight": 48,
+        "borderRadius": "var(--radius-lg)"
+      },
+      "scoreProgressRing": {
+        "strokeWidth": "10-12px",
+        "trackColor": "var(--primary-light)",
+        "labelFont": "Outfit",
+        "labelSize": "36px+"
+      },
+      "statTileGrid": {
+        "columns": "2-3",
+        "gap": 12,
+        "borderRadius": "var(--radius-lg)"
+      },
+      "bottomTabNav": {
+        "height": "64-72px",
+        "position": "fixed",
+        "primaryActionStyle": "elevated circular button"
+      }
+    }
+  }
+}
