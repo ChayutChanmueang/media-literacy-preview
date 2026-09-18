@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Home, RotateCcw, Trophy, X, SkipForward } from "lucide-react";
+import { Menu, Home, RotateCcw, Trophy, X, SkipForward, FlaskConical } from "lucide-react";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
@@ -41,6 +41,7 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
   const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
   const [session, setSession] = useState<any>(null);
+  const [appMode, setAppModeState] = useState<"normal" | "research">("normal"); // Dev-only toggle
   const [menuOpen, setMenuOpen] = useState(false); // US-CF-01B: navigation drawer
   const [pickerOpen, setPickerOpen] = useState(false); // US-CF-52: popup เลือกเกมดูกระดานคะแนน
   // US-FLOW-02: ตำแหน่งในสาย flow (จาก progress) + ความคืบหน้าภายในสเตปปัจจุบัน (ต่อโจทย์)
@@ -56,6 +57,7 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
 
     const initializedSession = progressService.getOrCreateSession();
     setSession(initializedSession);
+    setAppModeState(progressService.getAppMode());
 
     // US-FLOW-02: อ่านตำแหน่งในสาย flow + รีเซ็ตความคืบหน้าภายในสเตปเมื่อเปลี่ยนหน้า
     const currentProgress = progressService.getProgress();
@@ -113,6 +115,28 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
     }
   };
 
+  // Dev-only: สลับโหมดปกติ/วิจัย — รีเซ็ตข้อมูลทั้งหมดแล้วพากลับหน้าแรกเสมอ เพื่อให้ dev
+  // เห็น flow ของแต่ละโหมดตั้งแต่ต้น โดยไม่มีข้อมูลค้างจากโหมดก่อนหน้าปนกัน
+  const handleToggleMode = () => {
+    const nextMode = appMode === "research" ? "normal" : "research";
+    const confirmMessage =
+      nextMode === "research"
+        ? "สลับเป็นโหมดวิจัยจะรีเซ็ตข้อมูลและความคืบหน้าทั้งหมด แล้วพากลับไปหน้าแรก ยืนยันหรือไม่?"
+        : "สลับเป็นโหมดปกติจะรีเซ็ตข้อมูลและความคืบหน้าทั้งหมด แล้วพากลับไปหน้าแรก ยืนยันหรือไม่?";
+
+    if (window.confirm(confirmMessage)) {
+      progressService.resetAll();
+      progressService.setAppMode(nextMode);
+      loggingService.logEvent("dev_switch_app_mode", { to: nextMode });
+
+      document.cookie = "naplab_ml_size=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = "naplab_ml_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = "naplab_ml_progress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
+      window.location.href = "/";
+    }
+  };
+
   // US-CF-01B: ไปหน้าแรก (Start Menu / Landing) จาก drawer
   const handleGoHome = () => {
     setMenuOpen(false);
@@ -138,7 +162,6 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
 
     const isVideo = pathname.includes("/video");
     const isGame = pathname.includes("/game") || pathname.includes("/score");
-    const isSummary = pathname.includes("/summary");
 
     // สาย Flow: base ตามตำแหน่งจริงในลำดับ + interpolate ต่อโจทย์ในสไลซ์เดียวกัน (monotonic)
     if (flowMeta.mode === "flow") {
@@ -146,10 +169,9 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
       if (fi !== -1) return FLOW_START + fi * STEP_W + stepFraction * STEP_W;
     }
 
-    // Manual / นอกลำดับ flow: ค่าเพิ่มขึ้นตามสเตปในบท (คลิป < เกม < สรุป) เกมขยับต่อโจทย์ด้วย
+    // Manual / นอกลำดับ flow: ค่าเพิ่มขึ้นตามสเตปในบท (คลิป < เกม) เกมขยับต่อโจทย์ด้วย
     if (isVideo) return FLOW_START;
     if (isGame) return FLOW_START + STEP_W + stepFraction * STEP_W;
-    if (isSummary) return FLOW_START + 2 * STEP_W;
     return ONBOARD_PCT["/lessons"];
   };
 
@@ -260,17 +282,35 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
               <Home size={24} className="text-[var(--primary)] shrink-0" />
               <span>ไปหน้าแรก</span>
             </button>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                loggingService.logEvent("nav_leaderboard_from_drawer");
-                setPickerOpen(true);
-              }}
-              className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-[17px] font-bold text-[var(--text-primary)] hover:bg-[var(--primary-light)] cursor-pointer text-left"
-            >
-              <Trophy size={24} className="text-[var(--primary)] shrink-0" />
-              <span>กระดานคะแนน</span>
-            </button>
+            {appMode !== "research" && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  loggingService.logEvent("nav_leaderboard_from_drawer");
+                  setPickerOpen(true);
+                }}
+                className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-[17px] font-bold text-[var(--text-primary)] hover:bg-[var(--primary-light)] cursor-pointer text-left"
+              >
+                <Trophy size={24} className="text-[var(--primary)] shrink-0" />
+                <span>กระดานคะแนน</span>
+              </button>
+            )}
+            {DEV_SKIP_ENABLED && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleToggleMode();
+                }}
+                data-dev-only="mode-toggle"
+                className="flex items-center gap-3 min-h-14 px-4 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50 text-[17px] font-bold text-amber-700 hover:bg-amber-100 cursor-pointer text-left"
+              >
+                <FlaskConical size={24} className="shrink-0" />
+                <span>
+                  โหมด: {appMode === "research" ? "วิจัย" : "ปกติ"} (DEV แตะเพื่อสลับเป็น
+                  {appMode === "research" ? "ปกติ" : "วิจัย"})
+                </span>
+              </button>
+            )}
             <button
               onClick={() => {
                 setMenuOpen(false);

@@ -190,7 +190,9 @@ export default function ConsentLocationPage() {
       source: "manual",
     });
 
-    router.push("/self-assessment/pre");
+    // Research mode: pre-post test (self-assessment survey) gates entry to lessons.
+    // Normal mode has no pre-post test — go straight to the mode-selection screen.
+    router.push(progressService.getAppMode() === "research" ? "/self-assessment/pre" : "/lessons");
   };
 
   useDevSkip(() => {

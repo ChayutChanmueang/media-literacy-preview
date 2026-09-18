@@ -147,6 +147,20 @@ export default function LessonSelectorPage() {
     const currentProgress = progressService.getProgress();
     setProgress(currentProgress);
 
+    // โหมดวิจัย: ไม่มีหน้าเลือกโหมด/โหมดอิสระ/เกมสนุก — เข้าสาย "เนื้อเรื่อง" อัตโนมัติเสมอ
+    if (progressService.getAppMode() === "research") {
+      const targetLesson = firstIncompleteFlowLesson(currentProgress?.stars || {});
+      loggingService.logEvent("select_lesson", { lesson_id: targetLesson, mode: "flow" });
+      progressService.saveProgress({
+        ...currentProgress,
+        currentStep: "video",
+        currentLessonId: targetLesson,
+        learningMode: "flow",
+      });
+      router.push(`/lessons/${targetLesson}/video`);
+      return;
+    }
+
     // เคยเลือกโหมดอิสระค้างไว้ → กลับเข้าหน้าหมวดหมู่เลย ไม่ต้องเลือกโหมดซ้ำ
     if (currentProgress.learningMode === "manual") {
       setActiveSubPage("categories");
@@ -158,7 +172,7 @@ export default function LessonSelectorPage() {
     setLoading(false);
   }, [router]);
 
-  // โหมดอิสระ: เลือกเล่นเกมไหนก่อนก็ได้ ไม่มีการล็อกตามลำดับอีกต่อไป (คั่นด้วยหน้าคลิปเหมือนเดิม)
+  // โหมดอิสระ (วิดีโอ): เลือกดูคลิปไหนก่อนก็ได้ ไม่มีการล็อกตามลำดับอีกต่อไป
   const handleGameClick = (lessonId: string) => {
     loggingService.logEvent("select_lesson", { lesson_id: lessonId, mode: "manual" });
     const updatedProgress = {
@@ -169,6 +183,19 @@ export default function LessonSelectorPage() {
     };
     progressService.saveProgress(updatedProgress);
     router.push(`/lessons/${lessonId}/video`);
+  };
+
+  // โหมดอิสระ (เกมเพื่อการเรียนรู้): เข้าเกมตรงๆ ไม่ผ่านหน้าคลิปนำก่อน
+  const handleLearningGameClick = (lessonId: string) => {
+    loggingService.logEvent("select_lesson", { lesson_id: lessonId, mode: "manual" });
+    const updatedProgress = {
+      ...progress,
+      currentStep: "game",
+      currentLessonId: lessonId,
+      learningMode: "manual",
+    };
+    progressService.saveProgress(updatedProgress);
+    router.push(`/lessons/${lessonId}/game`);
   };
 
   const handleStartFlowMode = () => {
@@ -371,7 +398,7 @@ export default function LessonSelectorPage() {
                 key={game.id}
                 icon={game.icon}
                 label={game.label}
-                onClick={() => handleGameClick(game.id)}
+                onClick={() => handleLearningGameClick(game.id)}
               />
             ))}
           </div>

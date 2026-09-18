@@ -728,3 +728,47 @@ h2 {
     opacity: 0.4;
   }
 }
+
+/* —— GP1 prompt-builder prototype —— */
+.gp1-slot-active {
+  border-color: var(--primary);
+  animation: gp1-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes gp1-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(13, 148, 136, 0); }
+}
+
+.gp1-shake {
+  animation: gp1-shake 0.4s ease-in-out;
+}
+
+@keyframes gp1-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.gp1-card-drag {
+  transition: none;
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+}
+
+.gp1-card-snap {
+  transition: transform 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp1-slot-active {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.35);
+  }
+  .gp1-shake {
+    animation: none;
+  }
+  .gp1-card-snap {
+    transition: none;
+  }
+}

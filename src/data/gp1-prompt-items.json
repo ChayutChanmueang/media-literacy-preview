@@ -1,0 +1,53 @@
+[
+  {
+    "id": "prompt-01-good-morning",
+    "character_thought": "วันนี้อยากได้ภาพสวัสดีตอนเช้าสวยๆ ไปแชร์ในไลน์กลุ่มครอบครัว",
+    "prompt_template": "สร้างภาพบรรยากาศ {slot1} มี {slot2} พร้อมข้อความอวยพรว่า \"{slot3}\" ลงท้ายด้วย \"{slot4}\"",
+    "slots": [
+      {
+        "id": "slot1",
+        "label": "บรรยากาศของภาพ",
+        "order": 1,
+        "choices": [
+          { "text": "เช้าสดใส อบอุ่น", "type": "correct" },
+          { "text": "มืดมัว น่ากลัว", "type": "wrong_context" },
+          { "text": "หน้าตาเหมือนดาราคนนี้จริงๆ", "type": "sensitive_pii", "category": "real-person-likeness" }
+        ]
+      },
+      {
+        "id": "slot2",
+        "label": "สิ่งของ/ฉากในภาพ",
+        "order": 2,
+        "choices": [
+          { "text": "ดอกไม้และแสงแดดยามเช้า", "type": "correct" },
+          { "text": "รถแข่งความเร็วสูง", "type": "wrong_context" },
+          { "text": "เลขบัตรประชาชน 13 หลักของยาย", "type": "sensitive_pii", "category": "national-id" }
+        ]
+      },
+      {
+        "id": "slot3",
+        "label": "ข้อความอวยพร",
+        "order": 3,
+        "choices": [
+          { "text": "สวัสดีตอนเช้า ขอให้มีความสุขทั้งวันนะคะ", "type": "correct" },
+          { "text": "สูตรทำแกงเขียวหวาน", "type": "wrong_context" },
+          { "text": "ที่อยู่บ้านเลขที่ 99/1 ซอยลำไย", "type": "sensitive_pii", "category": "home-address" }
+        ]
+      },
+      {
+        "id": "slot4",
+        "label": "ลงท้ายข้อความ",
+        "order": 4,
+        "choices": [
+          { "text": "จากยาย ด้วยความคิดถึง", "type": "correct" },
+          { "text": "ไม่ต้องเซ็นชื่ออะไรเลย", "type": "wrong_context" },
+          { "text": "ชื่อ-นามสกุลจริงและเบอร์โทรศัพท์ของยาย", "type": "sensitive_pii", "category": "full-name-phone" }
+        ]
+      }
+    ],
+    "result_asset": "/images/gproto/good-morning-result.png",
+    "result_caption": "สวัสดีตอนเช้า ขอให้มีความสุขทั้งวันนะคะ — จากยาย ด้วยความคิดถึง",
+    "ai_disclosure": true,
+    "safety_tip": "ไม่บอกข้อมูลส่วนตัว เช่น เลขบัตร ที่อยู่ เบอร์โทร หรือหน้าคนจริง กับ AI นะคะ"
+  }
+]

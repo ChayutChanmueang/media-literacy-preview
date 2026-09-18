@@ -152,6 +152,8 @@ function LeaderboardPageInner() {
   const [pendingSave, setPendingSave] = useState<LeaderboardNameInput | null>(null);
   const [nameHintVisible, setNameHintVisible] = useState(false);
   const [playerScore, setPlayerScore] = useState<number | null>(null);
+  // โหมดอิสระ: เกมสนุกเป็นหมวดเดี่ยว ปุ่มจบเกมจึงใช้ข้อความ "ต่อไป" แทน "เสร็จสิ้นบทเรียน" (เฉพาะปุ่ม ไม่กระทบปลายทาง)
+  const [learningMode, setLearningMode] = useState<"flow" | "manual">("flow");
   const nameHintTimerRef = useRef<number | null>(null);
   const viewState: ViewState = isBrowse
     ? "leaderboard"
@@ -179,6 +181,7 @@ function LeaderboardPageInner() {
     // localStorage is unavailable during SSR, so initialize this external state after hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlayer(storedPlayer);
+    setLearningMode(progressService.getProgress()?.learningMode === "manual" ? "manual" : "flow");
     loggingService.logEvent("leaderboard_page_view", {
       has_player_profile: Boolean(storedPlayer),
       lesson_id: lessonId,
@@ -317,6 +320,16 @@ function LeaderboardPageInner() {
       leaderboardScoreService.clearPendingScore(gid);
     }
     const progress = progressService.getProgress();
+    // โหมดอิสระ: เกมสนุกเป็นหมวดเดี่ยว ไม่ใช่ปลายทาง Flow จึงกลับหน้าหมวดหมู่แทนหน้าจบคอร์ส
+    if (progress?.learningMode === "manual") {
+      progressService.saveProgress({
+        ...progress,
+        currentStep: "lessons",
+        currentLessonId: undefined,
+      });
+      router.push("/lessons");
+      return;
+    }
     progressService.saveProgress({
       ...progress,
       currentStep: "complete",
@@ -518,13 +531,13 @@ function LeaderboardPageInner() {
                 >
                   <ArrowRight size={34} strokeWidth={2.25} aria-hidden="true" />
                   <span className="text-center text-[clamp(15px,4.78vw,22px)] font-bold leading-tight">
-                    เสร็จสิ้นบทเรียน
+                    {learningMode === "manual" ? "ต่อไป" : "เสร็จสิ้นบทเรียน"}
                   </span>
                 </button>
               </div>
             ) : (
               <BottomActionButton type="button" onClick={handleFinishG13}>
-                เสร็จสิ้นบทเรียน
+                {learningMode === "manual" ? "ต่อไป" : "เสร็จสิ้นบทเรียน"}
                 <ArrowRight size={28} aria-hidden="true" />
               </BottomActionButton>
             )}

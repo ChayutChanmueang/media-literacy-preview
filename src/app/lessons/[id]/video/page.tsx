@@ -53,6 +53,8 @@ export default function VideoLessonPage() {
   const [playerReady, setPlayerReady] = useState(false);
   // US-CF-24: phase — "loading" ระหว่างอ่านโหมด, "intro" = หน้าชื่อคลิป, "video" = เล่นวิดีโอ
   const [phase, setPhase] = useState<"loading" | "intro" | "video">("loading");
+  // โหมดอิสระ (manual): วิดีโอเป็นหมวดแยกจากเกม ดูจบแล้วไม่มีเกมบังคับต่อ จึงกลับหน้าหมวดหมู่แทน
+  const [learningMode, setLearningMode] = useState<"flow" | "manual">("manual");
   const playerRef = useRef<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,6 +72,7 @@ export default function VideoLessonPage() {
   // อ่านโหมดการเรียนตอน mount → กำหนดปลายทางปุ่ม + ตัดสินใจว่าจะแสดงหน้าชื่อคลิปก่อนไหม
   useEffect(() => {
     const mode = progressService.getProgress()?.learningMode || "manual";
+    setLearningMode(mode);
     setPhase(mode === "flow" && video.showClipIntro ? "intro" : "video");
   }, [lessonId, video.showClipIntro]);
 
@@ -270,8 +273,14 @@ export default function VideoLessonPage() {
 
   const handleNext = () => {
     const progress = progressService.getProgress();
-    // US-CF-07: video-first — ดูคลิปจบแล้วไปเล่นเกมของบทเดียวกัน (ทั้ง Flow และ Manual)
-    // (ใน Flow การไปคลิปบทถัดไป/แบบทดสอบหลังเรียน จะเกิดหลัง "เกม" จบ ที่ game/page.tsx)
+    if (learningMode === "manual") {
+      // โหมดอิสระ: วิดีโอเป็นหมวดแยกจากเกม ดูจบแล้วไม่มีเกมบังคับต่อ กลับหน้าหมวดหมู่เลย
+      progressService.saveProgress({ ...progress, currentStep: "lessons", currentLessonId: undefined });
+      router.push("/lessons");
+      return;
+    }
+    // US-CF-07: video-first (Flow) — ดูคลิปจบแล้วไปเล่นเกมของบทเดียวกัน
+    // (การไปคลิปบทถัดไป/แบบทดสอบหลังเรียน จะเกิดหลัง "เกม" จบ ที่ game/page.tsx)
     progressService.saveProgress({ ...progress, currentStep: "game", currentLessonId: lessonId });
     router.push(`/lessons/${lessonId}/game`);
   };
@@ -477,7 +486,7 @@ export default function VideoLessonPage() {
           autoAdvanceMs={countdownActive ? 5000 : undefined}
           className="pointer-events-auto"
         >
-          เริ่มเล่นเกม
+          {learningMode === "manual" ? "ดูจบแล้ว" : "เริ่มเล่นเกม"}
         </Button3D>
       </div>
     </div>

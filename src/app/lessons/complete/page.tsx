@@ -23,14 +23,17 @@ export default function LessonCompletePage() {
   }, [router]);
 
   const handleBackHome = () => {
+    // โหมดวิจัย: ไม่มีหน้าหมวดหมู่ "/lessons" ให้กลับ (เข้าไปจะเจอ auto-redirect เข้าบทเรียนซ้ำ)
+    // จึงกลับไปหน้าแรกของแอปแทน ต่างจากโหมดปกติที่ "/lessons" คือหน้าหลักจริงๆ
+    const isResearch = progressService.getAppMode() === "research";
     const progress = progressService.getProgress();
     progressService.saveProgress({
       ...progress,
-      currentStep: "lessons",
+      currentStep: isResearch ? "landing" : "lessons",
       currentLessonId: undefined,
     });
     loggingService.logEvent("course_completion_back_home");
-    router.push("/lessons");
+    router.push(isResearch ? "/" : "/lessons");
   };
 
   return (

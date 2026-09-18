@@ -1,7 +1,10 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 
-// Compile-time guard (same as G13's dev timer skip): production builds drop the header button and handlers.
-export const DEV_SKIP_ENABLED = process.env.NODE_ENV === "development";
+// Compile-time guard (same as G13's dev timer skip): production builds drop the header button and handlers,
+// unless NEXT_PUBLIC_ENABLE_DEV_HUB=true was set at build time (same flag that unlocks /dev/games, see devHub.ts).
+export const DEV_SKIP_ENABLED =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_ENABLE_DEV_HUB === "true";
 
 let current: (() => void) | null = null;
 const listeners = new Set<() => void>();

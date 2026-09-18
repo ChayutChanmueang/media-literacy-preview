@@ -1,5 +1,18 @@
 # Documentation Changelog
 
+## [0.13.0] - 2026-09-18
+
+### Added
+- ระบบ Pre/Post-test (self-assessment): หน้าจอชุดใหม่ใต้ `src/app/self-assessment/[phase]/` (คำถาม → หน้าจบ) พร้อม `selfAssessmentPhase.ts` และชุดคำถาม `self-assessment-items.json`
+- เกมใหม่ 2 เกม (GenAI Drag and Drop, prototype): `GP1PromptBuilder.tsx` และ `GP2PromptBuilder.tsx` เข้าถึงผ่าน Dev Game Hub
+- สลับโหมด normal/research สำหรับ dev — คุมผ่าน `progressService.ts` และปุ่มใน `AppLayout.tsx` เพื่อแยก flow ทดสอบกับ flow จริง
+
+### Changed
+- ปรับ UI ของหน้า consent, lessons, game, video, summary และ complete ให้ใช้ดีไซน์ใหม่ (`Button3D`, `GameAnswerButton`, `GameScoreCard`, `GameSolutionCard`, `CompletionCard`) แทนปุ่ม/การ์ดเดิม — กระทบ `G1FactCheck`, `G3AIOrNot`, `G6LineSimulation`, `G11StopTheFinger`, `G13ScoopStacker`
+- ย้ายหน้าเลือกจังหวัด/ตำแหน่งใน consent ไป `src/app/consent/location/page.tsx` แยกจากหน้า consent หลัก
+
+**Bump rationale:** เพิ่มฟีเจอร์ใหม่หลายส่วน (pre/post-test, เกม GP1/GP2, โหมด normal/research) จึงอัปเดต MINOR จาก `0.12.3` เป็น `0.13.0`
+
 ## [0.12.3] - 2026-08-18
 
 ### Fixed

@@ -1,7 +1,7 @@
 {
   "name": "media-literacy",
   "private": true,
-  "version": "0.12.3",
+  "version": "0.13.0",
   "type": "module",
   "scripts": {
     "dev": "node -e \"console.log('\\x1b[36m  - Dev Game Hub: http://localhost:3000/dev/games\\x1b[0m\\n')\" && next dev --webpack",

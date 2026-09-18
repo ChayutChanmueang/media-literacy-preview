@@ -36,6 +36,8 @@ export default function GameShellPage() {
   const router = useRouter();
   const lessonId = (params.id as string) || "topic-1";
   const [loading, setLoading] = useState(true);
+  // โหมดอิสระ: ปุ่มจบเกม G13 ในหน้าสรุปคะแนนของตัวเกมเองใช้ข้อความ "ต่อไป" แทน "เสร็จสิ้นบทเรียน"
+  const [learningMode, setLearningMode] = useState<"flow" | "manual">("flow");
 
   useEffect(() => {
     // Verification of session
@@ -45,12 +47,14 @@ export default function GameShellPage() {
       return;
     }
 
+    // Session data is only available in browser storage after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLearningMode(progressService.getProgress()?.learningMode === "manual" ? "manual" : "flow");
+
     loggingService.logEvent("game_start", {
       game_id: getGameId(lessonId),
       lesson_id: lessonId,
     });
-    // Session data is only available in browser storage after hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(false);
   }, [lessonId, router]);
 
@@ -80,7 +84,8 @@ export default function GameShellPage() {
         currentStep: "leaderboard",
         currentLessonId: FLOW_G13_ID,
       });
-      goToScore(`/lessons/${FLOW_G13_ID}/leaderboard`);
+      // TEMP: ข้ามหน้าคะแนนกลาง (GameScorePage) ไปกระดานคะแนนตรงๆ — กระดานคะแนนของ G13 มีหน้าคะแนนของตัวเองอยู่แล้ว
+      router.push(`/lessons/${FLOW_G13_ID}/leaderboard`);
       return;
     }
 
@@ -102,19 +107,26 @@ export default function GameShellPage() {
     };
 
     if (learningMode === "flow") {
-      // US-CF-32: flow ไม่มีหน้าสรุปคะแนนคั่นแล้ว → จบเกมไป "หน้าชื่อคลิป" ของบทถัดไปเลย (video intro) หรือแบบทดสอบหลังเรียน
+      // US-CF-32: flow ไม่มีหน้าสรุปคะแนนคั่นแล้ว → จบเกมไป "หน้าชื่อคลิป" ของบทถัดไปเลย (video intro) หรือด่านปิดท้าย
       const nextId = nextFlowLessonAfterGame(lessonId);
       if (nextId === FLOW_POST_TEST_ID) {
-        progressService.saveProgress({ ...withStars, currentStep: "post-test", currentLessonId: undefined });
-        goToScore(FLOW_POST_TEST_PATH);
+        if (progressService.getAppMode() === "research") {
+          // โหมดวิจัย: ปิดท้ายด้วยแบบทดสอบหลังเรียน
+          progressService.saveProgress({ ...withStars, currentStep: "post-test", currentLessonId: undefined });
+          goToScore(FLOW_POST_TEST_PATH);
+        } else {
+          // โหมดปกติ: ไม่มีแบบทดสอบหลังเรียน → ปิดท้ายด้วยเกมสนุก (ต่อไอติม) + กระดานคะแนนแทน
+          progressService.saveProgress({ ...withStars, currentStep: "game", currentLessonId: FLOW_G13_ID });
+          goToScore(`/lessons/${FLOW_G13_ID}/game`);
+        }
       } else {
         progressService.saveProgress({ ...withStars, currentStep: "video", currentLessonId: nextId });
         goToScore(`/lessons/${nextId}/video`);
       }
     } else {
-      // Manual: ยังคงหน้าสรุป/รางวัลเหมือนเดิม
-      progressService.saveProgress({ ...withStars, currentStep: "reward" });
-      goToScore(`/lessons/${lessonId}/summary?stars=${TEMP_AWARDED_STARS}`);
+      // Manual: ไม่มีหน้าสรุปคั่นแล้ว → จบเกมไปหน้าคะแนนแล้วกลับหน้าหลักแผนผังเรียนเลย
+      progressService.saveProgress({ ...withStars, currentStep: "lessons" });
+      goToScore(`/lessons`);
     }
   };
 
@@ -134,7 +146,7 @@ export default function GameShellPage() {
       case "topic-6":
         return <G6LineSimulation onFinish={handleFinishGame} logEvent={logEventBound} />;
       case FLOW_G13_ID:
-        return <G13ScoopStacker onFinish={handleFinishGame} logEvent={logEventBound} />;
+        return <G13ScoopStacker onFinish={handleFinishGame} logEvent={logEventBound} learningMode={learningMode} />;
       default:
         return <G1FactCheck onFinish={handleFinishGame} logEvent={logEventBound} />;
     }

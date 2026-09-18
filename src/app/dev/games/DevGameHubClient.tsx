@@ -25,6 +25,8 @@ const G7CyberRunner = dynamic(() => import("@/components/G7CyberRunner"), { ssr:
 const G11StopTheFinger = dynamic(() => import("@/components/G11StopTheFinger"), { ssr: false });
 const G13ScoopStacker = dynamic(() => import("@/components/G13ScoopStacker"), { ssr: false });
 const G14GooslMarbles = dynamic(() => import("@/components/G14GooslMarbles"), { ssr: false });
+const GP1PromptBuilder = dynamic(() => import("@/components/GP1PromptBuilder"), { ssr: false });
+const GP2PromptBuilder = dynamic(() => import("@/components/GP2PromptBuilder"), { ssr: false });
 
 type GameProps = {
   onFinish: (stars: number) => void;
@@ -163,6 +165,24 @@ const GAMES: GameEntry[] = [
     status: "prototype",
     component: G14GooslMarbles,
     designDoc: "docs/gdd/design-g14.md",
+  },
+  {
+    id: "GP1",
+    title: "ขอ AI ให้ถูกคำ",
+    lesson: "ยังไม่ผูกบทเรียน (prototype นอก pipeline G-number)",
+    note: "ลาก/แตะเติมคำสั่งขอภาพจาก AI 4 ช่อง — สอนใช้ AI เชิงบวก + ห้ามใส่ข้อมูลส่วนตัว",
+    status: "prototype",
+    component: GP1PromptBuilder,
+    designDoc: "docs/gdd/prototype/design-ai-prompt-builder.md",
+  },
+  {
+    id: "GP2",
+    title: "ขอ AI ให้ถูกคำ (ลากลงกล่อง)",
+    lesson: "ยังไม่ผูกบทเรียน (prototype นอก pipeline G-number)",
+    note: "เนื้อหา/เฉลยเดียวกับ GP1 แต่เปลี่ยนกลไก — ลาก/แตะคำที่ใช่ลงกล่องวางคำเดียว ทำซ้ำ 4 รอบ",
+    status: "prototype",
+    component: GP2PromptBuilder,
+    designDoc: "docs/gdd/prototype/design-ai-prompt-builder.md",
   },
 ];
 

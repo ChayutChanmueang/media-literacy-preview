@@ -17,6 +17,8 @@ import GameIntro from "./GameIntro";
 type Props = {
   onFinish: (score: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
+  // โหมดอิสระ: ปุ่มจบเกมในหน้าสรุปคะแนนใช้ข้อความ "ต่อไป" แทน "เสร็จสิ้นบทเรียน" (ค่าเริ่มต้น "flow" กันไม่ให้ Dev Hub เปลี่ยนพฤติกรรม)
+  learningMode?: "flow" | "manual";
 };
 
 type GamePhase = "tutorial" | "playing" | "summary";
@@ -151,7 +153,7 @@ const getTowerGeometry = (world: GameWorld, reduceMotion: boolean) => {
   return { coneTop, x, wobble, topCenterY, visibleHeight };
 };
 
-export default function G13ScoopStacker({ onFinish, logEvent }: Props) {
+export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "flow" }: Props) {
   const [phase, setPhase] = useState<GamePhase>("tutorial");
   const [timeLeft, setTimeLeft] = useState(SESSION_TIME_SECONDS);
   const [height, setHeight] = useState(0);
@@ -926,7 +928,7 @@ export default function G13ScoopStacker({ onFinish, logEvent }: Props) {
               onClick={() => onFinish(height)}
               className="btn btn-primary min-h-16 text-[clamp(18px,4.8vw,22px)]"
             >
-              เสร็จสิ้นบทเรียน <ArrowRight size={24} aria-hidden="true" />
+              {learningMode === "manual" ? "ต่อไป" : "เสร็จสิ้นบทเรียน"} <ArrowRight size={24} aria-hidden="true" />
             </button>
             <button
               type="button"

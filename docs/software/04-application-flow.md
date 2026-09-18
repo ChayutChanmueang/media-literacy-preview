@@ -18,7 +18,7 @@
 | `/lessons` | `app/lessons/page.tsx` | `LessonSelector` | หน้าเลือกบทเรียน (Dashboard สำหรับผู้สูงอายุ) แสดงเส้นทางและสถานะความคืบหน้า (ดาว) | ต้องทำการทำข้อสอบ Pre-test เสร็จสิ้นแล้ว |
 | `/lessons/:id/video` | `app/lessons/[id]/video/page.tsx` | `VideoPlayer` | หน้าจอเครื่องเล่นคลิปวิดีโอแนวตั้ง (9:16) ดักจับสถานะดูวิดีโอจบ | ต้องผ่าน Onboarding, ทำ Pre-test, และเรียนบทเรียนก่อนหน้าตามลำดับ |
 | `/lessons/:id/game` | `app/lessons/[id]/game/page.tsx` | `GameShell` | หน้าเล่นเกมย่อยประจำบทเรียน โหลดปลั๊กอินเกมย่อย G1-G5 มาแสดง | ต้องทำการชมวิดีโอบทนั้นจบเรียบร้อยแล้วในเซสชันนี้ |
-| `/lessons/:id/summary` | `app/lessons/[id]/summary/page.tsx` | `LessonSummary` | หน้าแสดงความสำเร็จ ได้รับดาว และแนะนำบทถัดไป | ต้องเล่นเกมในบทเรียนนั้นผ่านเงื่อนไขชนะแล้ว |
+| `/lessons/:id/score` | `app/lessons/[id]/score/page.tsx` | `GameScorePage` | หน้าคะแนนหลังจบเกม (ใช้ร่วมกันทุกเกม) แสดงดาวที่ได้ ปุ่ม "ต่อไป" พาไปปลายทางจริงจาก query `next` — โหมด manual ไป `/lessons` ตรงๆ (ไม่มีหน้าสรุปคั่นแล้ว), โหมด flow ไปคลิป/เกมบทถัดไปหรือแบบทดสอบหลังเรียนต่อ | ต้องเล่นเกมในบทเรียนนั้นผ่านเงื่อนไขชนะแล้ว |
 | `/posttest` | `app/posttest/page.tsx` | `PosttestScreen` | หน้าทำแบบทดสอบวัดความรู้หลังเรียนเพื่อประเมินผลการเรียนรู้ | ต้องเก็บดาวสะสมครบถ้วนทุกบทเรียนก่อน |
 | `/certificate` | `app/certificate/page.tsx` | `CertificateScreen` | หน้ารับใบประกาศเกียรติคุณแบบใส่ชื่อเล่น ดาวน์โหลดรูปภาพ และแชร์เข้ากลุ่ม LINE | ต้องทำการทำข้อสอบ Post-test เสร็จสิ้นเรียบร้อยแล้ว |
 | `/lessons/:id/leaderboard` | `app/lessons/[id]/leaderboard/page.tsx` | `LessonLeaderboardPage` | หน้ากรอกชื่อครั้งแรกและกระดานคะแนนของเกมที่ระบุใน route | ต้องมี session และใช้ lesson/game ID ที่รองรับ; ฝั่ง client ตรวจ local player profile เพื่อเลือก state กรอกชื่อหรือแสดงอันดับ |
@@ -72,12 +72,12 @@ stateDiagram-v2
 
     GameShell --> LeaderboardEntry : เกมสำเร็จ
     
-    state LessonSummary {
+    state GameScorePage {
         [*] --> AwardStar
         AwardStar --> SaveProgress
     }
 
-    LessonSummary --> LessonSelector : กดปุ่ม "กลับหน้าหลัก / บทถัดไป"
+    GameScorePage --> LessonSelector : กดปุ่ม "ต่อไป" (โหมด manual — ไม่มีหน้าสรุปคั่นแล้ว)
     state LeaderboardEntry {
         [*] --> CheckLocalPlayer
         CheckLocalPlayer --> InputLeaderboardName : ไม่มี local player profile
@@ -85,7 +85,7 @@ stateDiagram-v2
         InputLeaderboardName --> LeaderboardByGame : บันทึกชื่อ + สร้าง UUID
     }
 
-    LeaderboardByGame --> LessonSummary : ไปต่อหลังดูอันดับ
+    LeaderboardByGame --> GameScorePage : ไปต่อหลังดูอันดับ
     
     LessonSelector --> PosttestScreen : ได้รับดาวครบทุกบทเรียน
     PosttestScreen --> CertificateScreen : ตอบแบบทดสอบหลังเรียนเสร็จสิ้น
@@ -219,7 +219,7 @@ Dev Game Hub ใช้ระบบ **mock** เพื่อแยกขาดจ
 
 | ฟีเจอร์ | พฤติกรรมในระบบจริง (`GameShell`) | พฤติกรรมใน Dev Hub (`DevGameHubPage`) |
 |:---|:---|:---|
-| `onFinish(stars)` | บันทึกดาวลง `progressService` + เปลี่ยนหน้าไป `/lessons/:id/summary` | แสดง Overlay แจ้งจำนวนดาว ไม่บันทึกใดๆ |
+| `onFinish(stars)` | บันทึกดาวลง `progressService` + เปลี่ยนหน้าไป `/lessons/:id/score` (แล้วต่อไปยัง `/lessons` หรือบทถัดไปตามโหมด) | แสดง Overlay แจ้งจำนวนดาว ไม่บันทึกใดๆ |
 | `logEvent(name, payload)` | ส่ง HTTP POST ไปยัง `/api/log` ผ่าน `loggingService` | `console.log` + แสดงใน Event Panel บนหน้าจอ |
 | Session Guard | ต้องมี `session_id` + ดูวิดีโอจบ + เรียงลำดับบท | ไม่มี Guard ใดๆ เปิดเล่นได้ทันที |
 | Component Loading | Static import ใน `GameShell.jsx` | Dynamic import (`next/dynamic`) เพื่อ code-split แต่ละเกม |
