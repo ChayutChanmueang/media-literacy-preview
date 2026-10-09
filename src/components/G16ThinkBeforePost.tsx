@@ -249,7 +249,7 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
       {/* ปุ่มคู่เดียวกับ G6 (เขียว/เหลือง) เปลี่ยนข้อความให้ตรงกับการกระทำ + "ไม่โพสต์" ใช้ไอคอน ✗ แทน ❓ */}
       <div className="shrink-0">
         {!choice ? (
-          <div className="flex gp-gap-8 gp-px-24 gp-pb-64 gp-pt-36">
+          <div className="flex gp-gap-8 gp-px-24 gp-pb-action-bar gp-pt-36">
             <GameAnswerButton
               tone="green"
               iconSrc="/images/games/answer-true.svg"
@@ -264,7 +264,7 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
             />
           </div>
         ) : (
-          <div className="gp-px-24 gp-pb-64 gp-pt-22">
+          <div className="gp-px-24 gp-pb-action-bar gp-pt-22">
             <Button3D
               key={`g16-next-${currentIdx}`}
               onClick={handleNext}

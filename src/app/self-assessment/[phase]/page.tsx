@@ -37,7 +37,7 @@ export default function SelfAssessmentStartPage() {
         </div>
       </div>
 
-      <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+      <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
         <Button3D onClick={handleStart}>กดเพื่อเริ่ม</Button3D>
       </div>
     </div>

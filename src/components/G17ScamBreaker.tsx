@@ -752,7 +752,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
           </div>
         </div>
 
-        <div className="shrink-0 gp-px-24 gp-pb-64 gp-pt-22">
+        <div className="shrink-0 gp-px-24 gp-pb-action-bar gp-pt-22">
           <Button3D onClick={handleLevelNext}>{isLastLevel ? "จบเกม" : "ไปด่านต่อไป"}</Button3D>
         </div>
       </div>

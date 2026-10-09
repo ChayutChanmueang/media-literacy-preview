@@ -254,7 +254,7 @@ export default function GP5RealOrFakeVideo({ onFinish, logEvent }: Props) {
             )}
           </div>
 
-          <div className="shrink-0 flex gp-gap-8 gp-px-24 gp-pb-64 gp-pt-48">
+          <div className="shrink-0 flex gp-gap-8 gp-px-24 gp-pb-action-bar gp-pt-48">
             <GameAnswerButton
               tone="green"
               iconSrc="/images/games/answer-true.svg"
@@ -302,7 +302,7 @@ export default function GP5RealOrFakeVideo({ onFinish, logEvent }: Props) {
             )}
           </GameSolutionCard>
 
-          <div className="shrink-0 gp-px-24 gp-pb-64 gp-pt-22">
+          <div className="shrink-0 gp-px-24 gp-pb-action-bar gp-pt-22">
             <Button3D
               key={`gp5-next-${currentIdx}`}
               onClick={handleNext}

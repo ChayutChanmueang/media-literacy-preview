@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.18.3] - 2026-10-09
+
+### Changed
+- ระยะใต้ปุ่มในแถบปุ่มล่างจอ (ปุ่มไปต่อ/ปุ่มตอบ ทั้ง 28 จุด: หน้าลงทะเบียน หน้าแรก บทเรียน คลิป แบบประเมินตนเอง หน้าจบ `GameIntro` และเกม G1/G3/G6/G16–G20/GP5) ลดจาก 64px เป็น 36px ทุกอุปกรณ์/เบราว์เซอร์ — คง 64px เฉพาะ Safari บน iPhone ที่แถบ URL อยู่ล่างจอทับหน้าเว็บ; ใช้ utility ใหม่ `pb-action-bar` / `gp-pb-action-bar` (ตัว `gp-` ย่อตาม `.gp-compact`) อ่านค่าจากตัวแปร `--action-bar-pb` ใน `src/app/globals.css`
+- ตรวจจับ Safari บน iPhone ด้วยสคริปต์ inline ใน `src/app/layout.tsx` (รันก่อน paint แรก ปุ่มไม่กระโดด) → ตั้ง `data-ios-safari` บน `<html>` — ไม่นับเบราว์เซอร์อื่นบน iPhone ที่ใช้ WebKit เหมือนกัน (Chrome, Firefox, Edge, LINE, Facebook, Instagram ฯลฯ) และ iPad (แถบ URL อยู่บน)
+- `AGENT.md`: แถบปุ่มล่างจอใหม่ให้ใช้ `pb-action-bar` แทน `pb-[64px]`
+
+**Bump rationale:** ปรับระยะใต้ปุ่มล่างจอให้กินพื้นที่น้อยลงนอก Safari บน iPhone ต่อจาก 0.18.2 จึงอัปเดต PATCH จาก `0.18.2` เป็น `0.18.3` ตามที่ผู้ใช้กำหนด
+
 ## [0.18.2] - 2026-10-09
 
 ### Added

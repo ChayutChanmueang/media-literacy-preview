@@ -138,7 +138,7 @@ export default function SelfAssessmentQuestionsPage() {
         </div>
       </div>
 
-      <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+      <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
         <Button3D onClick={() => finish(answers)} disabled={!allAnswered}>
           ต่อไป
         </Button3D>

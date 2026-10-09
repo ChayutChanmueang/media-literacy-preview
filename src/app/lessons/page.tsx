@@ -332,7 +332,7 @@ export default function LessonSelectorPage() {
           </div>
         </div>
 
-        <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+        <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
           <BackPillButton onClick={handleBackToModes} />
         </div>
       </div>
@@ -360,7 +360,7 @@ export default function LessonSelectorPage() {
           </div>
         </div>
 
-        <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+        <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
           <BackPillButton onClick={handleBackToCategories} />
         </div>
       </div>
@@ -389,7 +389,7 @@ export default function LessonSelectorPage() {
           </div>
         </div>
 
-        <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+        <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
           <BackPillButton onClick={handleBackToCategories} />
         </div>
       </div>
@@ -415,7 +415,7 @@ export default function LessonSelectorPage() {
         </div>
       </div>
 
-      <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+      <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
         <BackPillButton onClick={handleBackToCategories} />
       </div>
     </div>

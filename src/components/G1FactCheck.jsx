@@ -199,7 +199,7 @@ export default function G1FactCheck({ onFinish, logEvent }) {
             />
           </div>
 
-          <div className="shrink-0 flex gap-[8px] px-[24px] pb-[64px] pt-[36px]">
+          <div className="shrink-0 flex gap-[8px] px-[24px] pb-action-bar pt-[36px]">
             <GameAnswerButton
               tone="green"
               iconSrc="/images/games/answer-true.svg"
@@ -238,7 +238,7 @@ export default function G1FactCheck({ onFinish, logEvent }) {
             </div>
           </GameSolutionCard>
 
-          <div className="shrink-0 px-[24px] pb-[64px] pt-[22px]">
+          <div className="shrink-0 px-[24px] pb-action-bar pt-[22px]">
             <Button3D
               key={`g1-next-${currentIdx}`}
               onClick={handleNext}

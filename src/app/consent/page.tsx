@@ -91,7 +91,7 @@ export default function ConsentAgePage() {
         </div>
       </CustomScrollArea>
 
-      <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+      <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
         <Button3D onClick={() => ageGroup && goToLocation(ageGroup)} disabled={!ageGroup}>
           กดเพื่อไปต่อ
         </Button3D>

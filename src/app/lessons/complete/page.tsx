@@ -58,7 +58,7 @@ export default function LessonCompletePage() {
         </div>
       </div>
 
-      <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+      <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
         <Button3D onClick={handleBackHome}>กดเพื่อกลับไปหน้าหลัก</Button3D>
       </div>
     </div>

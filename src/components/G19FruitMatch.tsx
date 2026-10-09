@@ -711,7 +711,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
             )}
           </div>
         </div>
-        <div className="flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-64 gp-pt-22">
+        <div className="flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
           <Button3D onClick={startRun}>เล่นอีกครั้ง</Button3D>
           <button
             type="button"

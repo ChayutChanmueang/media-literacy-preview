@@ -454,7 +454,7 @@ export default function ConsentLocationPage() {
       </CustomScrollArea>
 
       {/* รายการที่เปิดอยู่วาดทับแถบนี้ได้ — ระหว่างนั้นปิดการกด (แตะตรงนี้ = แค่ปิดรายการ ไม่ submit) */}
-      <div inert={!!openMenu} className={`shrink-0 px-[24px] pb-[64px] pt-[24px] ${openMenu ? "pointer-events-none" : ""}`}>
+      <div inert={!!openMenu} className={`shrink-0 px-[24px] pb-action-bar pt-[24px] ${openMenu ? "pointer-events-none" : ""}`}>
         {/* ยังกรอกไม่ครบ = ปุ่มสีเทา (ให้รู้ว่ายังขาดอะไรอยู่) แต่ยังกดได้ — กดแล้วไฮไลต์ช่องที่ขาดแทนการ submit */}
         <Button3D onClick={handleContinue} inactive={!locationDone || !accepted}>
           ยินยอมและเริ่มเรียนรู้

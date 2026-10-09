@@ -68,7 +68,7 @@ export default function GameIntro({
         </div>
       </div>
 
-      <div className="shrink-0 gp-px-24 gp-pb-64 gp-pt-24">
+      <div className="shrink-0 gp-px-24 gp-pb-action-bar gp-pt-24">
         <Button3D onClick={onStart}>{startLabel}</Button3D>
       </div>
     </div>

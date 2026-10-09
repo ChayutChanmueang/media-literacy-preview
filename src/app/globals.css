@@ -898,6 +898,24 @@ h2 {
 @utility gp-pr-* {
   padding-right: calc(--value(integer) * 1px * var(--gp-s, 1));
 }
+
+/* Bottom action bar (continue / answer buttons): space under the buttons down to the screen edge.
+ * 36px everywhere (24px looked too low on a phone), but 64px in Safari on iPhone, where the bottom
+ * URL/tab bar sits over the page and would hide or crowd the buttons.
+ * data-ios-safari is set on <html> before first paint by the script in src/app/layout.tsx. */
+:root {
+  --action-bar-pb: 36px;
+}
+:root[data-ios-safari] {
+  --action-bar-pb: 64px;
+}
+@utility pb-action-bar {
+  padding-bottom: var(--action-bar-pb, 36px);
+}
+/* scales with .gp-compact like the other gp-* sizes */
+@utility gp-pb-action-bar {
+  padding-bottom: calc(var(--action-bar-pb, 36px) * var(--gp-s, 1));
+}
 @utility gp-gap-* {
   gap: calc(--value(integer) * 1px * var(--gp-s, 1));
 }

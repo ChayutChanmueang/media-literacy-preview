@@ -592,7 +592,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
           </AutoAdvanceButton>
         ) : !responseChosen ? (
           /* US-CF-12: 2 ตัวเลือก ตอบกลับ(เขียว) / ไม่ตอบกลับ(เหลือง) — ขยายกว้างเต็มจอ */
-          <div className="flex gap-[8px] px-[24px] pb-[64px] pt-[36px]">
+          <div className="flex gap-[8px] px-[24px] pb-action-bar pt-[36px]">
             <GameAnswerButton
               tone="green"
               iconSrc="/images/games/answer-true.svg"
@@ -609,7 +609,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
             />
           </div>
         ) : (
-          <div className="px-[24px] pb-[64px] pt-[22px]">
+          <div className="px-[24px] pb-action-bar pt-[22px]">
             <Button3D
               key={`g6-next-${currentIdx}`}
               onClick={handleNext}

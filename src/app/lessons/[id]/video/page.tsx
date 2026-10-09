@@ -393,7 +393,7 @@ export default function VideoLessonPage() {
           </div>
         </div>
 
-        <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+        <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
           <Button3D onClick={handleStartClip} onAutoAdvance={handleStartClip} autoAdvanceMs={15000}>
             เริ่มชมคลิป
           </Button3D>
@@ -510,7 +510,7 @@ export default function VideoLessonPage() {
 
       {/* Bottom overlays: `invisible` while hidden stops a slide-down flash on mount and keeps them untappable; the padded frame passes taps through to the player */}
       <div
-        className={`pointer-events-none absolute bottom-0 left-0 right-0 z-30 px-[24px] pb-[64px] pt-[24px] transition-transform duration-500 ease-in-out ${
+        className={`pointer-events-none absolute bottom-0 left-0 right-0 z-30 px-[24px] pb-action-bar pt-[24px] transition-transform duration-500 ease-in-out ${
           showSkipButton ? "visible translate-y-0" : "invisible translate-y-full"
         }`}
       >
@@ -521,7 +521,7 @@ export default function VideoLessonPage() {
 
       {/* ปุ่มไปเกม slide up เมื่อคลิปจบ — นับถอยหลัง 5 วิแล้วไปเกมเอง */}
       <div
-        className={`pointer-events-none absolute bottom-0 left-0 right-0 z-30 px-[24px] pb-[64px] pt-[24px] transition-transform duration-500 ease-in-out ${
+        className={`pointer-events-none absolute bottom-0 left-0 right-0 z-30 px-[24px] pb-action-bar pt-[24px] transition-transform duration-500 ease-in-out ${
           showControls ? "visible translate-y-0" : "invisible translate-y-full"
         }`}
       >
