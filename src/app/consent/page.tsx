@@ -8,6 +8,8 @@ import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
 import { AGE_OPTIONS, type AgeGroup } from "@/lib/ageOptions";
 import Button3D from "@/components/Button3D";
+import CustomScrollArea from "@/components/CustomScrollArea";
+import { PAGE_SCROLL_TRACK_CLASS, SCROLL_THUMB_CLASS } from "@/lib/scrollbarStyles";
 
 const subscribeNoop = () => () => {};
 
@@ -36,7 +38,8 @@ export default function ConsentAgePage() {
 
   return (
     <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* scroll bar วาดเอง ให้เห็นตลอดทุกเบราว์เซอร์/มือถือเมื่อเนื้อหาเกินจอ */}
+      <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
         <div className="flex min-h-full flex-col items-center justify-center gap-[32px] px-[24px] py-[28px]">
           <div className="flex flex-col items-center gap-[8px] text-center">
             <p className="text-[24px] font-semibold leading-[32px]">ข้อมูลผู้ใช้</p>
@@ -86,7 +89,7 @@ export default function ConsentAgePage() {
               })}
           </div>
         </div>
-      </div>
+      </CustomScrollArea>
 
       <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
         <Button3D onClick={() => ageGroup && goToLocation(ageGroup)} disabled={!ageGroup}>

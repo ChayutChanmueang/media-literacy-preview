@@ -52,13 +52,25 @@ export default function Button3D({
       type="button"
       {...props}
       disabled={disabled}
-      className={`${notoLoopedThai.className} group relative block gp-h-104 w-full shrink-0 cursor-pointer overflow-clip rounded-[24px] disabled:cursor-not-allowed ${
-        disabled ? "bg-[#7F7F7F]" : "bg-[#0078A8] active:bg-transparent"
-      } ${className}`}
+      className={`${notoLoopedThai.className} group relative block gp-h-104 w-full shrink-0 cursor-pointer rounded-[24px] disabled:cursor-not-allowed ${className}`}
     >
+      {/* Base (the dark "side"): its own layer at the bottom, so pressing never swaps colours mid-frame.
+          Pressed, it hides only after the face has fully covered it (delay = slide time), so no dark
+          sliver shows around the face's rounded corners; on release it comes back at once. */}
+      <span
+        aria-hidden="true"
+        className={`absolute inset-x-0 bottom-0 gp-h-96 rounded-[24px] ${
+          disabled
+            ? "bg-[#7F7F7F]"
+            : "bg-[#0078A8] transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]"
+        }`}
+      />
+      {/* Face: slides down by the base height (8px × --gp-s, matching gp-h-104 − gp-h-96) */}
       <span
         className={`absolute inset-x-0 top-0 flex gp-h-96 items-center justify-center overflow-clip rounded-[24px] gp-text-28 font-bold gp-leading-36 text-white ${
-          disabled ? "bg-[#A5A5A5]" : "bg-[#00A3E0] group-active:top-[8px]"
+          disabled
+            ? "bg-[#A5A5A5]"
+            : "bg-[#00A3E0] transition-transform duration-[90ms] ease-out group-active:translate-y-[calc(8px*var(--gp-s,1))]"
         }`}
       >
         {counting && (

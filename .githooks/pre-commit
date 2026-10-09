@@ -1,9 +1,0 @@
-#!/bin/sh
-# Block video files from ever being committed (see .gitignore).
-videos=$(git diff --cached --name-only --diff-filter=ACMR | grep -iE '\.(mp4|m4v|mov|webm|mkv|avi|wmv|flv|mpg|mpeg|3gp|ogv)$')
-if [ -n "$videos" ]; then
-  echo "pre-commit: video files are not allowed in this repo:" >&2
-  echo "$videos" | sed 's/^/  /' >&2
-  echo "Unstage them with: git restore --staged <file>" >&2
-  exit 1
-fi

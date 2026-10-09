@@ -14,6 +14,10 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
  * @param {(active: boolean) => void} [props.onActiveChange]  แจ้ง caller เมื่อผู้ใช้เริ่ม/หยุดโต้ตอบ (แตะ/เลื่อน)
  *                                     — ใช้หยุดตัวนับ auto-advance ระหว่างที่ผู้ใช้กำลังอ่าน/เลื่อนเนื้อหา
  * @param {React.ReactNode} [props.children] เนื้อหาที่เลื่อนได้
+ * @param {React.RefObject<HTMLDivElement | null>} [props.scrollRef] ref ไปยังกล่องที่เลื่อนจริง (ให้ caller อ่าน/ตั้ง scrollTop ได้)
+ * @param {boolean} [props.locked]       ล็อกไม่ให้เลื่อน (เช่น ระหว่างที่รายการ dropdown เปิดทับอยู่) — scroll bar ยังแสดงตำแหน่งเดิม
+ * @param {number} [props.maxHeight]     สูงตามเนื้อหาแต่ไม่เกินค่านี้ (px) แทนการเติมเต็มกรอบนอก — ใช้กับรายการที่ไม่รู้ความสูงล่วงหน้า
+ * @param {object} [props.contentProps]  attribute เพิ่มให้กล่องที่เลื่อน (เช่น role/aria-label ของ listbox)
  */
 export default function CustomScrollArea({
   className = '',
@@ -22,8 +26,19 @@ export default function CustomScrollArea({
   thumbClassName = 'absolute left-0 w-full rounded-full bg-[var(--primary)] opacity-80',
   onActiveChange,
   children,
+  scrollRef: externalScrollRef,
+  locked = false,
+  maxHeight,
+  contentProps,
 }) {
   const scrollRef = useRef(null);
+  const setScrollEl = useCallback(
+    (el) => {
+      scrollRef.current = el;
+      if (externalScrollRef) externalScrollRef.current = el;
+    },
+    [externalScrollRef],
+  );
   const [thumb, setThumb] = useState({ heightPct: 0, topPct: 0, visible: false });
 
   const update = useCallback(() => {
@@ -100,7 +115,8 @@ export default function CustomScrollArea({
   return (
     <div className={`relative ${className}`}>
       <div
-        ref={scrollRef}
+        {...contentProps}
+        ref={setScrollEl}
         onScroll={() => {
           update();
           handleActivity();
@@ -112,7 +128,8 @@ export default function CustomScrollArea({
         onTouchStart={handleHoldStart}
         onTouchMove={handleActivity}
         onTouchEnd={handleHoldEnd}
-        className={`absolute inset-0 overflow-y-auto no-native-scrollbar ${contentClassName}`}
+        style={maxHeight != null ? { maxHeight } : undefined}
+        className={`${maxHeight != null ? 'relative' : 'absolute inset-0'} ${locked ? 'overflow-hidden' : 'overflow-y-auto'} no-native-scrollbar ${contentClassName}`}
       >
         {children}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import locationData from "@/data/thailand-location.json";
@@ -9,43 +10,62 @@ import { loggingService } from "@/services/loggingService";
 import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
 import Button3D from "@/components/Button3D";
+import CustomScrollArea from "@/components/CustomScrollArea";
+import { LIST_SCROLL_TRACK_CLASS, PAGE_SCROLL_TRACK_CLASS, SCROLL_THUMB_CLASS } from "@/lib/scrollbarStyles";
 
 // US-CF-23: จังหวัด "อื่นๆ" (เผื่อผู้เล่นจังหวัดอื่น) — ไม่ต้องเลือกอำเภอ/ตำบลต่อ
 const OTHER_PROVINCE = "อื่น ๆ";
 const subscribeNoop = () => () => {};
 
 const LIST_MAX_HEIGHT = 320; // ความสูงสูงสุดของรายการตาม Figma
-const LIST_MIN_HEIGHT = 124; // อย่างน้อย 2 แถว ไม่งั้นรายการเตี้ยจนใช้ยาก
-const LIST_OFFSET = 8; // ระยะห่างระหว่างปุ่มกับรายการ + เว้นขอบล่าง
+const ROW_HEIGHT = 62; // แถวละ 62px (รวมเส้นคั่น 2px)
+const LIST_BORDER = 2;
+// อย่างน้อย 3 ตัวเลือก เตี้ยกว่านี้ใช้ยาก (ถ้ามีตัวเลือกไม่ถึง 3 รายการก็สั้นตามจริง)
+const LIST_MIN_HEIGHT = ROW_HEIGHT * 3 + LIST_BORDER * 2;
+const LIST_GAP = 10; // ขอบล่างปุ่ม → ขอบบนรายการ (ใช้ใน keyframe dropdown-slide-down ด้วย)
+const VIEWPORT_MARGIN = 16; // เว้นจากขอบล่างจอ
+
+type Placement = { left: number; width: number; top: number; maxHeight: number };
 
 // Figma node 2917:16430 (Component 56) — ปุ่มเลือกแบบกดแล้วกางรายการ (ไม่ใช้ <select> ของเบราว์เซอร์ เพื่อให้หน้าตาตรงดีไซน์)
+// รายการเปิดอยู่ = วาดเป็นชั้นบนสุด (portal + fixed) ทับปุ่มยินยอมได้ — หน้าเพจล็อกการเลื่อนและปิดปุ่มยินยอมไว้ (ดู ConsentLocationPage)
 function SelectCard({
   placeholder,
   value,
   onChange,
   options,
   disabled,
-  boundaryRef,
+  open,
+  onOpenChange,
+  scrollRef,
 }: {
   placeholder: string;
   value: string;
   onChange: (value: string) => void;
   options: string[];
   disabled?: boolean;
-  /** ขอบล่างที่รายการห้ามเลยลงไป (แถบปุ่มยินยอม) — รายการจะเตี้ยลงแทนที่จะดันให้ทั้งหน้าเลื่อน */
-  boundaryRef?: React.RefObject<HTMLDivElement | null>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** กล่องเลื่อนของหน้า — เลื่อนขึ้นให้ก่อนถ้าใต้ปุ่มมีที่ไม่พอ 3 ตัวเลือก */
+  scrollRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const [open, setOpen] = useState(false);
-  const [maxHeight, setMaxHeight] = useState(LIST_MAX_HEIGHT);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<Placement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const onOpenChangeRef = useRef(onOpenChange);
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  });
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || listRef.current?.contains(target)) return;
+      onOpenChangeRef.current(false);
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") onOpenChangeRef.current(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -55,38 +75,51 @@ function SelectCard({
     };
   }, [open]);
 
-  // วัดที่ว่างระหว่างปุ่มกับแถบปุ่มยินยอม แล้วย่อความสูงรายการให้พอดี (วัดก่อน paint กันรายการกระพริบ)
+  // วางรายการใต้ปุ่ม (วัดก่อน paint กันรายการกระพริบ): สูงสุด 320px สูงตามที่เหลือถึงขอบล่างจอ
+  // แต่ไม่ต่ำกว่า 3 ตัวเลือก — ทับปุ่มยินยอมได้ ถ้าใต้ปุ่มมีที่ไม่พอ 3 ตัวเลือก เลื่อนหน้าขึ้นให้ก่อน
   useLayoutEffect(() => {
-    if (!open) return;
+    const trigger = triggerRef.current;
+    if (!open || !trigger) return;
+    const minHeight = Math.min(LIST_MIN_HEIGHT, options.length * ROW_HEIGHT + LIST_BORDER * 2);
+    const shortBy =
+      trigger.getBoundingClientRect().bottom + LIST_GAP + minHeight + VIEWPORT_MARGIN - window.innerHeight;
+    if (shortBy > 0 && scrollRef.current) scrollRef.current.scrollTop += shortBy;
+
     const measure = () => {
-      const trigger = rootRef.current?.getBoundingClientRect();
-      if (!trigger) return;
-      const boundary = boundaryRef?.current?.getBoundingClientRect().top ?? window.innerHeight;
-      const available = boundary - trigger.bottom - LIST_OFFSET * 2;
-      setMaxHeight(Math.max(LIST_MIN_HEIGHT, Math.min(LIST_MAX_HEIGHT, available)));
+      const rect = trigger.getBoundingClientRect();
+      const available = window.innerHeight - VIEWPORT_MARGIN - (rect.bottom + LIST_GAP);
+      setPlacement({
+        left: rect.left,
+        width: rect.width,
+        top: rect.bottom,
+        maxHeight: Math.max(LIST_MIN_HEIGHT, Math.min(LIST_MAX_HEIGHT, available)),
+      });
     };
     measure();
+    // the page swaps to overflow-hidden while open, which can drop a desktop scrollbar and widen the trigger
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(trigger);
     window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
     };
-  }, [open, boundaryRef]);
+  }, [open, options.length, scrollRef]);
 
   return (
-    <div ref={rootRef} className={`relative h-[64px] w-full ${open ? "z-30" : ""}`}>
+    <div className="relative h-[64px] w-full">
       {/* ปุ่มเปิดรายการ (Figma node 2917:16430): พื้นขาว ขอบ #A5A5A5 ตัวอักษร+ลูกศร #7F7F7F
           เลือกค่าแล้ว = สไตล์เดียวกับช่วงอายุที่เลือก (พื้นฟ้าอ่อน ขอบ+ตัวอักษรฟ้า) ให้สองหน้าดูเป็นชุดเดียวกัน
           ปิดใช้งาน (เช่น อำเภอก่อนเลือกจังหวัด) = เทาอ่อนกว่า */}
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => onOpenChange(!open)}
         disabled={disabled}
         aria-label={placeholder}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`relative z-[2] flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:translate-y-0 ${
+        className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:translate-y-0 ${
           value ? "border-[#00A3E0] bg-[#D9F1FA] text-[#00A3E0]" : "border-[#A5A5A5] bg-white text-[#7F7F7F]"
         }`}
       >
@@ -104,42 +137,52 @@ function SelectCard({
         </svg>
       </button>
 
-      {open && (
-        // Clip window starts at the trigger's middle (behind its opaque fill), so the list slides
-        // out from under the button — same build as Figma Component 58 (list tucked behind the trigger)
-        <div className="pointer-events-none absolute inset-x-0 top-[31px] z-[1] overflow-hidden pt-[41px]">
+      {open &&
+        placement &&
+        createPortal(
+          // Clip window starts at the trigger's bottom edge, so the list slides out from under the
+          // button — same idea as Figma Component 58 (list tucked behind the trigger)
           <div
-            role="listbox"
-            aria-label={placeholder}
-            style={{ maxHeight }}
-            className="dropdown-slide-down pointer-events-auto flex flex-col overflow-y-auto rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white"
+            ref={listRef}
+            className={`${notoLoopedThai.className} pointer-events-none fixed z-40 overflow-hidden`}
+            style={{ left: placement.left, width: placement.width, top: placement.top, paddingTop: LIST_GAP }}
           >
-            {/* Figma node 2222:4106: แถวสูง 62px คั่นด้วยเส้น #D9D9D9 ตัวอักษร #595959
-                ตัวที่เลือกอยู่ = พื้นฟ้าอ่อน ตัวอักษรฟ้า + ✓ กำกับ (ไม่สื่อด้วยสีอย่างเดียว) */}
-            {options.map((o) => {
-              const selected = value === o;
-              return (
-                <button
-                  key={o}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    onChange(o);
-                    setOpen(false);
-                  }}
-                  className={`flex min-h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] border-b-2 border-solid border-[#D9D9D9] px-[12px] text-[20px] font-semibold leading-[30px] last:border-b-0 active:bg-[#F2F2F2] ${
-                    selected ? "bg-[#D9F1FA] text-[#00A3E0]" : "bg-white text-[#595959]"
-                  }`}
-                >
-                  {selected && <span aria-hidden="true">✓</span>}
-                  {o}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+            {/* scroll bar วาดเอง (CustomScrollArea) ให้เห็นตลอดทุกเบราว์เซอร์/มือถือเมื่อรายการยาวเกินกรอบ */}
+            <CustomScrollArea
+              className="dropdown-slide-down pointer-events-auto overflow-hidden rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white"
+              maxHeight={placement.maxHeight - LIST_BORDER * 2}
+              contentClassName="flex flex-col overscroll-contain"
+              contentProps={{ role: "listbox", "aria-label": placeholder }}
+              trackClassName={LIST_SCROLL_TRACK_CLASS}
+              thumbClassName={SCROLL_THUMB_CLASS}
+            >
+              {/* Figma node 2222:4106: แถวสูง 62px คั่นด้วยเส้น #D9D9D9 ตัวอักษร #595959
+                  ตัวที่เลือกอยู่ = พื้นฟ้าอ่อน ตัวอักษรฟ้า + ✓ กำกับ (ไม่สื่อด้วยสีอย่างเดียว) */}
+              {options.map((o) => {
+                const selected = value === o;
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => {
+                      onChange(o);
+                      onOpenChange(false);
+                    }}
+                    className={`flex min-h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] border-b-2 border-solid border-[#D9D9D9] px-[32px] text-[20px] font-semibold leading-[30px] last:border-b-0 active:bg-[#F2F2F2] ${
+                      selected ? "bg-[#D9F1FA] text-[#00A3E0]" : "bg-white text-[#595959]"
+                    }`}
+                  >
+                    {selected && <span aria-hidden="true">✓</span>}
+                    {o}
+                  </button>
+                );
+              })}
+            </CustomScrollArea>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -154,7 +197,13 @@ export default function ConsentLocationPage() {
   const [accepted, setAccepted] = useState(false);
   const [showPDPA, setShowPDPA] = useState(false);
   const isClient = useSyncExternalStore(subscribeNoop, () => true, () => false);
-  const footerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // เปิดได้ทีละรายการ — ระหว่างเปิด: ล็อกการเลื่อนหน้า (เลื่อนได้แค่ในรายการ) และกดปุ่มยินยอมไม่ได้
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const menuProps = (name: string) => ({
+    open: openMenu === name,
+    onOpenChange: (open: boolean) => setOpenMenu(open ? name : null),
+  });
 
   useEffect(() => {
     const session = progressService.getOrCreateSession();
@@ -221,7 +270,13 @@ export default function ConsentLocationPage() {
 
   return (
     <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <CustomScrollArea
+        className="min-h-0 flex-1"
+        scrollRef={scrollRef}
+        locked={!!openMenu}
+        trackClassName={PAGE_SCROLL_TRACK_CLASS}
+        thumbClassName={SCROLL_THUMB_CLASS}
+      >
         <div className="flex min-h-full flex-col items-center gap-[32px] px-[24px] pb-[28px] pt-[32px]">
           <div className="flex flex-col items-center gap-[8px] text-center">
             <p className="text-[24px] font-semibold leading-[32px]">ข้อมูลผู้ใช้</p>
@@ -236,7 +291,8 @@ export default function ConsentLocationPage() {
                   value={province}
                   onChange={handleProvinceChange}
                   options={[...locationData.provinces.map((p) => p.name), OTHER_PROVINCE]}
-                  boundaryRef={footerRef}
+                  {...menuProps("จังหวัด")}
+                  scrollRef={scrollRef}
                 />
                 {!isOtherProvince && (
                   <>
@@ -246,7 +302,8 @@ export default function ConsentLocationPage() {
                       onChange={handleDistrictChange}
                       options={districts.map((d) => d.name)}
                       disabled={!province}
-                      boundaryRef={footerRef}
+                      {...menuProps("อำเภอ")}
+                      scrollRef={scrollRef}
                     />
                     <SelectCard
                       placeholder="ตำบล"
@@ -254,7 +311,8 @@ export default function ConsentLocationPage() {
                       onChange={setSubdistrict}
                       options={subdistricts}
                       disabled={!district}
-                      boundaryRef={footerRef}
+                      {...menuProps("ตำบล")}
+                      scrollRef={scrollRef}
                     />
                   </>
                 )}
@@ -289,9 +347,10 @@ export default function ConsentLocationPage() {
             </>
           )}
         </div>
-      </div>
+      </CustomScrollArea>
 
-      <div ref={footerRef} className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+      {/* รายการที่เปิดอยู่วาดทับแถบนี้ได้ — ระหว่างนั้นปิดการกด (แตะตรงนี้ = แค่ปิดรายการ ไม่ submit) */}
+      <div inert={!!openMenu} className={`shrink-0 px-[24px] pb-[64px] pt-[24px] ${openMenu ? "pointer-events-none" : ""}`}>
         <Button3D
           onClick={() => submit({ province, district, subdistrict })}
           disabled={!locationDone || !accepted}

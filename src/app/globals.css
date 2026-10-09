@@ -435,10 +435,10 @@ h2 {
 }
 
 /* Registration dropdown list (/consent/location): starts tucked behind its trigger button and slides
-   out from under it. The parent clips at the trigger's middle; the 41px is that clip window's top padding. */
+   out from under it. The parent clips at the trigger's bottom edge; the 10px is that clip window's top padding (LIST_GAP). */
 @keyframes dropdown-slide-down {
   from {
-    transform: translateY(calc(-100% - 41px));
+    transform: translateY(calc(-100% - 10px));
   }
   to {
     transform: translateY(0);
