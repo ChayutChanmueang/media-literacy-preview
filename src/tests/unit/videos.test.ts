@@ -74,7 +74,9 @@ describe("videos.json catalog", () => {
 
   it("keeps current skip flags for unfinished clips", () => {
     expect(isVideoSkipped("topic-1")).toBe(false);
-    expect(isVideoSkipped("topic-6")).toBe(true);
+    expect(isVideoSkipped("topic-2")).toBe(true);
+    expect(isVideoSkipped("topic-6")).toBe(false);
+    expect(isVideoSkipped("topic-5")).toBe(true);
     expect(isVideoSkipped("topic-3")).toBe(false);
   });
 

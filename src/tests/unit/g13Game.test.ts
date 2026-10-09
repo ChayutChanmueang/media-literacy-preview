@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampToRange,
   getBombDropCount,
+  getKeyframeValue,
   getSkyAltitudeProgress,
   getStackTargetY,
   getTowerCameraTarget,
@@ -55,6 +56,14 @@ describe("G13 Canvas remake game rules", () => {
     ).toBe(false);
   });
 
+  it("only catches within the catch depth below the target, not after falling past it", () => {
+    const zone = { objectX: 200, targetX: 200, targetY: 300, catchWidth: 38, catchDepth: 25 };
+    expect(isCaughtAtTarget({ ...zone, objectBottomY: 299 })).toBe(false);
+    expect(isCaughtAtTarget({ ...zone, objectBottomY: 300 })).toBe(true);
+    expect(isCaughtAtTarget({ ...zone, objectBottomY: 325 })).toBe(true);
+    expect(isCaughtAtTarget({ ...zone, objectBottomY: 326 })).toBe(false);
+  });
+
   it("keeps the cone inside canvas world bounds", () => {
     expect(clampToRange(-20, 42, 318)).toBe(42);
     expect(clampToRange(180, 42, 318)).toBe(180);
@@ -84,5 +93,14 @@ describe("G13 Canvas remake game rules", () => {
     expect(getVisibleScoopRange(10, 162, 65)).toEqual({ startIndex: 7, endIndex: 10 });
     // 0 scoops: empty range
     expect(getVisibleScoopRange(0, 162, 65)).toEqual({ startIndex: 0, endIndex: 0 });
+  });
+
+  it("eases the tutorial hand between keyframes", () => {
+    const keys = [[0, 0], [0.5, 10], [1, 10]] as const;
+    expect(getKeyframeValue(0, keys)).toBe(0);
+    expect(getKeyframeValue(0.25, keys)).toBe(5);
+    expect(getKeyframeValue(0.5, keys)).toBe(10);
+    expect(getKeyframeValue(0.75, keys)).toBe(10);
+    expect(getKeyframeValue(2, keys)).toBe(10);
   });
 });

@@ -1,0 +1,34 @@
+{
+  "levels": [
+    {
+      "grid": [
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo"
+      ]
+    },
+    {
+      "grid": [
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo"
+      ]
+    },
+    {
+      "grid": [
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo",
+        "oooooooooo"
+      ]
+    }
+  ]
+}

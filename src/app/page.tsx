@@ -8,6 +8,7 @@ import { loggingService } from "@/services/loggingService";
 import { FLOW_SEQUENCE, firstIncompleteFlowLesson } from "@/lib/flow";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
+import pkg from "../../package.json";
 
 // Figma node 2065:7228 "รู้ทันสื่อ"
 export default function LandingPage() {
@@ -59,7 +60,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+    <div className={`${notoLoopedThai.className} relative flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex min-h-full flex-col items-center justify-center gap-[20px] px-[24px] py-[28px] text-center">
           <Image
@@ -103,6 +104,13 @@ export default function LandingPage() {
       <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
         <Button3D onClick={handleNext}>กดเพื่อเริ่ม</Button3D>
       </div>
+
+      {/* เวอร์ชันแอป + โหมดของ deployment นี้ (APP_MODE: normal / research) มุมซ้ายล่าง ในช่องว่างใต้ปุ่ม
+          ข้อยกเว้นกฎตัวอักษร ≥ 20px (ผู้ใช้ขอ): เป็นข้อมูลให้ทีมเช็กว่าเปิดเว็บไหนอยู่ ไม่ใช่เนื้อหาสำหรับผู้เรียน
+          ขนาดเท่าเลขเวอร์ชันใน drawer ของ AppLayout */}
+      <p className="pointer-events-none absolute bottom-[12px] left-[16px] text-[15px] leading-[20px] text-[#595959]">
+        {pkg.version} ({progressService.getAppMode()})
+      </p>
     </div>
   );
 }

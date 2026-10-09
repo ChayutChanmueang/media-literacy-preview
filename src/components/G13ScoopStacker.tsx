@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { ArrowRight, Clock3, MoveHorizontal, RotateCcw, Trophy } from "lucide-react";
+import GameHudBar, { GameHudItem, HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
+import { ArrowRight, Clock3, GraduationCap, RotateCcw, Trophy } from "lucide-react";
 import {
   clampToRange,
   getBombDropCount,
   getDifficultyProgress,
+  getKeyframeValue,
   getSkyAltitudeProgress,
   getTowerCameraTarget,
   getVisibleScoopRange,
   isCaughtAtTarget,
 } from "@/lib/g13Game";
 import GameIntro from "./GameIntro";
+import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 
 type Props = {
   onFinish: (score: number) => void;
@@ -21,7 +23,7 @@ type Props = {
   learningMode?: "flow" | "manual";
 };
 
-type GamePhase = "tutorial" | "playing" | "summary";
+type GamePhase = "intro" | "playing" | "summary";
 type Flavor = { spriteIndex: number };
 type FallingKind = "scoop" | "bomb" | "double";
 
@@ -35,7 +37,22 @@ type FallingObject = {
   vy: number;
   rotation: number;
   spawnerIndex: 1 | 2;
+  scripted?: boolean; // tutorial drop: not from the seed, never scored
 };
+
+// Hand tutorial played once each time the game is opened, before the timed round:
+// move = drag the cone left and right, catch = a scripted scoop, dodge = a scripted bomb,
+// ready = a short "well done" before the real (seeded) round starts.
+type TutorialStep = "move" | "catch" | "dodge" | "ready";
+type Tutorial = {
+  step: TutorialStep;
+  wait: number; // seconds until the step's drop spawns (or, on "ready", until the round starts)
+  reachedLeft: boolean; // "move": the cone has been dragged to the left side of the screen
+  reachedRight: boolean; // "move": … and to the right side
+  handClock: number; // seconds into the current hand loop
+  dodgeX: number; // where the hand shows to move the cone on "dodge"
+};
+type TutorialBanner = { text: string; tone: "info" | "praise" | "retry" };
 
 type Debris = {
   x: number;
@@ -68,22 +85,34 @@ type GameWorld = {
   ended: boolean;
   dragOffset: number | null;
   dragPointerId: number | null;
+  roundStartedAt: number; // world.elapsed when the timed round began (the tutorial isn't timed)
+  tutorial: Tutorial | null;
 };
 
 const SESSION_TIME_SECONDS = 120;
-// US-CF-14: sprites scaled 1.85× from original values
-const SCOOP_RADIUS = 46;        // was 25
-const SCOOP_STACK_STEP = 65;    // was 35
+// US-CF-14: sprites scaled 1.85× from original values; then × SPRITE_SCALE so about 5 scoops
+// fit across a phone screen. Scoops, bombs (same radius), the cone and the stack spacing all
+// scale together, and the catch reaches / camera heights below follow.
+const SPRITE_SCALE = 0.9;
+const SCOOP_RADIUS = 46 * SPRITE_SCALE;        // was 25, then 46
+const SCOOP_STACK_STEP = 65 * SPRITE_SCALE;    // was 35, then 65
 // SVG มีพื้นที่โปร่งเหนือขอบปากกรวยเล็กน้อย จึงให้ scoop ฐานซ้อนลงบน rim
 // เพื่อให้ภาพที่เห็นและ collision target ตรงกัน ไม่ดูเหมือนลูกแรกลอยอยู่
-const CONE_SCOOP_OVERLAP = 17;  // was 9
-const CONE_WIDTH = 141;          // was 76
-const CONE_HEIGHT = 174;         // was 94
+const CONE_SCOOP_OVERLAP = 17 * SPRITE_SCALE;  // was 9, then 17
+const CONE_WIDTH = 141 * SPRITE_SCALE;         // was 76, then 141
+const CONE_HEIGHT = 174 * SPRITE_SCALE;        // was 94, then 174
+// Falling objects are also capped to this share of the screen width (narrow screens)
+const FALLING_RADIUS_WIDTH_RATIO = 0.12 * SPRITE_SCALE;
 const CONE_ASSET_PATH = "/assets/g13-waffle-cone.svg";
+// Horizontal reach (from the cone's centre) within which a falling object lands on the tower
+const SCOOP_CATCH_REACH = SCOOP_RADIUS * 1.55;
+const BOMB_HIT_REACH = CONE_WIDTH * 0.62;
+// With no scoop yet, a drop counts while its bottom is within this far below the cone's rim
+const EMPTY_CONE_CATCH_DEPTH = SCOOP_RADIUS * 0.5;
 
 // US-CF-17: Visible ice cream height cap in pixels (excluding cone)
-const MAX_VISIBLE_STACK_PX = 162; // 2.5 scoops height (used for camera tracking)
-const RENDER_STACK_LIMIT_PX = 260; // 4 scoops height (used for rendering safely off screen)
+const MAX_VISIBLE_STACK_PX = 162 * SPRITE_SCALE; // 2.5 scoops height (used for camera tracking)
+const RENDER_STACK_LIMIT_PX = 260 * SPRITE_SCALE; // 4 scoops height (used for rendering safely off screen)
 
 // US-CF-15 & US-CF-18: progressive difficulty driven by current score (stack height)
 /** Score at which difficulty reaches its cap */
@@ -105,6 +134,82 @@ const DOUBLE_SCOOP_CHANCE = 0.07;
 const SCOOP_SPRITE_COUNT = 10;
 const FLAVORS: Flavor[] = Array.from({ length: SCOOP_SPRITE_COUNT }, (_, i) => ({ spriteIndex: i }));
 
+// Spawns are seeded by today's date (Bangkok time), like G19, so every player gets the same
+// drops that day. One stream per spawner, and every spawn reads a fixed bundle of numbers
+// (SpawnRolls) whatever it turns into — so the n-th drop of a spawner always gets the same
+// rolls, even if a player's score (bomb chance) or a bomb already falling changes the outcome.
+// Spawner 2's random wait between drops has its own stream for the same reason.
+type SpawnRngs = { spawner1: Rng; spawner2: Rng; spawner2Delay: Rng };
+const makeSpawnRngs = (seed: string): SpawnRngs => ({
+  spawner1: seededStream("G13", seed, "spawner-1"),
+  spawner2: seededStream("G13", seed, "spawner-2"),
+  spawner2Delay: seededStream("G13", seed, "spawner-2-delay"),
+});
+
+const X_ATTEMPTS = 9; // first try + 8 retries to avoid landing on top of another falling object
+type SpawnRolls = { kind: number; double: number; flavor1: number; flavor2: number; rotation: number; xs: number[] };
+const drawSpawnRolls = (rng: Rng): SpawnRolls => ({
+  kind: rng(),
+  double: rng(),
+  flavor1: rng(),
+  flavor2: rng(),
+  rotation: rng(),
+  xs: Array.from({ length: X_ATTEMPTS }, () => rng()),
+});
+
+// Tutorial pacing — slow and forgiving (elderly-first, no pressure)
+// "move" passes once the cone has been to both sides: within this share of its travel range from each end
+const TUTORIAL_SIDE_ZONE = 0.15;
+const TUTORIAL_FALL_SPEED = 0.55; // scripted drops fall at this share of the normal starting speed
+const TUTORIAL_PRAISE_S = 1.6; // "เก่งมาก!" stays up before the next step's drop
+const TUTORIAL_RETRY_S = 1.6; // gentle "try again" before a missed drop comes again
+const TUTORIAL_READY_S = 2.2; // "start the real game" message before the timer starts
+const TUTORIAL_SCOOP_FLAVOR = 2;
+// The hand hides once the cone is already in place: well under the scoop / clear of the bomb
+const HAND_CATCH_CLOSE_PX = SCOOP_CATCH_REACH * 0.6;
+const HAND_DODGE_CLEAR_PX = BOMB_HIT_REACH + 12;
+const HAND_MOVE_LOOP_S = 3.6; // press in the middle, swipe to the left side, to the right side, back, lift
+const HAND_SLIDE_LOOP_S = 2.8; // press, slide to the target, lift, glide back to the cone
+// [loop progress, value] tracks for the hand: x offset (× distance), opacity, pressed (1 = down).
+// It stays on screen the whole loop (fades in only when it first appears), so the player always
+// sees what to do until the cone is in place.
+// "move" track: -1 = left side, 0 = middle, 1 = right side of the screen (not tied to the cone)
+const HAND_MOVE_X = [[0, 0], [0.12, 0], [0.38, -1], [0.46, -1], [0.74, 1], [0.82, 1], [0.95, 0], [1, 0]] as const;
+const HAND_MOVE_PRESSED: [number, number] = [0.08, 0.92];
+const HAND_SLIDE_X = [[0, 0], [0.22, 0], [0.56, 1], [0.68, 1], [0.92, 0], [1, 0]] as const;
+const HAND_FADE_IN_S = 0.3;
+const HAND_SLIDE_PRESSED: [number, number] = [0.14, 0.62];
+// Guide arrow drawn behind the cone along the hand's path, pointing where the hand goes.
+// One outlined shape (shaft + heads), a bit see-through so the hand stays the main cue.
+const GUIDE_SHAFT_HALF_WIDTH = 5;
+const GUIDE_HEAD_LENGTH = 26;
+const GUIDE_HEAD_HALF_WIDTH = 17;
+const GUIDE_OUTLINE_WIDTH = 3; // white rim, keeps the arrow readable over the sky
+const GUIDE_FILL_TOP = "#FCD34D";
+const GUIDE_FILL_BOTTOM = "#F59E0B";
+const GUIDE_OPACITY = 0.7;
+
+const TUTORIAL_TEXT = {
+  move: "แตะกรวยค้างไว้ แล้วลากไปให้สุดทางซ้าย และสุดทางขวา",
+  moveRight: "ดีมาก! ต่อไปลากไปให้สุดทางขวา",
+  moveLeft: "ดีมาก! ต่อไปลากไปให้สุดทางซ้าย",
+  catch: "ลากกรวยไปรับไอติมที่ตกลงมา",
+  catchRetry: "ไม่เป็นไร ลองรับใหม่อีกครั้งนะ",
+  dodge: "ระวังระเบิด 💣 ลากกรวยหลบออกไป",
+  dodgeRetry: "ไม่เป็นไร ลองหลบใหม่อีกครั้งนะ",
+  praise: "เก่งมาก!",
+  ready: "เก่งมาก! เริ่มเกมจริงกันเลย",
+};
+
+const createTutorial = (): Tutorial => ({
+  step: "move",
+  wait: 0,
+  reachedLeft: false,
+  reachedRight: false,
+  handClock: 0,
+  dodgeX: 0,
+});
+
 const createWorld = (): GameWorld => ({
   width: 1,
   height: 1,
@@ -125,12 +230,133 @@ const createWorld = (): GameWorld => ({
   ended: false,
   dragOffset: null,
   dragPointerId: null,
+  roundStartedAt: 0,
+  tutorial: null,
 });
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${String(secs).padStart(2, "0")}`;
+};
+
+// Where the tutorial hand is this frame, and the path its guide arrow covers
+type HandPose = {
+  x: number;
+  y: number;
+  pressed: boolean;
+  opacity: number;
+  pathFrom: number;
+  pathTo: number;
+  bothWays: boolean; // "move" swipes back and forth, so its arrow points both ways
+};
+
+const getTutorialHandPose = (world: GameWorld, coneX: number, coneTop: number): HandPose | null => {
+  const tutorial = world.tutorial;
+  if (!tutorial) return null;
+  const scripted = world.falling.find((item) => item.scripted);
+  if (tutorial.step !== "move" && !scripted) return null;
+  // keeps looping (also while dragging) until the cone is in place, then hides — a slide that
+  // short would only be in the way; it comes back if the cone is moved off again
+  if (tutorial.step === "catch" && scripted && Math.abs(coneX - scripted.x) <= HAND_CATCH_CLOSE_PX) return null;
+  if (tutorial.step === "dodge" && scripted && Math.abs(coneX - scripted.x) >= HAND_DODGE_CLEAR_PX) return null;
+
+  const opacity = clampToRange(tutorial.handClock / HAND_FADE_IN_S, 0, 1);
+  const y = coneTop + CONE_HEIGHT * 0.36; // on the cone's body, below the scoops
+  if (tutorial.step === "move") {
+    // a plain left–right swipe across the screen, the full distance the cone can travel
+    const t = (tutorial.handClock % HAND_MOVE_LOOP_S) / HAND_MOVE_LOOP_S;
+    const middle = world.width / 2;
+    const reach = Math.max(0, middle - (CONE_WIDTH / 2 + 4));
+    return {
+      x: middle + getKeyframeValue(t, HAND_MOVE_X) * reach,
+      y,
+      pressed: t >= HAND_MOVE_PRESSED[0] && t <= HAND_MOVE_PRESSED[1],
+      opacity,
+      pathFrom: middle - reach,
+      pathTo: middle + reach,
+      bothWays: true,
+    };
+  }
+  const t = (tutorial.handClock % HAND_SLIDE_LOOP_S) / HAND_SLIDE_LOOP_S;
+  const targetX = tutorial.step === "catch" && scripted ? scripted.x : tutorial.dodgeX;
+  return {
+    x: coneX + (targetX - coneX) * getKeyframeValue(t, HAND_SLIDE_X),
+    y,
+    pressed: t >= HAND_SLIDE_PRESSED[0] && t <= HAND_SLIDE_PRESSED[1],
+    opacity,
+    pathFrom: coneX,
+    pathTo: targetX,
+    bothWays: false,
+  };
+};
+
+// Closed polygon with rounded corners: [x, y, corner radius] per corner
+type Corner = [number, number, number];
+const traceRoundedPolygon = (context: CanvasRenderingContext2D, corners: Corner[]) => {
+  const first = corners[0];
+  const last = corners[corners.length - 1];
+  context.beginPath();
+  context.moveTo((last[0] + first[0]) / 2, (last[1] + first[1]) / 2);
+  corners.forEach(([x, y, radius], index) => {
+    const next = corners[(index + 1) % corners.length];
+    context.arcTo(x, y, next[0], next[1], radius);
+  });
+  context.closePath();
+};
+
+// The guide arrow is one outlined shape: shaft and head(s) traced as a single path. It's drawn
+// opaque on a buffer canvas first, then copied see-through — drawing the rim and fill straight
+// onto the scene with transparency would show the rim through the fill.
+const drawGuideArrow = (
+  context: CanvasRenderingContext2D,
+  buffer: HTMLCanvasElement,
+  world: GameWorld,
+  pose: HandPose
+) => {
+  const { pathFrom, pathTo, bothWays } = pose;
+  const length = Math.abs(pathTo - pathFrom);
+  if (length < GUIDE_HEAD_LENGTH * (bothWays ? 2.5 : 1.5)) return;
+  const bufferContext = buffer.getContext("2d");
+  if (!bufferContext) return;
+
+  const bandHeight = (GUIDE_HEAD_HALF_WIDTH + GUIDE_OUTLINE_WIDTH + 2) * 2;
+  const pixelWidth = Math.ceil(world.width * world.dpr);
+  const pixelHeight = Math.ceil(bandHeight * world.dpr);
+  if (buffer.width !== pixelWidth || buffer.height !== pixelHeight) {
+    buffer.width = pixelWidth;
+    buffer.height = pixelHeight;
+  }
+  bufferContext.setTransform(world.dpr, 0, 0, world.dpr, 0, 0);
+  bufferContext.clearRect(0, 0, world.width, bandHeight);
+
+  // corners laid out along the path (0 = start, length = tip), offset above/below its centre line
+  const mid = bandHeight / 2;
+  const direction = Math.sign(pathTo - pathFrom);
+  const at = (along: number, offset: number, radius: number): Corner => [pathFrom + direction * along, mid + offset, radius];
+  const s = GUIDE_SHAFT_HALF_WIDTH;
+  const h = GUIDE_HEAD_HALF_WIDTH;
+  const neck = length - GUIDE_HEAD_LENGTH;
+  const tipHead = [at(neck, -s, 3), at(neck, -h, 4), at(length, 0, 3), at(neck, h, 4), at(neck, s, 3)];
+  const corners: Corner[] = bothWays
+    ? [at(0, 0, 3), at(GUIDE_HEAD_LENGTH, -h, 4), at(GUIDE_HEAD_LENGTH, -s, 3), ...tipHead, at(GUIDE_HEAD_LENGTH, s, 3), at(GUIDE_HEAD_LENGTH, h, 4)]
+    : [at(0, -s, s), ...tipHead, at(0, s, s)]; // one-way: round tail at the cone
+
+  traceRoundedPolygon(bufferContext, corners);
+  bufferContext.lineJoin = "round";
+  bufferContext.lineWidth = GUIDE_OUTLINE_WIDTH * 2; // the fill covers the inner half
+  bufferContext.strokeStyle = "#FFFFFF";
+  bufferContext.stroke();
+  const fill = bufferContext.createLinearGradient(0, mid - h, 0, mid + h);
+  fill.addColorStop(0, GUIDE_FILL_TOP);
+  fill.addColorStop(1, GUIDE_FILL_BOTTOM);
+  bufferContext.fillStyle = fill;
+  bufferContext.fill();
+
+  context.save();
+  context.globalAlpha = pose.opacity * GUIDE_OPACITY;
+  context.drawImage(buffer, 0, pose.y - mid, world.width, bandHeight);
+  context.restore();
 };
 
 const getTowerGeometry = (world: GameWorld, reduceMotion: boolean) => {
@@ -141,7 +367,7 @@ const getTowerGeometry = (world: GameWorld, reduceMotion: boolean) => {
   const wobble = world.stack.length < 4 ? 0 : Math.sin(world.elapsed * speed) * amplitude;
   const x = world.coneX * world.width;
 
-  // US-CF-17: Cap visible ice cream height above cone to MAX_VISIBLE_STACK_PX (162px)
+  // US-CF-17: Cap visible ice cream height above cone to MAX_VISIBLE_STACK_PX
   const unclippedHeight =
     world.stack.length > 0 ? SCOOP_RADIUS + (world.stack.length - 1) * SCOOP_STACK_STEP : 0;
   const visibleHeight = Math.min(unclippedHeight, MAX_VISIBLE_STACK_PX);
@@ -154,7 +380,7 @@ const getTowerGeometry = (world: GameWorld, reduceMotion: boolean) => {
 };
 
 export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "flow" }: Props) {
-  const [phase, setPhase] = useState<GamePhase>("tutorial");
+  const [phase, setPhase] = useState<GamePhase>("intro");
   const [timeLeft, setTimeLeft] = useState(SESSION_TIME_SECONDS);
   const [height, setHeight] = useState(0);
   const [bestHeight, setBestHeight] = useState(0);
@@ -164,9 +390,15 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   const worldRef = useRef<GameWorld>(createWorld());
   const coneImageRef = useRef<HTMLImageElement | null>(null);
   const scoopImagesRef = useRef<HTMLImageElement[]>([]);
+  const guideBufferRef = useRef<HTMLCanvasElement | null>(null); // offscreen canvas for the tutorial's guide arrow
   const logRef = useRef(logEvent);
   const phaseRef = useRef<GamePhase>(phase);
   const reduceMotionRef = useRef(false);
+  const spawnRngsRef = useRef<SpawnRngs>(makeSpawnRngs(""));
+  // the hand tutorial plays on the first start each time the game is opened (not on "เล่นอีกรอบ")
+  const tutorialPendingRef = useRef(true);
+  const [tutorialBanner, setTutorialBanner] = useState<TutorialBanner | null>(null);
+  const [inTutorial, setInTutorial] = useState(false);
 
   useEffect(() => {
     logRef.current = logEvent;
@@ -206,20 +438,20 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
 
   const spawnObject = useCallback((spawnerIndex: 1 | 2) => {
     const world = worldRef.current;
-    // US-CF-14: cap ratio scaled 1.85× (0.065 → 0.120) to match SCOOP_RADIUS
-    const radius = Math.min(SCOOP_RADIUS, world.width * 0.120);
+    const radius = Math.min(SCOOP_RADIUS, world.width * FALLING_RADIUS_WIDTH_RATIO);
     const margin = radius + 8;
     // US-CF-15: bomb chance ramps from BOMB_CHANCE_BASE → BOMB_CHANCE_MAX with score
     const progress = getDifficultyProgress(world.stack.length, DIFFICULTY_SCORE_CAP);
     const bombChance = BOMB_CHANCE_BASE + (BOMB_CHANCE_MAX - BOMB_CHANCE_BASE) * progress;
-    let kind: FallingKind = Math.random() < bombChance ? "bomb" : "scoop";
+    const rolls = drawSpawnRolls(spawnerIndex === 1 ? spawnRngsRef.current.spawner1 : spawnRngsRef.current.spawner2);
+    let kind: FallingKind = rolls.kind < bombChance ? "bomb" : "scoop";
 
     // Ensure there is never more than 1 bomb falling at the same time
     if (kind === "bomb" && world.falling.some((item) => item.kind === "bomb")) {
       kind = "scoop";
     }
 
-    if (kind === "scoop" && Math.random() < DOUBLE_SCOOP_CHANCE) {
+    if (kind === "scoop" && rolls.double < DOUBLE_SCOOP_CHANCE) {
       kind = "double";
     }
 
@@ -228,21 +460,22 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     const maxMult = spawnerIndex === 1 ? FALL_SPEED_MAX_MULTIPLIER : FALL_SPEED_2ND_MAX_MULTIPLIER;
     const vy = baseVy * (1 + (maxMult - 1) * progress);
 
-    let x = margin + Math.random() * Math.max(1, world.width - margin * 2);
-    for (let attempt = 0; attempt < 8; attempt += 1) {
+    // x as a fraction of the play width, so phones of different widths get the same relative spot
+    const xAt = (roll: number) => margin + roll * Math.max(1, world.width - margin * 2);
+    let x = xAt(rolls.xs[0]);
+    for (let attempt = 1; attempt < X_ATTEMPTS; attempt += 1) {
       const isOverlapping = world.falling.some((item) => Math.abs(item.x - x) < radius * 2.8);
       if (!isOverlapping) break;
-      x = margin + Math.random() * Math.max(1, world.width - margin * 2);
+      x = xAt(rolls.xs[attempt]);
     }
 
-    const flavor1 = kind === "scoop" || kind === "double" ? FLAVORS[Math.floor(Math.random() * FLAVORS.length)] : undefined;
-    let flavor2: Flavor | undefined;
-    if (kind === "double") {
-      flavor2 = FLAVORS[Math.floor(Math.random() * FLAVORS.length)];
-      while (flavor2 === flavor1 && FLAVORS.length > 1) {
-        flavor2 = FLAVORS[Math.floor(Math.random() * FLAVORS.length)];
-      }
-    }
+    const flavorIndex1 = Math.floor(rolls.flavor1 * FLAVORS.length);
+    const flavor1 = kind === "scoop" || kind === "double" ? FLAVORS[flavorIndex1] : undefined;
+    // second flavour: any flavour except the first, picked with one roll (no retry loop)
+    const flavor2 =
+      kind === "double"
+        ? FLAVORS[(flavorIndex1 + 1 + Math.floor(rolls.flavor2 * (FLAVORS.length - 1))) % FLAVORS.length]
+        : undefined;
 
     world.falling.push({
       kind,
@@ -252,7 +485,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       y: -radius - 6,
       radius,
       vy,
-      rotation: Math.random() * Math.PI * 2,
+      rotation: rolls.rotation * Math.PI * 2,
       spawnerIndex,
     });
   }, []);
@@ -348,10 +581,173 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         world.spawnDelay1 = (falling.kind === "bomb" ? 0.55 : 0.32) * delayMultiplier;
       } else {
         const delayMultiplier2 = 1 - (1 - SPAWN_DELAY_2ND_MIN_MULTIPLIER) * progress;
-        world.spawnDelay2 = ((falling.kind === "bomb" ? 0.65 : 0.45) + Math.random() * 0.4) * delayMultiplier2;
+        world.spawnDelay2 = ((falling.kind === "bomb" ? 0.65 : 0.45) + spawnRngsRef.current.spawner2Delay() * 0.4) * delayMultiplier2;
       }
     },
     [removeTopScoops]
+  );
+
+  // Starts the timed round: seeded drops from here on (after the tutorial, or straight away on a replay)
+  const beginRound = useCallback(() => {
+    const world = worldRef.current;
+    // same date = same drops, also on "เล่นอีกรอบ" (fixed at round start, even if played past midnight)
+    const seed = todaySeed();
+    spawnRngsRef.current = makeSpawnRngs(seed);
+    world.roundStartedAt = world.elapsed;
+    world.lastSecond = SESSION_TIME_SECONDS;
+    world.spawnDelay1 = 0.45;
+    setTimeLeft(SESSION_TIME_SECONDS);
+    logRef.current("game_start", {
+      game_id: "g13",
+      renderer: "canvas",
+      session_duration_seconds: SESSION_TIME_SECONDS,
+      seed,
+    });
+  }, []);
+
+  const endTutorial = useCallback(
+    (skipped = false) => {
+      const world = worldRef.current;
+      if (!world.tutorial) return;
+      world.tutorial = null;
+      world.falling = [];
+      // the practice scoop pops off the cone — the real round starts from zero
+      removeTopScoops(world.stack.length);
+      tutorialPendingRef.current = false;
+      setInTutorial(false);
+      setTutorialBanner(null);
+      logRef.current("tutorial_done", { game_id: "g13", skipped });
+      beginRound();
+    },
+    [beginRound, removeTopScoops]
+  );
+
+  // Moves the tutorial to its next step, with a short "เก่งมาก!" first
+  const advanceTutorial = useCallback((completed: TutorialStep, next: TutorialStep) => {
+    const tutorial = worldRef.current.tutorial;
+    if (!tutorial) return;
+    logRef.current("tutorial_step_done", { game_id: "g13", step: completed });
+    tutorial.step = next;
+    tutorial.wait = next === "ready" ? TUTORIAL_READY_S : TUTORIAL_PRAISE_S;
+    setTutorialBanner({ text: next === "ready" ? TUTORIAL_TEXT.ready : TUTORIAL_TEXT.praise, tone: "praise" });
+  }, []);
+
+  // Scripted drops — fixed, not from the seed: the scoop falls on the far side from the cone,
+  // the bomb falls straight onto the cone so the player has to move away
+  const spawnTutorialObject = useCallback((step: "catch" | "dodge") => {
+    const world = worldRef.current;
+    const tutorial = world.tutorial;
+    if (!tutorial) return;
+    const radius = Math.min(SCOOP_RADIUS, world.width * FALLING_RADIUS_WIDTH_RATIO);
+    const coneX = world.coneX * world.width;
+    const halfCone = CONE_WIDTH / 2 + 4;
+    const reachable = (x: number) => clampToRange(x, halfCone, Math.max(halfCone, world.width - halfCone));
+    const onLeft = world.coneX < 0.5;
+    const vy = Math.max(145, world.height * 0.245) * TUTORIAL_FALL_SPEED;
+
+    if (step === "catch") {
+      world.falling.push({
+        kind: "scoop",
+        flavor: FLAVORS[TUTORIAL_SCOOP_FLAVOR],
+        x: reachable(world.width * (onLeft ? 0.75 : 0.25)),
+        y: -radius - 6,
+        radius,
+        vy,
+        rotation: 0,
+        spawnerIndex: 1,
+        scripted: true,
+      });
+    } else {
+      // a bomb hit knocked the practice scoop off — put a fresh one on so the next try looks the same
+      if (world.stack.length === 0) {
+        world.stack.push(FLAVORS[TUTORIAL_SCOOP_FLAVOR]);
+        setHeight(world.stack.length);
+      }
+      tutorial.dodgeX = reachable(world.width * (onLeft ? 0.8 : 0.2));
+      world.falling.push({
+        kind: "bomb",
+        x: clampToRange(coneX, radius + 8, Math.max(radius + 8, world.width - radius - 8)),
+        y: -radius - 6,
+        radius,
+        vy,
+        rotation: 0,
+        spawnerIndex: 1,
+        scripted: true,
+      });
+    }
+    tutorial.handClock = 0;
+    setTutorialBanner({ text: step === "catch" ? TUTORIAL_TEXT.catch : TUTORIAL_TEXT.dodge, tone: "info" });
+  }, []);
+
+  const resolveTutorialObject = useCallback(
+    (falling: FallingObject, caught: boolean) => {
+      const world = worldRef.current;
+      const tutorial = world.tutorial;
+      world.falling = world.falling.filter((item) => item !== falling);
+      if (!tutorial) return;
+
+      if (falling.kind === "bomb") {
+        logRef.current(caught ? "tutorial_bomb_hit" : "tutorial_bomb_dodge", { game_id: "g13" });
+        if (!caught) {
+          advanceTutorial("dodge", "ready");
+          return;
+        }
+        // same as the real game, so the player sees what a bomb does
+        removeTopScoops(2);
+        world.flash = 0.42;
+        world.flashColor = "rgba(249,115,22,";
+        tutorial.wait = TUTORIAL_RETRY_S;
+        setTutorialBanner({ text: TUTORIAL_TEXT.dodgeRetry, tone: "retry" });
+        return;
+      }
+
+      logRef.current(caught ? "tutorial_scoop_catch" : "tutorial_scoop_miss", { game_id: "g13" });
+      if (caught) {
+        world.stack.push(falling.flavor ?? FLAVORS[0]);
+        setHeight(world.stack.length);
+        advanceTutorial("catch", "dodge");
+        return;
+      }
+      tutorial.wait = TUTORIAL_RETRY_S;
+      setTutorialBanner({ text: TUTORIAL_TEXT.catchRetry, tone: "retry" });
+    },
+    [advanceTutorial, removeTopScoops]
+  );
+
+  const updateTutorial = useCallback(
+    (delta: number) => {
+      const world = worldRef.current;
+      const tutorial = world.tutorial;
+      if (!tutorial) return;
+      tutorial.handClock += delta;
+
+      if (tutorial.step === "move") {
+        // where the cone is within the range it can move (0 = as far left as it goes, 1 = as far right)
+        const halfCone = CONE_WIDTH / 2 + 4;
+        const range = world.width - halfCone * 2;
+        const along = range > 0 ? (world.coneX * world.width - halfCone) / range : 0.5;
+        const wasLeft = tutorial.reachedLeft;
+        const wasRight = tutorial.reachedRight;
+        if (along <= TUTORIAL_SIDE_ZONE) tutorial.reachedLeft = true;
+        if (along >= 1 - TUTORIAL_SIDE_ZONE) tutorial.reachedRight = true;
+        if (tutorial.reachedLeft && tutorial.reachedRight) {
+          advanceTutorial("move", "catch");
+        } else if (tutorial.reachedLeft !== wasLeft || tutorial.reachedRight !== wasRight) {
+          logRef.current("tutorial_side_reached", { game_id: "g13", side: tutorial.reachedLeft ? "left" : "right" });
+          setTutorialBanner({ text: tutorial.reachedLeft ? TUTORIAL_TEXT.moveRight : TUTORIAL_TEXT.moveLeft, tone: "info" });
+        }
+        return;
+      }
+      if (tutorial.step === "ready") {
+        tutorial.wait -= delta;
+        if (tutorial.wait <= 0) endTutorial();
+        return;
+      }
+      if (world.falling.length > 0) return;
+      tutorial.wait -= delta;
+      if (tutorial.wait <= 0) spawnTutorialObject(tutorial.step);
+    },
+    [advanceTutorial, endTutorial, spawnTutorialObject]
   );
 
   const drawScoop = useCallback(
@@ -487,6 +883,34 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     context.restore();
   }, []);
 
+  // 👆 hand of the tutorial, like G19's guide: the fingertip presses the cone (amber ring), slides,
+  // then lifts. Drawn on the canvas so it follows the cone without syncing positions to the DOM.
+  // (its guide arrow is drawn separately, behind the cone)
+  const drawTutorialHand = useCallback((context: CanvasRenderingContext2D, { x, y, pressed, opacity }: HandPose) => {
+    context.save();
+    context.globalAlpha = opacity;
+    if (pressed) {
+      context.beginPath();
+      context.arc(x, y, 22, 0, Math.PI * 2);
+      context.fillStyle = "rgba(253,230,138,0.55)";
+      context.fill();
+      context.lineWidth = 4;
+      context.strokeStyle = "#F59E0B";
+      context.stroke();
+    }
+    // released = lifted up and a bit bigger; pressed = down on the cone and a bit smaller
+    const size = pressed ? 54 : 60;
+    const lift = pressed ? 0 : 12;
+    context.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    context.textAlign = "left";
+    context.textBaseline = "top";
+    context.shadowColor = "rgba(0,0,0,0.35)";
+    context.shadowBlur = 6;
+    context.shadowOffsetY = 3;
+    context.fillText("👆", x - size * 0.38, y + lift - size * 0.04); // fingertip sits on (x, y)
+    context.restore();
+  }, []);
+
   const drawScene = useCallback(
     (context: CanvasRenderingContext2D) => {
       const world = worldRef.current;
@@ -537,6 +961,11 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       context.rect(0, 0, world.width, world.height);
       context.clip();
 
+      const handPose = getTutorialHandPose(world, geometry.x, geometry.coneTop);
+      if (handPose) {
+        guideBufferRef.current ??= document.createElement("canvas");
+        drawGuideArrow(context, guideBufferRef.current, world, handPose);
+      }
       drawCone(context, geometry.x, geometry.coneTop, geometry.wobble);
 
       // US-CF-17: Only render the visible slice of scoops sitting within RENDER_STACK_LIMIT_PX
@@ -582,6 +1011,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       world.debris.forEach((piece) => {
         drawScoop(context, piece.x, piece.y, piece.radius, piece.flavor, piece.rotation);
       });
+      if (handPose) drawTutorialHand(context, handPose);
       context.restore();
 
       if (world.flash > 0) {
@@ -590,7 +1020,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         context.fillRect(0, 0, world.width, world.height);
       }
     },
-    [drawBomb, drawCone, drawDoubleScoop, drawScoop]
+    [drawBomb, drawCone, drawDoubleScoop, drawScoop, drawTutorialHand]
   );
 
   const updateWorld = useCallback(
@@ -609,7 +1039,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           ? naturalConeTop + CONE_SCOOP_OVERLAP - unclippedHeight
           : naturalConeTop + CONE_SCOOP_OVERLAP;
 
-      // Target the top of the tower to be 162px (MAX_VISIBLE_STACK_PX) from the bottom of the screen
+      // Target the top of the tower to be MAX_VISIBLE_STACK_PX from the bottom of the screen
       const targetScreenY = world.height - MAX_VISIBLE_STACK_PX;
       const cameraTarget = getTowerCameraTarget(world.height, naturalTopY, targetScreenY / world.height);
       const cameraEase = 1 - Math.exp(-5.5 * delta);
@@ -618,14 +1048,18 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         world.cameraOffset = cameraTarget;
       }
 
-      const secondsRemaining = Math.max(0, Math.ceil(SESSION_TIME_SECONDS - world.elapsed));
-      if (secondsRemaining !== world.lastSecond) {
-        world.lastSecond = secondsRemaining;
-        setTimeLeft(secondsRemaining);
-      }
-      if (world.elapsed >= SESSION_TIME_SECONDS) {
-        finishGame();
-        return;
+      // the clock only runs in the round, not during the tutorial
+      if (!world.tutorial) {
+        const roundElapsed = world.elapsed - world.roundStartedAt;
+        const secondsRemaining = Math.max(0, Math.ceil(SESSION_TIME_SECONDS - roundElapsed));
+        if (secondsRemaining !== world.lastSecond) {
+          world.lastSecond = secondsRemaining;
+          setTimeLeft(secondsRemaining);
+        }
+        if (roundElapsed >= SESSION_TIME_SECONDS) {
+          finishGame();
+          return;
+        }
       }
 
       world.debris.forEach((piece) => {
@@ -638,22 +1072,26 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         (piece) => piece.y - piece.radius < world.height + 50 && piece.x + piece.radius > -50 && piece.x - piece.radius < world.width + 50
       );
 
-      const hasSpawner1 = world.falling.some((item) => item.spawnerIndex === 1);
-      if (!hasSpawner1) {
-        world.spawnDelay1 -= delta;
-        if (world.spawnDelay1 <= 0) spawnObject(1);
-      }
+      if (world.tutorial) {
+        updateTutorial(delta);
+      } else {
+        const hasSpawner1 = world.falling.some((item) => item.spawnerIndex === 1);
+        if (!hasSpawner1) {
+          world.spawnDelay1 -= delta;
+          if (world.spawnDelay1 <= 0) spawnObject(1);
+        }
 
-      if (world.stack.length >= 10 && !world.secondSpawnerActive) {
-        world.secondSpawnerActive = true;
-        world.spawnDelay2 = 0.3 + Math.random() * 0.5;
-      }
+        if (world.stack.length >= 10 && !world.secondSpawnerActive) {
+          world.secondSpawnerActive = true;
+          world.spawnDelay2 = 0.3 + spawnRngsRef.current.spawner2Delay() * 0.5;
+        }
 
-      if (world.secondSpawnerActive) {
-        const hasSpawner2 = world.falling.some((item) => item.spawnerIndex === 2);
-        if (!hasSpawner2) {
-          world.spawnDelay2 -= delta;
-          if (world.spawnDelay2 <= 0) spawnObject(2);
+        if (world.secondSpawnerActive) {
+          const hasSpawner2 = world.falling.some((item) => item.spawnerIndex === 2);
+          if (!hasSpawner2) {
+            world.spawnDelay2 -= delta;
+            if (world.spawnDelay2 <= 0) spawnObject(2);
+          }
         }
       }
 
@@ -662,25 +1100,30 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         falling.rotation += (falling.kind === "bomb" ? 2.2 : 0.65) * delta;
 
         const geometry = getTowerGeometry(world, reduceMotionRef.current);
-        const targetY = world.stack.length ? geometry.topCenterY : geometry.coneTop;
-        const catchWidth = falling.kind === "bomb" ? CONE_WIDTH * 0.62 : SCOOP_RADIUS * 1.55;
+        const catchWidth = falling.kind === "bomb" ? BOMB_HIT_REACH : SCOOP_CATCH_REACH;
+        // Only the upper half of the top scoop catches (or the cone's rim when it's empty):
+        // a drop that has already fallen past it, beside the tower, can't be scooped up from the
+        // side by sliding the cone under it
+        const hasStack = world.stack.length > 0;
         const caught = isCaughtAtTarget({
           objectX: falling.x,
           objectBottomY: falling.y + falling.radius,
           targetX: geometry.x + geometry.wobble,
-          targetY,
+          targetY: hasStack ? geometry.topCenterY - SCOOP_RADIUS : geometry.coneTop,
           catchWidth,
-          verticalTolerance: world.stack.length ? SCOOP_RADIUS * 0.42 : 2,
+          verticalTolerance: hasStack ? 0 : 2,
+          catchDepth: hasStack ? SCOOP_RADIUS : EMPTY_CONE_CATCH_DEPTH,
         });
 
+        const resolve = falling.scripted ? resolveTutorialObject : resolveFallingObject;
         if (caught) {
-          resolveFallingObject(falling, true);
+          resolve(falling, true);
         } else if (falling.y - falling.radius > world.height) {
-          resolveFallingObject(falling, false);
+          resolve(falling, false);
         }
       });
     },
-    [finishGame, resolveFallingObject, spawnObject]
+    [finishGame, resolveFallingObject, resolveTutorialObject, spawnObject, updateTutorial]
   );
 
   useEffect(() => {
@@ -776,11 +1219,14 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     setHeight(0);
     setTimeLeft(SESSION_TIME_SECONDS);
     setPhase("playing");
-    logRef.current("game_start", {
-      game_id: "g13",
-      renderer: "canvas",
-      session_duration_seconds: SESSION_TIME_SECONDS,
-    });
+    if (tutorialPendingRef.current) {
+      worldRef.current.tutorial = createTutorial();
+      setInTutorial(true);
+      setTutorialBanner({ text: TUTORIAL_TEXT.move, tone: "info" });
+      logRef.current("tutorial_start", { game_id: "g13" });
+    } else {
+      beginRound();
+    }
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -837,34 +1283,46 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-amber-50 font-sans select-none">
-      {phase === "tutorial" && (
+      {phase === "intro" && (
         <GameIntro
           title="ต่อไอติมฝึกสมอง"
           objective="เกมฝึกสมองแสนสนุก! ลากกรวยไอติมเพื่อรับลูกไอติมให้ได้สูงที่สุดและหลบลูกระเบิดภายในเวลาที่กำหนด!"
           onStart={startGame}
           containerClassName="bg-gradient-to-b from-sky-100 to-orange-100"
-          mediaSlot={
-            <div className="w-28 h-32 rounded-3xl bg-white/65 shadow-md flex items-center justify-center">
-              <Image
-                src={CONE_ASSET_PATH}
-                alt="กรวยไอติมลายวาฟเฟิล"
-                width={80}
-                height={112}
-                priority
-                className="w-20 h-28 object-contain"
-              />
-            </div>
-          }
+          imageSrc="/assets/icons/g13-ice-cream.jpg"
         />
       )}
 
       {phase === "playing" && (
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="shrink-0 min-h-12 px-4 py-2 flex items-center justify-between bg-white border-b border-amber-200 text-[clamp(17px,4.35vw,20px)] font-bold">
-            <span className="flex items-center gap-2 text-slate-700">
-              <Clock3 size={21} aria-hidden="true" /> {formatTime(timeLeft)}
-            </span>
-            {process.env.NODE_ENV === "development" && (
+          <GameHudBar
+            left={
+              inTutorial ? (
+                <GameHudItem icon={GraduationCap} tone="tutorial">
+                  ฝึกเล่น
+                </GameHudItem>
+              ) : (
+                <GameHudItem icon={Clock3}>{formatTime(timeLeft)}</GameHudItem>
+              )
+            }
+            right={
+              <GameHudItem icon={Trophy} tone="score">
+                สูง {height} ชั้น
+              </GameHudItem>
+            }
+          >
+            {process.env.NODE_ENV === "development" && inTutorial && (
+              <button
+                type="button"
+                onClick={() => endTutorial(true)}
+                className={HUD_DEV_BUTTON_CLASS}
+                aria-label="ข้ามการฝึกเล่นสำหรับทดสอบเกม"
+                data-dev-only="g13-skip-tutorial"
+              >
+                ข้ามฝึก
+              </button>
+            )}
+            {process.env.NODE_ENV === "development" && !inTutorial && (
               <button
                 type="button"
                 onClick={() => {
@@ -874,17 +1332,14 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
                   });
                   finishGame();
                 }}
-                className="min-h-12 rounded-xl border-2 border-dashed border-violet-500 bg-violet-50 px-3 text-[20px] font-bold text-violet-800"
+                className={HUD_DEV_BUTTON_CLASS}
                 aria-label="ข้ามเวลาที่เหลือสำหรับทดสอบเกม"
                 data-dev-only="g13-skip-timer"
               >
                 ข้ามเวลา
               </button>
             )}
-            <span className="flex items-center gap-2 text-amber-900">
-              <Trophy size={21} aria-hidden="true" /> สูง {height} ชั้น
-            </span>
-          </div>
+          </GameHudBar>
           <div className="relative flex-1 min-h-0 overflow-hidden">
             <canvas
               ref={canvasRef}
@@ -895,6 +1350,23 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
             />
+            {/* Tutorial instruction — the 👆 hand itself is drawn on the canvas */}
+            <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-4">
+              {tutorialBanner && (
+                <p
+                  className={`max-w-sm rounded-2xl border-2 bg-white/95 px-4 py-2 text-center text-[clamp(18px,5vw,22px)] font-bold leading-snug shadow-md ${
+                    tutorialBanner.tone === "praise"
+                      ? "border-emerald-500 text-emerald-800"
+                      : tutorialBanner.tone === "retry"
+                        ? "border-slate-300 text-slate-700"
+                        : "border-amber-400 text-amber-950"
+                  }`}
+                >
+                  {tutorialBanner.tone === "praise" && <span aria-hidden="true">✓ </span>}
+                  {tutorialBanner.text}
+                </p>
+              )}
+            </div>
             {/* Fixed input hit area — ไม่ขยับตามกรวย/camera จึงลากต่อได้แม้กรวยพ้นขอบล่าง */}
             <div
               role="group"
@@ -903,13 +1375,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
-              className="absolute inset-x-0 bottom-0 z-10 h-[34%] min-h-24 touch-none cursor-grab active:cursor-grabbing flex items-end justify-center pb-3 bg-gradient-to-t from-white/20 to-transparent"
-            >
-              <div className="pointer-events-none flex items-center gap-2 rounded-full border border-amber-900/20 bg-white/65 px-4 py-1.5 text-[clamp(14px,3.7vw,17px)] font-bold text-amber-950 shadow-sm backdrop-blur-sm">
-                <MoveHorizontal size={21} aria-hidden="true" />
-                ลากตรงนี้เพื่อขยับ
-              </div>
-            </div>
+              className="absolute inset-x-0 bottom-0 z-10 h-[34%] min-h-24 touch-none cursor-grab active:cursor-grabbing bg-gradient-to-t from-white/20 to-transparent"
+            />
           </div>
         </div>
       )}

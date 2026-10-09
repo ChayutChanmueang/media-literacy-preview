@@ -48,14 +48,20 @@ export default function ConsentAgePage() {
               AGE_OPTIONS.map((opt) => {
                 const selected = ageGroup === opt.value;
                 return (
-                  <div key={opt.value} className="h-[64px] w-full overflow-clip rounded-[20px] bg-[#D9D9D9]">
+                  // Selected = Figma node 2393:13824 "Blue-button"
+                  <div
+                    key={opt.value}
+                    className={`h-[64px] w-full overflow-clip rounded-[20px] ${selected ? "bg-[#0078A8]" : "bg-[#D9D9D9]"}`}
+                  >
                     <button
                       type="button"
                       role="radio"
                       aria-checked={selected}
                       onClick={() => setAgeGroup(opt.value)}
-                      className={`flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid bg-white text-[20px] font-semibold leading-[30px] active:translate-y-[2px] ${
-                        selected ? "border-[#00A3E0] text-[#0078A8]" : "border-[#D9D9D9] text-[#A5A5A5]"
+                      className={`flex w-full cursor-pointer items-center justify-center rounded-[20px] text-[20px] font-semibold leading-[30px] active:translate-y-[2px] ${
+                        selected
+                          ? "h-[60px] bg-[#00A3E0] text-white"
+                          : "h-[62px] border-2 border-solid border-[#D9D9D9] bg-white text-[#A5A5A5]"
                       }`}
                     >
                       {opt.label}

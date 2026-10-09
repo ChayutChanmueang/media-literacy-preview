@@ -31,13 +31,13 @@ export default function GameAnswerButton({
     <button
       type="button"
       {...props}
-      className={`${notoLoopedThai.className} group block h-[104px] min-w-0 flex-1 cursor-pointer bg-transparent disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`${notoLoopedThai.className} group block gp-h-104 min-w-0 flex-1 cursor-pointer bg-transparent disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
     >
       <span
-        className={`flex h-[96px] flex-col items-center justify-center rounded-[24px] border-2 border-solid border-white text-[24px] font-semibold leading-[32px] text-white group-active:translate-y-[8px] group-active:shadow-none ${TONES[tone]}`}
+        className={`flex gp-h-96 flex-col items-center justify-center rounded-[24px] border-2 border-solid border-white gp-text-24 font-semibold gp-leading-32 text-white group-active:translate-y-[8px] group-active:shadow-none ${TONES[tone]}`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={iconSrc} alt="" aria-hidden="true" className="size-[24px] shrink-0" />
+        <img src={iconSrc} alt="" aria-hidden="true" className="gp-size-24 shrink-0" />
         {label}
       </span>
     </button>

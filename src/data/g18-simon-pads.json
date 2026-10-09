@@ -1,0 +1,40 @@
+{
+  "pads": [
+    {
+      "id": "red",
+      "colorName": "แดง",
+      "colorDot": "🔴",
+      "color": "#EF4444",
+      "shadow": "#991B1B",
+      "glow": "rgba(239, 68, 68, 0.9)",
+      "toneHz": 329.63
+    },
+    {
+      "id": "green",
+      "colorName": "เขียว",
+      "colorDot": "🟢",
+      "color": "#22C55E",
+      "shadow": "#166534",
+      "glow": "rgba(34, 197, 94, 0.9)",
+      "toneHz": 261.63
+    },
+    {
+      "id": "yellow",
+      "colorName": "เหลือง",
+      "colorDot": "🟡",
+      "color": "#EAB308",
+      "shadow": "#854D0E",
+      "glow": "rgba(234, 179, 8, 0.9)",
+      "toneHz": 220.0
+    },
+    {
+      "id": "blue",
+      "colorName": "น้ำเงิน",
+      "colorDot": "🔵",
+      "color": "#3B82F6",
+      "shadow": "#1E3A8A",
+      "glow": "rgba(59, 130, 246, 0.9)",
+      "toneHz": 164.81
+    }
+  ]
+}

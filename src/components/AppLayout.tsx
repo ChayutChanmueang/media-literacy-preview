@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Home, RotateCcw, Trophy, X, SkipForward, FlaskConical } from "lucide-react";
-import { progressService } from "@/services/progressService";
+import { Menu, Home, RotateCcw, Trophy, X, SkipForward } from "lucide-react";
+import { progressService, type AppMode } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
 import { DEV_SKIP_ENABLED, useDevSkipHandler } from "@/lib/devSkip";
@@ -15,6 +15,8 @@ interface AppLayoutProps {
   // ยังรับไว้จาก layout.tsx เพื่อคงกลไก font-size ฝั่ง server (data-size จาก cookie);
   // UI ปุ่มปรับขนาดถูกซ่อนตาม US-CF-01 จึงไม่ได้ใช้ค่านี้ใน component นี้แล้ว
   initialSize?: string;
+  // โหมดของ deployment นี้ จาก env APP_MODE (อ่านฝั่ง server ใน layout.tsx)
+  appMode: AppMode;
 }
 
 // US-FLOW-02: progress bar แบบ flow-aware — เดินหน้าตามตำแหน่งจริงในสาย Flow (คลิป→เกม→…→แบบทดสอบหลังเรียน)
@@ -29,6 +31,9 @@ const ONBOARD_PCT: Record<string, number> = { "/": 5, "/consent": 10, "/pretest"
 const FLOW_START = 22;
 const STEP_W = (100 - FLOW_START) / FLOW_STEP_ORDER.length;
 
+// ปิดแถบ progress ใต้ header ไว้ก่อน (ผู้ใช้ขอ) — โค้ดคำนวณยังอยู่ครบ เปลี่ยนเป็น true เพื่อเปิดกลับ
+const SHOW_PROGRESS_BAR = false;
+
 function flowStepIndex(pathname: string, lessonId?: string): number {
   const isVideo = pathname.includes("/video");
   const isGame = pathname.includes("/game");
@@ -36,18 +41,24 @@ function flowStepIndex(pathname: string, lessonId?: string): number {
   return FLOW_STEP_ORDER.indexOf(`${isVideo ? "video" : "game"}:${lessonId}`);
 }
 
-export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
+export default function AppLayout({ children, initialTheme, appMode }: AppLayoutProps) {
+  // ตั้งระหว่าง render (ไม่ใช่ใน effect) เพราะ effect ของหน้าลูกรันก่อน effect ของ layout
+  // และบางหน้าอ่าน getAppMode() ใน effect ตั้งแต่ mount (เช่น /lessons)
+  progressService.configureAppMode(appMode);
   const pathname = usePathname();
   const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
   const [session, setSession] = useState<any>(null);
-  const [appMode, setAppModeState] = useState<"normal" | "research">("normal"); // Dev-only toggle
   const [menuOpen, setMenuOpen] = useState(false); // US-CF-01B: navigation drawer
   const [pickerOpen, setPickerOpen] = useState(false); // US-CF-52: popup เลือกเกมดูกระดานคะแนน
   // US-FLOW-02: ตำแหน่งในสาย flow (จาก progress) + ความคืบหน้าภายในสเตปปัจจุบัน (ต่อโจทย์)
   const [flowMeta, setFlowMeta] = useState<{ lessonId?: string; mode?: string }>({});
   const [stepFraction, setStepFraction] = useState(0);
   const devSkip = useDevSkipHandler();
+  // US-CF-49: ปุ่ม "ข้าม" บนหน้าคลิปจะโผล่หลังเริ่มช่วงวิดีโอแล้ว 5.59 วิ (นับรวมเวลารอคลิปโหลด
+  // แต่ไม่นับหน้าชื่อคลิป "เริ่มชมคลิป" ที่อยู่ URL เดียวกัน) — หน้าคลิปเป็นคนนับแล้วยิง event 'videoSkipReady'
+  // เก็บเป็น pathname ที่พร้อมแล้ว ไม่ใช่ boolean — ย้ายไปคลิปบทถัดไปจะซ่อนเองจนกว่าหน้านั้นจะยิงใหม่
+  const [skipReadyPath, setSkipReadyPath] = useState<string | null>(null);
 
   // Sync state and run client-side reconciliation
   useEffect(() => {
@@ -57,7 +68,7 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
 
     const initializedSession = progressService.getOrCreateSession();
     setSession(initializedSession);
-    setAppModeState(progressService.getAppMode());
+    progressService.clearLegacyAppMode();
 
     // US-FLOW-02: อ่านตำแหน่งในสาย flow + รีเซ็ตความคืบหน้าภายในสเตปเมื่อเปลี่ยนหน้า
     const currentProgress = progressService.getProgress();
@@ -92,6 +103,15 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
     return () => window.removeEventListener("flowStepProgress", handler);
   }, []);
 
+  // US-CF-49: หน้าคลิปยิง 'videoSkipReady' ({ path }) เมื่อครบ 5.59 วิในช่วงวิดีโอ (HEADER_SKIP_DELAY_MS ในหน้าคลิป) และ ({ path: null }) ตอนออกจากช่วงวิดีโอ
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setSkipReadyPath((e as CustomEvent<{ path: string | null }>).detail?.path ?? null);
+    };
+    window.addEventListener("videoSkipReady", handler);
+    return () => window.removeEventListener("videoSkipReady", handler);
+  }, []);
+
   const handleHeaderClick = () => {
     const initializedSession = progressService.getOrCreateSession();
     if (initializedSession?.consentGiven && initializedSession?.ageGroup) {
@@ -107,28 +127,6 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
       loggingService.logEvent("reset_application_state");
 
       // Clear cookie size & theme
-      document.cookie = "naplab_ml_size=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-      document.cookie = "naplab_ml_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-      document.cookie = "naplab_ml_progress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-
-      window.location.href = "/";
-    }
-  };
-
-  // Dev-only: สลับโหมดปกติ/วิจัย — รีเซ็ตข้อมูลทั้งหมดแล้วพากลับหน้าแรกเสมอ เพื่อให้ dev
-  // เห็น flow ของแต่ละโหมดตั้งแต่ต้น โดยไม่มีข้อมูลค้างจากโหมดก่อนหน้าปนกัน
-  const handleToggleMode = () => {
-    const nextMode = appMode === "research" ? "normal" : "research";
-    const confirmMessage =
-      nextMode === "research"
-        ? "สลับเป็นโหมดวิจัยจะรีเซ็ตข้อมูลและความคืบหน้าทั้งหมด แล้วพากลับไปหน้าแรก ยืนยันหรือไม่?"
-        : "สลับเป็นโหมดปกติจะรีเซ็ตข้อมูลและความคืบหน้าทั้งหมด แล้วพากลับไปหน้าแรก ยืนยันหรือไม่?";
-
-    if (window.confirm(confirmMessage)) {
-      progressService.resetAll();
-      progressService.setAppMode(nextMode);
-      loggingService.logEvent("dev_switch_app_mode", { to: nextMode });
-
       document.cookie = "naplab_ml_size=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
       document.cookie = "naplab_ml_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
       document.cookie = "naplab_ml_progress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
@@ -192,6 +190,10 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
   // จึงซ่อน top bar (☰ + โลโก้) และแถบ progress ทั้งหมด
   const isLanding = pathname === "/";
 
+  // หน้าคลิปเรียนเท่านั้นที่มีปุ่ม "ข้าม" มุมขวาบนของ header
+  const isLessonVideo = /^\/lessons\/[^/]+\/video$/.test(pathname);
+  const showSkipInHeader = isLessonVideo && skipReadyPath === pathname;
+
   return (
     <div id="root-container">
       {!isLanding && (
@@ -212,6 +214,7 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
               <span className="font-bold text-[22px] text-[var(--primary)]">รู้ทันสื่อ</span>
             </div>
 
+            <div className="ml-auto flex items-center gap-2">
             {/* Dev-only: ข้ามขั้นตอนปัจจุบัน — แสดงเฉพาะหน้าที่ลงทะเบียนผ่าน useDevSkip */}
             {DEV_SKIP_ENABLED && devSkip && (
               <button
@@ -222,20 +225,45 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
                 }}
                 data-dev-only="step-skip"
                 aria-label="ข้ามขั้นตอนนี้ (สำหรับนักพัฒนา)"
-                className="ml-auto flex items-center gap-1 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50 px-2.5 py-1 text-[16px] font-bold text-amber-700 cursor-pointer"
+                className="flex items-center gap-1 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50 px-2.5 py-1 text-[16px] font-bold text-amber-700 cursor-pointer"
               >
                 <SkipForward size={18} aria-hidden="true" />
                 DEV ข้าม
               </button>
             )}
-          </div>
 
-          {/* Progress Indicator */}
-          <div className="w-full bg-[var(--bg-card)] shrink-0">
-            <div className="progress-bar-container rounded-none h-1.5">
-              <div className="progress-bar-fill" style={{ width: `${getProgressPercentage()}%` }}></div>
+            {/* ปุ่มข้ามคลิป (มุมขวาบน) — จงใจให้ดูเรียบ ขาวเป็นหลัก ตัวอักษรเทา
+                ไม่ให้เด่นแข่งกับปุ่มหลักด้านล่าง แต่ยังได้ touch target 48px
+                และตัวอักษร 20px ตามกติกา accessibility
+                ตัวจัดการอยู่ที่หน้าคลิป (เจ้าของ player) จึงสั่งผ่าน custom event */}
+            {isLessonVideo && (
+              // จองที่ไว้ตั้งแต่เข้าหน้า เพื่อไม่ให้ header ขยับตอนปุ่มโผล่ตอนวินาทีที่ 5
+              // (ปุ่มโผล่มาเลย ไม่มี animation ตามที่ตกลงกันไว้)
+              <div className="flex items-center min-h-[48px]">
+                {showSkipInHeader && (
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent("videoSkipRequest"))}
+                    aria-label="ข้ามคลิปวิดีโอนี้"
+                    className="flex items-center gap-1.5 min-h-[48px] px-3.5 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] text-[20px] font-medium hover:bg-[var(--bg-app)] active:bg-[var(--bg-app)] cursor-pointer"
+                  >
+                    <span>ข้าม</span>
+                    <SkipForward size={18} strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            )}
             </div>
           </div>
+
+          {/* Progress Indicator — ปิดไว้ชั่วคราว ดู SHOW_PROGRESS_BAR */}
+          {SHOW_PROGRESS_BAR && (
+            <div className="w-full bg-[var(--bg-card)] shrink-0">
+              <div className="progress-bar-container rounded-none h-1.5">
+                <div className="progress-bar-fill" style={{ width: `${getProgressPercentage()}%` }}></div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -293,22 +321,6 @@ export default function AppLayout({ children, initialTheme }: AppLayoutProps) {
               >
                 <Trophy size={24} className="text-[var(--primary)] shrink-0" />
                 <span>กระดานคะแนน</span>
-              </button>
-            )}
-            {DEV_SKIP_ENABLED && (
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  handleToggleMode();
-                }}
-                data-dev-only="mode-toggle"
-                className="flex items-center gap-3 min-h-14 px-4 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50 text-[17px] font-bold text-amber-700 hover:bg-amber-100 cursor-pointer text-left"
-              >
-                <FlaskConical size={24} className="shrink-0" />
-                <span>
-                  โหมด: {appMode === "research" ? "วิจัย" : "ปกติ"} (DEV แตะเพื่อสลับเป็น
-                  {appMode === "research" ? "ปกติ" : "วิจัย"})
-                </span>
               </button>
             )}
             <button

@@ -111,25 +111,35 @@ const CATEGORIES = [
   { id: "video", icon: "/images/lessons/category-video.png", label: "วิดีโอ" },
 ] as const;
 
-// เกมสนุก (นอกสาย Flow) — ตอนนี้มีแค่ G13 ตัวเดียว โครงสร้างรองรับเพิ่มเกมสนุกอื่นในอนาคต
+// เกมสนุก (นอกสาย Flow) — G13 + G18–G20 (เดิม prototype GP7–GP9) เปิดเฉพาะโหมดอิสระ
+// G18–G20 ยังไม่มีไอคอนเฉพาะเกม จึงใช้ไอคอนหมวด "เกมสนุก" ไปก่อน
 const FUN_GAMES = [
-  { id: "flow-g13", icon: "/assets/g13-waffle-cone.svg", label: "ต่อไอติมฝึกสมอง" },
+  { id: "flow-g13", icon: "/assets/icons/g13-ice-cream.jpg", label: "ต่อไอติมฝึกสมอง" },
+  { id: "g18", icon: "/images/lessons/category-fun.png", label: "จำให้ขึ้นใจ" },
+  { id: "g19", icon: "/images/lessons/category-fun.png", label: "เรียงผลไม้" },
+  { id: "g20", icon: "/images/lessons/category-fun.png", label: "ผักบุ้งลอยฟ้า" },
 ];
 
 // Figma node "เกมเพื่อการเรียนรู้" — mockup มี 3 แถว (แถวสุดท้ายซ้ำข้อความแถวแรกในต้นฉบับ ดูเป็น
 // placeholder พลาด) ใช้ 3 เกมที่มีอยู่จริงในสาย Flow แทน (G2/G5 ยังเล่นได้จาก /dev/games เท่านั้น)
+// + G15–G17 (เดิม prototype GP3/GP4/GP6) เปิดเฉพาะโหมดอิสระ ไม่อยู่ในสาย Flow/โหมดวิจัย
+// G15–G17 ยังไม่มีไอคอนเฉพาะเกม จึงใช้ไอคอนหมวด "เกมเพื่อการเรียนรู้" ไปก่อน
 const LEARNING_GAMES = [
-  { id: "topic-1", icon: "/assets/icon-game/g1-icon.png", label: "เกมจริงหรือมั่ว" },
-  { id: "topic-6", icon: "/assets/icon-game/line-icon.png", label: "เกมจำลองแชทไลน์" },
-  { id: "topic-3", icon: "/assets/icon-game/g3-icon.png", label: "เอไอ หรือ ของจริง" },
+  { id: "topic-1", icon: "/assets/icons/g1-right-o-wrong.jpg", label: "เกมจริงหรือมั่ว" },
+  { id: "topic-6", icon: "/assets/icons/g6-line-sim.jpg", label: "เกมจำลองแชทไลน์" },
+  { id: "topic-3", icon: "/assets/icons/g3-ai-o-fake.jpg", label: "เอไอ หรือ ของจริง" },
+  { id: "g15", icon: "/images/lessons/category-learning.png", label: "ลองถาม AI" },
+  { id: "g16", icon: "/images/lessons/category-learning.png", label: "คิดก่อนโพสต์" },
+  { id: "g17", icon: "/images/lessons/category-learning.png", label: "โล่กันโกง" },
 ];
 
 // รายการวิดีโอ — ดึงจาก videos.json แหล่งเดียวกับหน้าคลิปจริง ไม่พิมพ์ชื่อซ้ำเอง กันข้อมูลสองที่ไม่ตรงกัน
 // ไม่มีภาพปกต่อคลิปในโปรเจกต์ จึงใช้ไอคอนกล้องเดียวกับหมวด "วิดีโอ" ซ้ำทุกแถวไปก่อน
-const VIDEOS = getOrderedLessonIds().map((lessonId) => {
-  const video = getVideoByLessonId(lessonId);
-  return { id: lessonId, icon: "/images/lessons/category-video.png", label: video.clipIntro };
-});
+// บทที่ตั้ง skip (ยังไม่มีคลิปจริง) ไม่แสดงในรายการ เพราะกดเข้าไปจะข้ามไปเกมทันที
+const VIDEOS = getOrderedLessonIds()
+  .map((lessonId) => getVideoByLessonId(lessonId))
+  .filter((video) => !video.skip)
+  .map((video) => ({ id: video.lessonId, icon: "/images/lessons/category-video.png", label: video.clipIntro }));
 
 export default function LessonSelectorPage() {
   const router = useRouter();

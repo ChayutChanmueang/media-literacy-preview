@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
 import AppLayout from "@/components/AppLayout";
+import { getServerAppMode } from "@/lib/appMode";
 
 export const metadata: Metadata = {
   title: "รู้ทันสื่อ - Interactive Learning",
@@ -58,7 +59,7 @@ export default async function RootLayout({
   return (
     <html lang="th" data-theme={theme} data-size={size}>
       <body className="min-h-full flex justify-center bg-[#f8fafc]">
-        <AppLayout initialTheme={theme} initialSize={size}>
+        <AppLayout initialTheme={theme} initialSize={size} appMode={getServerAppMode()}>
           {children}
         </AppLayout>
       </body>

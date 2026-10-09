@@ -5,6 +5,8 @@ export type CatchGeometry = {
   targetY: number;
   catchWidth: number;
   verticalTolerance?: number;
+  /** How far below targetY the object's bottom may be and still count; past that it has gone by */
+  catchDepth?: number;
 };
 
 export const clampToRange = (value: number, min: number, max: number) =>
@@ -53,8 +55,10 @@ export const isCaughtAtTarget = ({
   targetY,
   catchWidth,
   verticalTolerance = 0,
+  catchDepth = Infinity,
 }: CatchGeometry) =>
   objectBottomY >= targetY - verticalTolerance &&
+  objectBottomY <= targetY + catchDepth &&
   Math.abs(objectX - targetX) <= catchWidth;
 
 /**
@@ -73,3 +77,21 @@ export const getVisibleScoopRange = (
   return { startIndex, endIndex: stackLength };
 };
 
+
+/**
+ * Value of a looping keyframe track at progress t (0–1), eased (smoothstep) between keys.
+ * Keys are [t, value] pairs sorted by t; used for the tutorial hand's path and fade.
+ */
+export const getKeyframeValue = (t: number, keys: readonly (readonly [number, number])[]): number => {
+  if (keys.length === 0) return 0;
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i += 1) {
+    const [t0, v0] = keys[i - 1];
+    const [t1, v1] = keys[i];
+    if (t <= t1) {
+      const p = t1 === t0 ? 1 : (t - t0) / (t1 - t0);
+      return v0 + (v1 - v0) * p * p * (3 - 2 * p);
+    }
+  }
+  return keys[keys.length - 1][1];
+};

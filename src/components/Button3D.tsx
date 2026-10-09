@@ -52,12 +52,12 @@ export default function Button3D({
       type="button"
       {...props}
       disabled={disabled}
-      className={`${notoLoopedThai.className} group relative block h-[104px] w-full shrink-0 cursor-pointer overflow-clip rounded-[24px] disabled:cursor-not-allowed ${
+      className={`${notoLoopedThai.className} group relative block gp-h-104 w-full shrink-0 cursor-pointer overflow-clip rounded-[24px] disabled:cursor-not-allowed ${
         disabled ? "bg-[#7F7F7F]" : "bg-[#0078A8] active:bg-transparent"
       } ${className}`}
     >
       <span
-        className={`absolute inset-x-0 top-0 flex h-[96px] items-center justify-center overflow-clip rounded-[24px] text-[28px] font-bold leading-[36px] text-white ${
+        className={`absolute inset-x-0 top-0 flex gp-h-96 items-center justify-center overflow-clip rounded-[24px] gp-text-28 font-bold gp-leading-36 text-white ${
           disabled ? "bg-[#A5A5A5]" : "bg-[#00A3E0] group-active:top-[8px]"
         }`}
       >

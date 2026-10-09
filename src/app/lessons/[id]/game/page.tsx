@@ -18,6 +18,13 @@ const G3AIOrNot = dynamic(() => import("@/components/G3AIOrNot"), { ssr: false }
 const G5DigitalShield = dynamic(() => import("@/components/G5DigitalShield"), { ssr: false });
 const G6LineSimulation = dynamic(() => import("@/components/G6LineSimulation"), { ssr: false });
 const G13ScoopStacker = dynamic(() => import("@/components/G13ScoopStacker"), { ssr: false });
+// G15–G20 (เดิม prototype GP3/4/6/7/8/9): เปิดเฉพาะโหมดอิสระ ใช้ lesson id = รหัสเกมตัวเล็ก (g15…g20)
+const G15AIChatSimulator = dynamic(() => import("@/components/G15AIChatSimulator"), { ssr: false });
+const G16ThinkBeforePost = dynamic(() => import("@/components/G16ThinkBeforePost"), { ssr: false });
+const G17ScamBreaker = dynamic(() => import("@/components/G17ScamBreaker"), { ssr: false });
+const G18MemoryPads = dynamic(() => import("@/components/G18MemoryPads"), { ssr: false });
+const G19FruitMatch = dynamic(() => import("@/components/G19FruitMatch"), { ssr: false });
+const G20VeggieToss = dynamic(() => import("@/components/G20VeggieToss"), { ssr: false });
 
 const getGameId = (lessonId: string) => {
   switch (lessonId) {
@@ -27,6 +34,12 @@ const getGameId = (lessonId: string) => {
     case "topic-5": return "G5";
     case "topic-6": return "G6";
     case FLOW_G13_ID: return "G13";
+    case "g15": return "G15";
+    case "g16": return "G16";
+    case "g17": return "G17";
+    case "g18": return "G18";
+    case "g19": return "G19";
+    case "g20": return "G20";
     default: return "G1";
   }
 };
@@ -147,6 +160,18 @@ export default function GameShellPage() {
         return <G6LineSimulation onFinish={handleFinishGame} logEvent={logEventBound} />;
       case FLOW_G13_ID:
         return <G13ScoopStacker onFinish={handleFinishGame} logEvent={logEventBound} learningMode={learningMode} />;
+      case "g15":
+        return <G15AIChatSimulator onFinish={handleFinishGame} logEvent={logEventBound} />;
+      case "g16":
+        return <G16ThinkBeforePost onFinish={handleFinishGame} logEvent={logEventBound} />;
+      case "g17":
+        return <G17ScamBreaker onFinish={handleFinishGame} logEvent={logEventBound} />;
+      case "g18":
+        return <G18MemoryPads onFinish={handleFinishGame} logEvent={logEventBound} />;
+      case "g19":
+        return <G19FruitMatch onFinish={handleFinishGame} logEvent={logEventBound} />;
+      case "g20":
+        return <G20VeggieToss onFinish={handleFinishGame} logEvent={logEventBound} />;
       default:
         return <G1FactCheck onFinish={handleFinishGame} logEvent={logEventBound} />;
     }

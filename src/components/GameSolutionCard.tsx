@@ -26,25 +26,25 @@ export default function GameSolutionCard({
   onReadingChange,
 }: GameSolutionCardProps) {
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col px-[24px] pt-[24px]`}>
+    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col gp-px-24 gp-pt-24`}>
       <div
-        className={`flex h-[92px] shrink-0 items-center justify-center rounded-t-[24px] [animation:fadeIn_0.3s_ease-out] ${
+        className={`flex gp-h-92 shrink-0 items-center justify-center rounded-t-[24px] [animation:fadeIn_0.3s_ease-out] ${
           tone === "correct" ? "bg-[#2FB84E]" : "bg-[#FF4B4B]"
         }`}
       >
-        <p className="text-[40px] font-bold leading-[48px] text-white">{banner}</p>
+        <p className="gp-text-40 font-bold gp-leading-48 text-white">{banner}</p>
       </div>
 
       <div className="relative min-h-0 flex-1 rounded-b-[24px] border-2 border-solid border-[#D9D9D9] bg-white shadow-[0px_2px_0px_0px_#D9D9D9] [animation:fadeIn_0.3s_ease-out]">
         <CustomScrollArea
           className="h-full"
-          contentClassName="pl-[24px] pr-[44px] py-[22px] text-left"
+          contentClassName="gp-pl-24 gp-pr-44 gp-py-22 text-left"
           trackClassName="absolute top-[18px] bottom-[18px] right-[14px] w-[8px] rounded-[12px] bg-[#D9D9D9] pointer-events-none"
           thumbClassName="absolute left-0 w-full rounded-[12px] bg-[#7F7F7F]"
           onActiveChange={onReadingChange}
         >
-          <p className="text-[24px] font-semibold leading-[32px] text-[#4B4B4B]">{heading}</p>
-          <div className="mt-[26px] text-[18px] font-normal leading-[26px] text-[#4B4B4B]">{children}</div>
+          <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">{heading}</p>
+          <div className="gp-mt-26 gp-text-18 font-normal gp-leading-26 text-[#4B4B4B]">{children}</div>
         </CustomScrollArea>
       </div>
     </div>

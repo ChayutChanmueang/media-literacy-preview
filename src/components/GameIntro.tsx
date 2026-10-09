@@ -47,23 +47,28 @@ export default function GameIntro({
   return (
     <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col ${containerClassName}`}>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex min-h-full flex-col items-center justify-center gap-[40px] px-[24px] py-[28px] text-center">
+        {/* ใช้รูปไอคอนเกม: วางชิดบน + ไอคอนใหญ่ ; แบบอื่นจัดกึ่งกลางแนวตั้งเหมือนเดิม */}
+        <div
+          className={`flex min-h-full flex-col items-center gp-gap-40 gp-px-24 text-center ${
+            imageSrc && !mediaSlot ? "justify-start gp-pt-40 gp-pb-28" : "justify-center gp-py-28"
+          }`}
+        >
           {mediaSlot ? (
-            <div className="mb-[24px] shrink-0">{mediaSlot}</div>
+            <div className="gp-mb-24 shrink-0">{mediaSlot}</div>
           ) : imageSrc ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={imageSrc} alt={imageAlt} className="mb-[24px] size-[120px] shrink-0 object-contain" />
+            <img src={imageSrc} alt={imageAlt} className="gp-mb-24 gp-size-264 max-w-full shrink-0 object-contain" />
           ) : Icon ? (
-            <Icon size={120} className="mb-[24px] shrink-0 text-[var(--primary)]" aria-hidden="true" />
+            <Icon size={120} className="gp-mb-24 shrink-0 text-[var(--primary)]" aria-hidden="true" />
           ) : null}
 
-          <p className="text-[32px] font-bold leading-[40px] text-black">{title}</p>
-          <p className="text-[24px] font-semibold leading-[32px] text-[#4B4B4B]">{objective}</p>
-          {choices && <p className="text-[24px] font-semibold leading-[32px] text-[#4B4B4B]">{choices}</p>}
+          <p className="gp-text-32 font-bold gp-leading-40 text-black">{title}</p>
+          <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">{objective}</p>
+          {choices && <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">{choices}</p>}
         </div>
       </div>
 
-      <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
+      <div className="shrink-0 gp-px-24 gp-pb-64 gp-pt-24">
         <Button3D onClick={onStart}>{startLabel}</Button3D>
       </div>
     </div>

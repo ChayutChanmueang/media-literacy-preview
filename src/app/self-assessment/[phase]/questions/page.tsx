@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Check } from "lucide-react";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import { notoLoopedThai } from "@/lib/fonts";
@@ -11,16 +10,14 @@ import type { SelfAssessmentPhase } from "@/lib/selfAssessmentPhase";
 import Button3D from "@/components/Button3D";
 import ITEMS from "@/data/self-assessment-items.json";
 
-const PER_PAGE = 2;
-const PAGE_COUNT = Math.ceil(ITEMS.length / PER_PAGE);
-
-// Figma: Component 42 colors; selected state intentionally uses a thick ring + check badge instead of Figma's solid fill
+// Figma: Component 72 / Component 66 (2454:8936). Unselected = pastel face on a color edge;
+// selected = solid color face on a darker edge; pressed = face drops 4px over the edge.
 const SCALE = [
-  { value: 1, label: ["ไม่เห็นด้วย", "อย่างยิ่ง"], stroke: "#FF4B4B", fill: "#FBE3DE" },
-  { value: 2, label: ["ไม่เห็นด้วย"], stroke: "#E08A3C", fill: "#FBEBD9" },
-  { value: 3, label: ["ไม่แน่ใจ"], stroke: "#D9B23C", fill: "#FBF3D9" },
-  { value: 4, label: ["เห็นด้วย"], stroke: "#2FB84E", fill: "#E9F2E5" },
-  { value: 5, label: ["เห็นด้วย", "อย่างยิ่ง"], stroke: "#1E7A46", fill: "#E9F2E5" },
+  { value: 1, label: ["ไม่เห็นด้วย", "อย่างยิ่ง"], color: "#C81F2A", pale: "#FBE3DE", dark: "#7D141B" },
+  { value: 2, label: ["ไม่เห็นด้วย"], color: "#F4912E", pale: "#FBEBD9", dark: "#86521D" },
+  { value: 3, label: ["ไม่แน่ใจ"], color: "#F4C741", pale: "#FBF3D9", dark: "#866D22" },
+  { value: 4, label: ["เห็นด้วย"], color: "#B5D930", pale: "#E9F2E5", dark: "#71871F" },
+  { value: 5, label: ["เห็นด้วย", "อย่างยิ่ง"], color: "#84CE2F", pale: "#DCEEE3", dark: "#54841D" },
 ];
 
 const shuffle = <T,>(list: T[]): T[] => {
@@ -38,9 +35,7 @@ const subscribeNoop = () => () => {};
 export default function SelfAssessmentQuestionsPage() {
   const router = useRouter();
   const { phase } = useParams<{ phase: SelfAssessmentPhase }>();
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [pageIndex, setPageIndex] = useState(0);
   // Order is random per visit; render it only on the client so SSR and hydration never disagree.
   const [statements] = useState(() => shuffle(ITEMS));
   const isClient = useSyncExternalStore(subscribeNoop, () => true, () => false);
@@ -49,9 +44,8 @@ export default function SelfAssessmentQuestionsPage() {
     loggingService.logEvent("self_assessment_page_view", { phase });
   }, [phase]);
 
-  const firstIndex = pageIndex * PER_PAGE;
-  const pageStatements = statements.slice(firstIndex, firstIndex + PER_PAGE);
-  const pageAnswered = isClient && pageStatements.every((s) => answers[s.id]);
+  // All statements are shown on one scrolling page; submit unlocks once every one is answered.
+  const allAnswered = isClient && statements.every((s) => answers[s.id]);
 
   const handleSelect = (statementId: string, value: number) => {
     setAnswers((prev) => ({ ...prev, [statementId]: value }));
@@ -72,21 +66,6 @@ export default function SelfAssessmentQuestionsPage() {
     router.push(`/self-assessment/${phase}/complete`);
   };
 
-  const handleNext = () => {
-    loggingService.logEvent("self_assessment_page_completed", {
-      phase,
-      page: pageIndex + 1,
-      statement_ids: pageStatements.map((s) => s.id),
-    });
-
-    if (pageIndex < PAGE_COUNT - 1) {
-      setPageIndex(pageIndex + 1);
-      scrollRef.current?.scrollTo({ top: 0 });
-      return;
-    }
-    finish(answers);
-  };
-
   useDevSkip(() => {
     const filled = { ...answers };
     for (const s of statements) filled[s.id] ??= Math.ceil(Math.random() * 5);
@@ -96,10 +75,10 @@ export default function SelfAssessmentQuestionsPage() {
 
   return (
     <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-[#E8EAF3] text-black`}>
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex flex-col gap-[20px] px-[24px] pb-[4px] pt-[28px]">
           {isClient &&
-            pageStatements.map((statement) => {
+            statements.map((statement) => {
               const selected = answers[statement.id];
               return (
                 <div
@@ -115,38 +94,34 @@ export default function SelfAssessmentQuestionsPage() {
                     {statement.text}
                   </p>
 
-                  <div className="flex min-h-[80px] w-full items-start justify-between">
+                  {/* Figma packs the five buttons edge to edge (5 × 60 = 300px); columns share the width so no gaps appear.
+                      Text scales with the row (cqw) in Figma's ratio — 20px number / 12px label at 300px — never below those sizes. */}
+                  <div className="@container flex min-h-[80px] w-full items-start">
                     {SCALE.map((opt) => {
                       const isSelected = selected === opt.value;
                       return (
-                        <div key={opt.value} className="flex w-[55px] min-w-0 shrink flex-col items-center gap-[8px]">
+                        <div key={opt.value} className="flex min-w-0 flex-1 basis-0 flex-col items-center gap-[8px]">
                           <button
                             type="button"
                             role="radio"
                             aria-checked={isSelected}
                             aria-label={`${opt.value} ${opt.label.join("")}`}
                             onClick={() => handleSelect(statement.id, opt.value)}
-                            className="flex min-h-[48px] w-full cursor-pointer items-center justify-center py-[4px]"
+                            className="group relative w-full cursor-pointer pb-[4px]"
                           >
                             <span
-                              className={`relative flex size-[clamp(44px,12vw,52px)] items-center justify-center rounded-full border-solid text-[22px] font-bold transition-transform ${
-                                isSelected ? "scale-110 border-4" : "border-2"
-                              }`}
-                              style={{ backgroundColor: opt.fill, borderColor: opt.stroke, color: "#1f2937" }}
+                              className="absolute inset-x-0 bottom-0 top-[4px] rounded-[8px]"
+                              style={{ backgroundColor: isSelected ? opt.dark : opt.color }}
+                              aria-hidden="true"
+                            />
+                            <span
+                              className="relative flex aspect-square w-full items-center justify-center rounded-[8px] border-2 border-solid border-white text-[max(20px,6.667cqw)] font-semibold leading-[1.5] text-black group-active:translate-y-[4px] group-active:border-transparent"
+                              style={{ backgroundColor: isSelected ? opt.color : opt.pale }}
                             >
                               {opt.value}
-                              {isSelected && (
-                                <span
-                                  className="absolute -right-[12px] -top-[12px] flex size-[24px] items-center justify-center rounded-full border-2 bg-white"
-                                  style={{ borderColor: opt.stroke }}
-                                  aria-hidden="true"
-                                >
-                                  <Check size={12} strokeWidth={4} className="text-[#0f172a]" />
-                                </span>
-                              )}
                             </span>
                           </button>
-                          <p className="w-full text-center text-[12px] font-semibold leading-[16px]" aria-hidden="true">
+                          <p className="w-full text-center text-[max(12px,4cqw)] font-semibold leading-[1.333]" aria-hidden="true">
                             {opt.label.map((line) => (
                               <span key={line} className="block">
                                 {line}
@@ -164,7 +139,7 @@ export default function SelfAssessmentQuestionsPage() {
       </div>
 
       <div className="shrink-0 px-[24px] pb-[64px] pt-[24px]">
-        <Button3D onClick={handleNext} disabled={!pageAnswered}>
+        <Button3D onClick={() => finish(answers)} disabled={!allAnswered}>
           ต่อไป
         </Button3D>
       </div>

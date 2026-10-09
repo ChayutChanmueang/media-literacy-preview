@@ -9,12 +9,16 @@ import { LEADERBOARD_PENDING_SCORE_KEY } from "./leaderboardScoreService";
 
 const SESSION_KEY = "naplab_ml_session";
 const PROGRESS_KEY = "naplab_ml_progress";
-// Stored separately from SESSION_KEY/PROGRESS_KEY so it survives resetAll() —
-// switching app mode resets all progress but must remember the mode just switched to.
-const APP_MODE_KEY = "naplab_ml_app_mode";
+// Legacy key from the removed dev mode-toggle — cleared so stale values don't linger.
+const LEGACY_APP_MODE_KEY = "naplab_ml_app_mode";
 const COOKIE_MAX_AGE_DAYS = 365;
 
 export type AppMode = "normal" | "research";
+
+// Set per deployment from the APP_MODE env (read server-side in the root layout and
+// handed to AppLayout, which calls configureAppMode during render so it is ready
+// before any page's effects run).
+let configuredAppMode: AppMode = "normal";
 
 // Helper to set cookie
 function setCookie(name: string, value: any, days: number) {
@@ -222,36 +226,28 @@ export const progressService = {
   },
 
   /**
-   * Reads the dev-toggleable app mode ("normal" | "research"). Defaults to "normal"
-   * when unset (new sessions, and existing sessions from before this flag existed).
+   * Sets the app mode for this deployment (from the APP_MODE env). Called by AppLayout only.
    */
-  getAppMode(): AppMode {
-    if (typeof window === "undefined") return "normal";
-
-    let mode: AppMode | null = null;
-    try {
-      const stored = localStorage.getItem(APP_MODE_KEY);
-      if (stored === "normal" || stored === "research") mode = stored;
-    } catch (e) {}
-
-    if (!mode) {
-      const cookieMode = getCookie(APP_MODE_KEY);
-      if (cookieMode === "normal" || cookieMode === "research") mode = cookieMode;
-    }
-
-    return mode ?? "normal";
+  configureAppMode(mode: AppMode) {
+    configuredAppMode = mode;
   },
 
   /**
-   * Sets the dev-toggleable app mode. Deliberately independent of resetAll() —
-   * it must survive the reset that switching modes triggers.
+   * The app mode of this deployment ("normal" | "research"), fixed by the APP_MODE env.
    */
-  setAppMode(mode: AppMode) {
+  getAppMode(): AppMode {
+    return configuredAppMode;
+  },
+
+  /**
+   * Removes the mode stored by the old dev toggle (mode now comes from env only).
+   */
+  clearLegacyAppMode() {
     if (typeof window === "undefined") return;
     try {
-      localStorage.setItem(APP_MODE_KEY, mode);
+      localStorage.removeItem(LEGACY_APP_MODE_KEY);
     } catch (e) {}
-    setCookie(APP_MODE_KEY, mode, COOKIE_MAX_AGE_DAYS);
+    document.cookie = `${LEGACY_APP_MODE_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
   },
 
   /**

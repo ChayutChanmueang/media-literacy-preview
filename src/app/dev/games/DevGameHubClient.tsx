@@ -27,10 +27,19 @@ const G13ScoopStacker = dynamic(() => import("@/components/G13ScoopStacker"), { 
 const G14GooslMarbles = dynamic(() => import("@/components/G14GooslMarbles"), { ssr: false });
 const GP1PromptBuilder = dynamic(() => import("@/components/GP1PromptBuilder"), { ssr: false });
 const GP2PromptBuilder = dynamic(() => import("@/components/GP2PromptBuilder"), { ssr: false });
+const G15AIChatSimulator = dynamic(() => import("@/components/G15AIChatSimulator"), { ssr: false });
+const G16ThinkBeforePost = dynamic(() => import("@/components/G16ThinkBeforePost"), { ssr: false });
+const GP5RealOrFakeVideo = dynamic(() => import("@/components/GP5RealOrFakeVideo"), { ssr: false });
+const G17ScamBreaker = dynamic(() => import("@/components/G17ScamBreaker"), { ssr: false });
+const G18MemoryPads = dynamic(() => import("@/components/G18MemoryPads"), { ssr: false });
+const G19FruitMatch = dynamic(() => import("@/components/G19FruitMatch"), { ssr: false });
+const G20VeggieToss = dynamic(() => import("@/components/G20VeggieToss"), { ssr: false });
 
 type GameProps = {
   onFinish: (stars: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
+  /** optional — prototypes that end with their own "back to hub" button call this instead of onFinish */
+  onExit?: () => void;
 };
 
 type GameStatus = "done" | "qa" | "prototype" | "planned";
@@ -184,6 +193,69 @@ const GAMES: GameEntry[] = [
     component: GP2PromptBuilder,
     designDoc: "docs/gdd/prototype/design-ai-prompt-builder.md",
   },
+  {
+    id: "G15",
+    title: "ลองถาม AI",
+    lesson: "โหมดอิสระ › เกมเพื่อการเรียนรู้ (g15)",
+    note: "จำลองหน้าแชท AI — เลือกถาม 3 เรื่อง (ระยะทาง / รูปต้นไม้ / รูปลอตเตอรี่) ดู AI ตอบ แล้วให้เวลาอ่าน 15 วิ ก่อนหน้าจบ",
+    status: "qa",
+    component: G15AIChatSimulator,
+    designDoc: "docs/gdd/design-g15-ai-chat.md",
+  },
+  {
+    id: "G16",
+    title: "คิดก่อนโพสต์",
+    lesson: "โหมดอิสระ › เกมเพื่อการเรียนรู้ (g16)",
+    note: "จำลองหน้าสร้างโพสต์ 6 โพสต์ — อ่านแล้วเลือก โพสต์เลย / ไม่โพสต์ (ปุ่มชุดเดียวกับ G6) เฉลยจุดที่เปิดเผยข้อมูลส่วนตัว",
+    status: "qa",
+    component: G16ThinkBeforePost,
+    designDoc: "docs/gdd/design-g16-think-before-post.md",
+  },
+  {
+    id: "GP5",
+    title: "คลิปจริง หรือ คลิปปลอม",
+    lesson: "ยังไม่ผูกบทเรียน (prototype นอก pipeline G-number)",
+    note: "เลย์เอาต์เดียวกับ G3 แต่โจทย์เป็นคลิปวิดีโอ (AI / Deepfake / จริง) 6 คลิปฝังจาก YouTube (ปลอม 3 จริง 3) สลับลำดับทุกรอบ",
+    status: "prototype",
+    component: GP5RealOrFakeVideo,
+    designDoc: "docs/gdd/prototype/design-gp5-real-or-fake-video.md",
+  },
+  {
+    id: "G17",
+    title: "โล่กันโกง",
+    lesson: "โหมดอิสระ › เกมเพื่อการเรียนรู้ (g17)",
+    note: "เกมเด้งลูกทำลายบล็อก (brick breaker) — ลากแถบ 191 รับโล่ให้เด้งไปทำลายบล็อก 3 ด่านบนกริด (มีกำแพงทึบด่าน 2–3) แต่ละด่านบล็อกต่อกันเป็นภาพ 1 ภาพจากคลัง G3 จบด่านเฉลยว่าภาพจริง/AI/ตัดต่อ ไม่มีจับเวลา/แพ้",
+    status: "qa",
+    component: G17ScamBreaker,
+    designDoc: "docs/gdd/design-g17-scam-breaker.md",
+  },
+  {
+    id: "G18",
+    title: "จำให้ขึ้นใจ",
+    lesson: "โหมดอิสระ › เกมสนุก (g18)",
+    note: "เกมจำลำดับไฟ (Simon) แบบ simon10.html — เล่นไม่จำกัดด่าน ด่าน n มีไฟ n ดวง คะแนน = จำนวนด่านที่ผ่าน กดผิดครั้งแรกในด่านได้ดูซ้ำช้า ๆ ครั้งที่ 2 จบรอบด้วยหน้าคะแนน (ไม่มีหน้าแพ้/จับเวลา)",
+    status: "qa",
+    component: G18MemoryPads,
+    designDoc: "docs/gdd/design-g18-memory-pads.md",
+  },
+  {
+    id: "G19",
+    title: "เรียงผลไม้",
+    lesson: "โหมดอิสระ › เกมสนุก (g19)",
+    note: "เกมเรียงผลไม้ 3 ผลขึ้นไป (match-3) แบบ candy crush4.HTML — กระดาน 5×5 ผลไม้ 5 ชนิด ลากหรือแตะสลับช่องข้าง ๆ สลับได้ 20 ครั้งต่อรอบ (แทนตัวจับเวลา 60 วิ) จบรอบด้วยหน้าคะแนน + สถิติดีที่สุด (ไม่มีหน้าแพ้/จับเวลา)",
+    status: "qa",
+    component: G19FruitMatch,
+    designDoc: "docs/gdd/design-g19-fruit-match.md",
+  },
+  {
+    id: "G20",
+    title: "ผักบุ้งลอยฟ้า",
+    lesson: "โหมดอิสระ › เกมสนุก (g20)",
+    note: "เกมโยนผักบุ้งลงจานแบบ shootball7.html — แตะกระทะแล้วลากนิ้วขึ้นเพื่อโยน ชิ่งกำแพงซ้าย-ขวาได้ ลงจานแล้วขึ้นเลเวล (จานย้ายที่ → เลื่อนไปมา) โยนได้ 15 ครั้งต่อรอบ (แทนตัวจับเวลา 60 วิ) จบรอบด้วยหน้าผลงาน + สถิติดีที่สุด (ไม่มีหน้าแพ้/จับเวลา)",
+    status: "qa",
+    component: G20VeggieToss,
+    designDoc: "docs/gdd/design-g20-veggie-toss.md",
+  },
 ];
 
 type LoggedEvent = {
@@ -266,7 +338,7 @@ export default function DevGameHubClient() {
         </div>
 
         <div className="relative flex flex-col flex-1 min-h-0">
-          <GameComponent key={runKey} onFinish={handleFinish} logEvent={logEvent} />
+          <GameComponent key={runKey} onFinish={handleFinish} logEvent={logEvent} onExit={backToList} />
 
           {finishedStars !== null && (
             <div className="absolute inset-0 bg-slate-900/70 flex items-center justify-center p-6 z-50">

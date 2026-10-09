@@ -96,7 +96,7 @@ export default function G3AIOrNot({ onFinish, logEvent }) {
         title="เอไอ หรือ ของจริง"
         objective="ดูภาพแล้วช่วยกันสังเกตว่าเป็นภาพถ่ายจริง หรือภาพที่ AI สร้างขึ้น"
         choices="จริง · ปลอม · ไม่แน่ใจ"
-        imageSrc="/assets/icon-game/g3-icon.png"
+        imageSrc="/assets/icons/g3-ai-o-fake.jpg"
         onStart={() => {
           setShowIntro(false);
           logEvent('game_intro_start', { game_id: 'G3' });

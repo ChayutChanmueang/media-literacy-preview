@@ -735,6 +735,39 @@ h2 {
   animation: gp1-glow 2.2s ease-in-out infinite;
 }
 
+/* G19 hint hand (HintGuide in G19FruitMatch.tsx). One loop, same % on every track:
+   0-12 fades in, released (lifted, bigger) / 12-22 presses down onto the fruit + ring /
+   28-62 slides onto the neighbour (--dx/--dy = one cell) still pressed / 70 releases (lifts, ring fades) /
+   86-100 faded, short pause. Kept running under prefers-reduced-motion on purpose: it is the instruction. */
+.g19-guide-hand,
+.g19-guide-ring,
+.g19-guide-finger {
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.g19-guide-hand { animation-name: g19-guide-hand; }
+.g19-guide-ring { animation-name: g19-guide-ring; transform: translate(-50%, -50%); }
+.g19-guide-finger { animation-name: g19-guide-finger; transform: translate(-38%, 0); }
+@keyframes g19-guide-hand {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 1; transform: translate(0, 0); }
+  28% { opacity: 1; transform: translate(0, 0); }
+  62%, 72% { opacity: 1; transform: translate(var(--dx), var(--dy)); }
+  86%, 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+/* released = lifted up and a bit bigger; pressed = down on the fruit and a bit smaller */
+@keyframes g19-guide-finger {
+  0%, 12% { transform: translate(-38%, -18%) scale(1.12); }
+  22%, 66% { transform: translate(-38%, 0) scale(0.92); }
+  76%, 100% { transform: translate(-38%, -18%) scale(1.12); }
+}
+@keyframes g19-guide-ring {
+  0%, 18% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  24% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  28%, 64% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  74%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
 @keyframes gp1-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.35); }
   50% { box-shadow: 0 0 0 6px rgba(13, 148, 136, 0); }
@@ -771,4 +804,90 @@ h2 {
   .gp1-card-snap {
     transition: none;
   }
+}
+
+/*
+ * Compact scaling for the GP prototypes (GP1, GP2, GP5) and the games that grew out of them (G15–G17) on small phones.
+ * `.gp-compact` on a game's root sets two factors that shrink on short/narrow screens:
+ *   --gp-s  sizes: heights, padding, gaps, icons
+ *   --gp-t  text: font-size / line-height — never below 18px (AGENT.md allows a slightly
+ *           lower minimum on tiny screens as long as the normal size stays ≥ 20px)
+ * The gp-* utilities below read those factors with a fallback of 1, so shared components
+ * that use them (GameIntro, Button3D, …) render exactly as before anywhere outside .gp-compact.
+ * Tap targets keep their own min-h-[48px] floor at the call site.
+ */
+.gp-compact {
+  --gp-s: 1;
+  --gp-t: 1;
+}
+@media (max-height: 780px), (max-width: 374px) {
+  .gp-compact {
+    --gp-s: 0.82;
+    --gp-t: 0.94;
+  }
+  /* purely decorative chrome (e.g. G15's mock app bar/composer) — drop it to give content the room */
+  .gp-compact .gp-hide-compact {
+    display: none;
+  }
+}
+@media (max-height: 660px) {
+  .gp-compact {
+    --gp-s: 0.68;
+    --gp-t: 0.9;
+  }
+}
+
+@utility gp-h-* {
+  height: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-min-h-* {
+  min-height: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-max-h-* {
+  max-height: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-size-* {
+  width: calc(--value(integer) * 1px * var(--gp-s, 1));
+  height: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-p-* {
+  padding: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-px-* {
+  padding-inline: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-py-* {
+  padding-block: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-pt-* {
+  padding-top: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-pb-* {
+  padding-bottom: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-pl-* {
+  padding-left: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-pr-* {
+  padding-right: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-gap-* {
+  gap: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-mt-* {
+  margin-top: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+@utility gp-mb-* {
+  margin-bottom: calc(--value(integer) * 1px * var(--gp-s, 1));
+}
+/* min(base, …) keeps text that is already under 18px at its own size instead of enlarging it */
+@utility gp-text-* {
+  font-size: min(--value(integer) * 1px, max(18px, calc(--value(integer) * 1px * var(--gp-t, 1))));
+}
+@utility gp-leading-* {
+  line-height: calc(--value(integer) * 1px * var(--gp-t, 1));
+}
+/* min-height for tap targets: scales like gp-min-h-* but never below 48px */
+@utility gp-tap-min-h-* {
+  min-height: max(48px, calc(--value(integer) * 1px * var(--gp-s, 1)));
 }

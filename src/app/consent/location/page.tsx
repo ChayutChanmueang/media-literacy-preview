@@ -76,53 +76,61 @@ function SelectCard({
 
   return (
     <div ref={rootRef} className="relative w-full">
-      <div className="h-[64px] w-full overflow-clip rounded-[20px] bg-[#D9D9D9]">
-        <button
-          type="button"
-          onClick={() => setOpen((prev) => !prev)}
-          disabled={disabled}
-          aria-label={placeholder}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid border-[#D9D9D9] bg-white text-[20px] font-semibold leading-[30px] disabled:cursor-not-allowed ${
-            value ? "text-[#4B4B4B]" : "text-[#A5A5A5]"
-          }`}
+      {/* ปุ่มเปิดรายการ: แบบเดียวกับตัวเลือกในรายการ — พื้นขาว ขอบ+ตัวอักษร+ลูกศรสีม่วงของธีม (--primary)
+          หนาเท่ากันทุกด้าน ให้ดูออกว่ากดได้ (ไม่ใช้ฟ้า เพราะจะดูเหมือนปุ่มไปต่อ Button3D)
+          ปิดใช้งาน (เช่น อำเภอก่อนเลือกจังหวัด) = เทาเหมือนเดิม */}
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        disabled={disabled}
+        aria-label={placeholder}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="relative flex h-[64px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid border-[var(--primary)] bg-white text-[20px] font-semibold leading-[30px] text-[var(--primary)] active:bg-[var(--primary-light)] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:bg-white"
+      >
+        {value || placeholder}
+        {/* same shape as /images/consent/dropdown-arrow.svg, drawn inline so it follows the text colour */}
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className={`pointer-events-none absolute right-[16px] size-[24px] ${open ? "rotate-180" : ""}`}
         >
-          {value || placeholder}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/consent/dropdown-arrow.svg"
-            alt=""
-            aria-hidden="true"
-            className={`pointer-events-none absolute right-[16px] size-[24px] ${open ? "rotate-180" : ""}`}
+          <path
+            fill="currentColor"
+            d="M10.7791 17.4255L2.34884 8.17021C2.23256 8.04255 2.14574 7.90468 2.08837 7.7566C2.03101 7.60851 2.00155 7.44851 2 7.2766C2 6.93617 2.10698 6.6383 2.32093 6.38298C2.53488 6.12766 2.8155 6 3.16279 6H20.8372C21.186 6 21.4674 6.12766 21.6814 6.38298C21.8953 6.6383 22.0015 6.93617 22 7.2766C22 7.3617 21.8837 7.65958 21.6511 8.17021L13.2209 17.4255C13.0271 17.6383 12.8333 17.7872 12.6395 17.8723C12.4457 17.9574 12.2325 18 12 18C11.7674 18 11.5543 17.9574 11.3605 17.8723C11.1667 17.7872 10.9729 17.6383 10.7791 17.4255Z"
           />
-        </button>
-      </div>
+        </svg>
+      </button>
 
       {open && (
         <div
           role="listbox"
           aria-label={placeholder}
           style={{ maxHeight }}
-          className="absolute inset-x-0 top-[72px] z-20 overflow-y-auto rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white"
+          className="absolute inset-x-0 top-[72px] z-20 flex flex-col gap-[8px] overflow-y-auto rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white p-[8px]"
         >
-          {options.map((o) => (
-            <button
-              key={o}
-              type="button"
-              role="option"
-              aria-selected={value === o}
-              onClick={() => {
-                onChange(o);
-                setOpen(false);
-              }}
-              className={`flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] bg-white text-[20px] font-semibold leading-[30px] ${
-                value === o ? "text-[#4B4B4B]" : "text-[#A5A5A5]"
-              }`}
-            >
-              {o}
-            </button>
-          ))}
+          {/* ตัวเลือกเป็นปุ่มพื้นขาว ขอบ+ตัวอักษรสีม่วงของธีม (--primary, ธีมม่วง #7b2cbf ~7:1 กับพื้นขาว)
+              หนาเท่ากันทุกด้าน ให้ดูออกว่ากดได้ — ไม่ใช้ฟ้าเพราะจะดูเหมือนปุ่มไปต่อ
+              ตัวที่เลือกอยู่มี ✓ กำกับ (ไม่สื่อด้วยสีอย่างเดียว) */}
+          {options.map((o) => {
+            const selected = value === o;
+            return (
+              <button
+                key={o}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(o);
+                  setOpen(false);
+                }}
+                className="flex h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[20px] border-2 border-solid border-[var(--primary)] bg-white px-[12px] text-[20px] font-semibold leading-[30px] text-[var(--primary)] active:bg-[var(--primary-light)]"
+              >
+                {selected && <span aria-hidden="true">✓</span>}
+                {o}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -252,9 +260,10 @@ export default function ConsentLocationPage() {
                   aria-checked={accepted}
                   aria-label="ข้าพเจ้าได้อ่านและยอมรับนโยบายความเป็นส่วนตัว (PDPA) แล้ว"
                   onClick={() => setAccepted((prev) => !prev)}
-                  className="flex size-[40px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-2 border-solid border-[#D9D9D9] bg-white"
+                  className="flex size-[40px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-2 border-solid border-[var(--primary)] bg-white active:bg-[var(--primary-light)]"
                 >
-                  {accepted && <Check size={26} strokeWidth={3} className="text-[#0078A8]" aria-hidden="true" />}
+                  {/* สีม่วงของธีมเหมือนปุ่มเลือกจังหวัด/อำเภอ/ตำบล ให้ดูเป็นชุดเดียวกันและดูออกว่ากดได้ */}
+                  {accepted && <Check size={26} strokeWidth={3} className="text-[var(--primary)]" aria-hidden="true" />}
                 </button>
                 <p className="flex-1 text-[18px] font-normal leading-[26px]">
                   ข้าพเจ้าได้อ่านและยอมรับ

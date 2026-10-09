@@ -34,7 +34,7 @@ const LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {
   "flow-g13": {
     lessonId: "flow-g13",
     gid: "G13",
-    icon: "/assets/g13-waffle-cone.svg",
+    icon: "/assets/icons/g13-ice-cream.jpg",
   },
 };
 

@@ -10,6 +10,9 @@ import Button3D from "@/components/Button3D";
 import { getVideoByLessonId, isVideoSkipped } from "@/lib/videos";
 import { useDevSkip } from "@/lib/devSkip";
 
+// US-CF-49: เวลาที่ปุ่ม "ข้าม" บน header จะโผล่ หลังเข้าช่วงวิดีโอ (นับรวมเวลารอคลิปโหลด)
+const HEADER_SKIP_DELAY_MS = 5590;
+
 declare global {
   interface Window {
     YT: any;
@@ -287,18 +290,8 @@ export default function VideoLessonPage() {
 
   useDevSkip(handleNext);
 
-  // US-CF-49 / US-CF-49.1: ข้ามวิดีโอเมื่อโหลดช้า หรือ stutter
-  const handleSkipSlowLoad = () => {
-    const waitDurationMs = skipBtnShownAtRef.current ? Date.now() - skipBtnShownAtRef.current : 0;
-    const eventName = videoPlayingRef.current ? "video_skip_stutter" : "video_skip_slow_load";
-    
-    loggingService.logEvent(eventName, {
-      lesson_id: lessonId,
-      video_id: logId,
-      wait_duration_ms: waitDurationMs,
-    });
-    
-    // Stop video from loading/playing in the background while transitioning
+  // หยุดคลิปไม่ให้เล่น/โหลดค้างอยู่เบื้องหลังระหว่างเปลี่ยนหน้า
+  const stopPlayback = () => {
     if (playerRef.current && typeof playerRef.current.destroy === "function") {
       try {
         playerRef.current.destroy();
@@ -311,9 +304,61 @@ export default function VideoLessonPage() {
         videoRef.current.load();
       } catch (e) {}
     }
+  };
 
+  // US-CF-49 / US-CF-49.1: ข้ามวิดีโอเมื่อโหลดช้า หรือ stutter
+  const handleSkipSlowLoad = () => {
+    const waitDurationMs = skipBtnShownAtRef.current ? Date.now() - skipBtnShownAtRef.current : 0;
+    const eventName = videoPlayingRef.current ? "video_skip_stutter" : "video_skip_slow_load";
+    
+    loggingService.logEvent(eventName, {
+      lesson_id: lessonId,
+      video_id: logId,
+      wait_duration_ms: waitDurationMs,
+    });
+    
+    stopPlayback();
     handleNext();
   };
+
+  // ปุ่ม "ข้าม" แบบเงียบ ๆ บน header bar — ผู้ใช้เลือกข้ามคลิปเองได้ทุกเมื่อ (ไม่ใช่เคสโหลดช้า)
+  const handleManualSkip = () => {
+    const position = playerRef.current && typeof playerRef.current.getCurrentTime === "function"
+      ? playerRef.current.getCurrentTime()
+      : videoRef.current?.currentTime ?? 0;
+
+    loggingService.logEvent("video_skip_manual", {
+      lesson_id: lessonId,
+      video_id: logId,
+      position_sec: Math.round(position),
+    });
+
+    stopPlayback();
+    handleNext();
+  };
+
+  // ปุ่ม "ข้าม" อยู่บน header bar ของ AppLayout (คนละ component) จึงสั่งงานผ่าน
+  // custom event แบบเดียวกับ 'flowStepProgress' — ตัวจัดการยังอยู่ที่หน้านี้
+  // เพราะเป็นเจ้าของ player ที่ต้องหยุดก่อนเปลี่ยนหน้า
+  useEffect(() => {
+    window.addEventListener("videoSkipRequest", handleManualSkip);
+    return () => window.removeEventListener("videoSkipRequest", handleManualSkip);
+  });
+
+  // US-CF-49: นับ HEADER_SKIP_DELAY_MS (5.59 วิ) ก่อนให้ปุ่ม "ข้าม" บน header โผล่ — เริ่มนับเมื่อเข้าช่วงวิดีโอเท่านั้น
+  // (ไม่นับระหว่างหน้าชื่อคลิป "เริ่มชมคลิป" ที่อยู่ URL เดียวกัน) แต่นับรวมช่วงที่ยังรอคลิปโหลด
+  // ออกจากช่วงวิดีโอ/ออกจากหน้า → แจ้ง header ให้ซ่อนปุ่ม
+  useEffect(() => {
+    if (skipped || phase !== "video") return;
+    const path = window.location.pathname;
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("videoSkipReady", { detail: { path } }));
+    }, HEADER_SKIP_DELAY_MS);
+    return () => {
+      clearTimeout(timer);
+      window.dispatchEvent(new CustomEvent("videoSkipReady", { detail: { path: null } }));
+    };
+  }, [phase, skipped]);
 
   // US-CF-24: กด "ดูคลิป" เอง หรือครบ 15 วิ → เริ่มเล่นวิดีโอ
   const handleStartClip = () => {

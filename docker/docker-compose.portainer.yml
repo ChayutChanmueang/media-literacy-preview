@@ -33,6 +33,7 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       # เปิด /dev/games บน production ได้โดยไม่ต้อง rebuild (อ่านฝั่ง server ตอน runtime)
+      - APP_MODE=${APP_MODE:-normal}
       - ENABLE_DEV_HUB=${ENABLE_DEV_HUB:-false}
       - NEXT_PUBLIC_ENABLE_DEV_HUB=${NEXT_PUBLIC_ENABLE_DEV_HUB:-false}
     healthcheck:

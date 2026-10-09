@@ -33,6 +33,12 @@
   - [G11 — หยุดนิ้ว! คิดก่อนกด](./gdd/design-g11.md) — 🔨 Prototype แตะมือหยุดนิ้วก่อนกดข้อมูลหลอกลวง ([US-GAME-11](./agile/user-stories/US-GAME-11.md))
   - [G12 — อย่ากดลิงก์จี้ ถ้าไม่รีบหยุดกด](./gdd/design-g12.md) — 🟡 ผสาน Chuzzle + คอมเมนต์ลิงก์อันตราย + นิ้วที่กำลังกด [NEW]
   - [G13 — ต่อไอติมรู้ทันสื่อ](./gdd/design-g13.md) — 🔨 DOM Prototype ใช้เป็นเกมปิดท้าย Flow; มี task [US-GAME-13-R2 — Canvas Remake](./agile/user-stories/US-GAME-13-R2.md) รอเริ่ม (ไอติมจริง + ระเบิด + stack collision ใหม่)
+  - [G15 — ลองถาม AI](./gdd/design-g15-ai-chat.md) — 🔍 In QA จำลองแชท AI (เดิม GP3) — โหมดอิสระ › เกมเพื่อการเรียนรู้
+  - [G16 — คิดก่อนโพสต์](./gdd/design-g16-think-before-post.md) — 🔍 In QA จำลองหน้าสร้างโพสต์ (เดิม GP4) — โหมดอิสระ › เกมเพื่อการเรียนรู้
+  - [G17 — โล่กันโกง](./gdd/design-g17-scam-breaker.md) — 🔍 In QA เด้งลูกทำลายบล็อกภาพ (เดิม GP6) — โหมดอิสระ › เกมเพื่อการเรียนรู้
+  - [G18 — จำให้ขึ้นใจ](./gdd/design-g18-memory-pads.md) — 🔍 In QA จำลำดับไฟ Simon (เดิม GP7) — โหมดอิสระ › เกมสนุก
+  - [G19 — เรียงผลไม้](./gdd/design-g19-fruit-match.md) — 🔍 In QA match-3 (เดิม GP8) — โหมดอิสระ › เกมสนุก
+  - [G20 — ผักบุ้งลอยฟ้า](./gdd/design-g20-veggie-toss.md) — 🔍 In QA โยนผักบุ้งลงจาน (เดิม GP9) — โหมดอิสระ › เกมสนุก
 
 
 ## 💻 Software Design
