@@ -11,7 +11,7 @@ import Button3D from "@/components/Button3D";
 
 const subscribeNoop = () => () => {};
 
-// Figma node 2065:7239 "ข้อมูลผู้ใช้ - age" — step 1 of registration; step 2 is /consent/location
+// Figma node 2917:16405 "ข้อมูลผู้ใช้ - age" — step 1 of registration; step 2 is /consent/location
 export default function ConsentAgePage() {
   const router = useRouter();
   // Prefilled from the session so coming back from step 2 keeps the choice; rendered client-side only
@@ -48,22 +48,37 @@ export default function ConsentAgePage() {
               AGE_OPTIONS.map((opt) => {
                 const selected = ageGroup === opt.value;
                 return (
-                  // Selected = Figma node 2393:13824 "Blue-button"
-                  <div
-                    key={opt.value}
-                    className={`h-[64px] w-full overflow-clip rounded-[20px] ${selected ? "bg-[#0078A8]" : "bg-[#D9D9D9]"}`}
-                  >
+                  // Figma node 2917:16412 — flat card + radio ring; selected = light-blue fill, Primary Blue border/text/dot
+                  <div key={opt.value} className="h-[64px] w-full">
                     <button
                       type="button"
                       role="radio"
                       aria-checked={selected}
                       onClick={() => setAgeGroup(opt.value)}
-                      className={`flex w-full cursor-pointer items-center justify-center rounded-[20px] text-[20px] font-semibold leading-[30px] active:translate-y-[2px] ${
+                      className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] ${
                         selected
-                          ? "h-[60px] bg-[#00A3E0] text-white"
-                          : "h-[62px] border-2 border-solid border-[#D9D9D9] bg-white text-[#A5A5A5]"
+                          ? "border-[#00A3E0] bg-[#D9F1FA] text-[#00A3E0]"
+                          : "border-[#A5A5A5] bg-white text-[#7F7F7F]"
                       }`}
                     >
+                      {selected ? (
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-[20px] top-1/2 flex size-[20px] -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-solid border-[#00A3E0]"
+                        >
+                          <span className="size-[10px] rounded-full bg-[#00A3E0]" />
+                        </span>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src="/images/consent/radio-unselected.svg"
+                          alt=""
+                          aria-hidden="true"
+                          width={20}
+                          height={20}
+                          className="absolute left-[20px] top-1/2 -translate-y-1/2"
+                        />
+                      )}
                       {opt.label}
                     </button>
                   </div>

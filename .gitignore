@@ -33,3 +33,18 @@ dist-ssr
 
 # TypeScript incremental build cache
 tsconfig.tsbuildinfo
+
+# Video files — ห้าม commit/push เข้า repo (ไฟล์ใหญ่ เกิน limit GitHub) ให้ host ภายนอกแทน
+# บังคับซ้ำด้วย .githooks/pre-commit (กัน `git add -f`)
+*.mp4
+*.m4v
+*.mov
+*.webm
+*.mkv
+*.avi
+*.wmv
+*.flv
+*.mpg
+*.mpeg
+*.3gp
+*.ogv

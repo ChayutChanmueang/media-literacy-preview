@@ -434,6 +434,33 @@ h2 {
   animation: toast-float-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Registration dropdown list (/consent/location): starts tucked behind its trigger button and slides
+   out from under it. The parent clips at the trigger's middle; the 41px is that clip window's top padding. */
+@keyframes dropdown-slide-down {
+  from {
+    transform: translateY(calc(-100% - 41px));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.dropdown-slide-down {
+  animation: dropdown-slide-down 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Reduced motion: no travel at all, just a quick fade (fadeIn would nudge the list upward) */
+@keyframes dropdown-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-slide-down {
+    animation: dropdown-fade-in 0.15s ease-out both;
+  }
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);

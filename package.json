@@ -1,7 +1,7 @@
 {
   "name": "media-literacy",
   "private": true,
-  "version": "0.17.0",
+  "version": "0.18.0",
   "type": "module",
   "scripts": {
     "dev": "node -e \"console.log('\\x1b[36m  - Dev Game Hub: http://localhost:3000/dev/games\\x1b[0m\\n')\" && next dev --webpack",
@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks',{stdio:'ignore'})}catch{}\""
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

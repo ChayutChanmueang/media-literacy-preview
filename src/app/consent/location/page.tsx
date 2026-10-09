@@ -18,7 +18,7 @@ const LIST_MAX_HEIGHT = 320; // ความสูงสูงสุดของ
 const LIST_MIN_HEIGHT = 124; // อย่างน้อย 2 แถว ไม่งั้นรายการเตี้ยจนใช้ยาก
 const LIST_OFFSET = 8; // ระยะห่างระหว่างปุ่มกับรายการ + เว้นขอบล่าง
 
-// Figma node 2065:6915 — ปุ่มเลือกแบบกดแล้วกางรายการ (ไม่ใช้ <select> ของเบราว์เซอร์ เพื่อให้หน้าตาตรงดีไซน์)
+// Figma node 2917:16430 (Component 56) — ปุ่มเลือกแบบกดแล้วกางรายการ (ไม่ใช้ <select> ของเบราว์เซอร์ เพื่อให้หน้าตาตรงดีไซน์)
 function SelectCard({
   placeholder,
   value,
@@ -75,10 +75,10 @@ function SelectCard({
   }, [open, boundaryRef]);
 
   return (
-    <div ref={rootRef} className="relative w-full">
-      {/* ปุ่มเปิดรายการ: แบบเดียวกับตัวเลือกในรายการ — พื้นขาว ขอบ+ตัวอักษร+ลูกศรสีม่วงของธีม (--primary)
-          หนาเท่ากันทุกด้าน ให้ดูออกว่ากดได้ (ไม่ใช้ฟ้า เพราะจะดูเหมือนปุ่มไปต่อ Button3D)
-          ปิดใช้งาน (เช่น อำเภอก่อนเลือกจังหวัด) = เทาเหมือนเดิม */}
+    <div ref={rootRef} className={`relative h-[64px] w-full ${open ? "z-30" : ""}`}>
+      {/* ปุ่มเปิดรายการ (Figma node 2917:16430): พื้นขาว ขอบ #A5A5A5 ตัวอักษร+ลูกศร #7F7F7F
+          เลือกค่าแล้ว = สไตล์เดียวกับช่วงอายุที่เลือก (พื้นฟ้าอ่อน ขอบ+ตัวอักษรฟ้า) ให้สองหน้าดูเป็นชุดเดียวกัน
+          ปิดใช้งาน (เช่น อำเภอก่อนเลือกจังหวัด) = เทาอ่อนกว่า */}
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -86,14 +86,16 @@ function SelectCard({
         aria-label={placeholder}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="relative flex h-[64px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid border-[var(--primary)] bg-white text-[20px] font-semibold leading-[30px] text-[var(--primary)] active:bg-[var(--primary-light)] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:bg-white"
+        className={`relative z-[2] flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:translate-y-0 ${
+          value ? "border-[#00A3E0] bg-[#D9F1FA] text-[#00A3E0]" : "border-[#A5A5A5] bg-white text-[#7F7F7F]"
+        }`}
       >
         {value || placeholder}
         {/* same shape as /images/consent/dropdown-arrow.svg, drawn inline so it follows the text colour */}
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"
-          className={`pointer-events-none absolute right-[16px] size-[24px] ${open ? "rotate-180" : ""}`}
+          className={`pointer-events-none absolute right-[22px] size-[24px] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         >
           <path
             fill="currentColor"
@@ -103,41 +105,46 @@ function SelectCard({
       </button>
 
       {open && (
-        <div
-          role="listbox"
-          aria-label={placeholder}
-          style={{ maxHeight }}
-          className="absolute inset-x-0 top-[72px] z-20 flex flex-col gap-[8px] overflow-y-auto rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white p-[8px]"
-        >
-          {/* ตัวเลือกเป็นปุ่มพื้นขาว ขอบ+ตัวอักษรสีม่วงของธีม (--primary, ธีมม่วง #7b2cbf ~7:1 กับพื้นขาว)
-              หนาเท่ากันทุกด้าน ให้ดูออกว่ากดได้ — ไม่ใช้ฟ้าเพราะจะดูเหมือนปุ่มไปต่อ
-              ตัวที่เลือกอยู่มี ✓ กำกับ (ไม่สื่อด้วยสีอย่างเดียว) */}
-          {options.map((o) => {
-            const selected = value === o;
-            return (
-              <button
-                key={o}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  onChange(o);
-                  setOpen(false);
-                }}
-                className="flex h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[20px] border-2 border-solid border-[var(--primary)] bg-white px-[12px] text-[20px] font-semibold leading-[30px] text-[var(--primary)] active:bg-[var(--primary-light)]"
-              >
-                {selected && <span aria-hidden="true">✓</span>}
-                {o}
-              </button>
-            );
-          })}
+        // Clip window starts at the trigger's middle (behind its opaque fill), so the list slides
+        // out from under the button — same build as Figma Component 58 (list tucked behind the trigger)
+        <div className="pointer-events-none absolute inset-x-0 top-[31px] z-[1] overflow-hidden pt-[41px]">
+          <div
+            role="listbox"
+            aria-label={placeholder}
+            style={{ maxHeight }}
+            className="dropdown-slide-down pointer-events-auto flex flex-col overflow-y-auto rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white"
+          >
+            {/* Figma node 2222:4106: แถวสูง 62px คั่นด้วยเส้น #D9D9D9 ตัวอักษร #595959
+                ตัวที่เลือกอยู่ = พื้นฟ้าอ่อน ตัวอักษรฟ้า + ✓ กำกับ (ไม่สื่อด้วยสีอย่างเดียว) */}
+            {options.map((o) => {
+              const selected = value === o;
+              return (
+                <button
+                  key={o}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => {
+                    onChange(o);
+                    setOpen(false);
+                  }}
+                  className={`flex min-h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] border-b-2 border-solid border-[#D9D9D9] px-[12px] text-[20px] font-semibold leading-[30px] last:border-b-0 active:bg-[#F2F2F2] ${
+                    selected ? "bg-[#D9F1FA] text-[#00A3E0]" : "bg-white text-[#595959]"
+                  }`}
+                >
+                  {selected && <span aria-hidden="true">✓</span>}
+                  {o}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// Figma node 2065:7252 "ข้อมูลผู้ใช้ - ที่อยู่" — step 2 of registration; step 1 is /consent
+// Figma node 2917:16418 "ข้อมูลผู้ใช้ - ที่อยู่" — step 2 of registration; step 1 is /consent
 export default function ConsentLocationPage() {
   const router = useRouter();
   const initial = () => progressService.getOrCreateSession()?.location ?? null;
@@ -260,10 +267,12 @@ export default function ConsentLocationPage() {
                   aria-checked={accepted}
                   aria-label="ข้าพเจ้าได้อ่านและยอมรับนโยบายความเป็นส่วนตัว (PDPA) แล้ว"
                   onClick={() => setAccepted((prev) => !prev)}
-                  className="flex size-[40px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-2 border-solid border-[var(--primary)] bg-white active:bg-[var(--primary-light)]"
+                  className={`flex size-[40px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-2 border-solid active:bg-[#F2F2F2] ${
+                    accepted ? "border-[#00A3E0] bg-[#D9F1FA]" : "border-[#D9D9D9] bg-white"
+                  }`}
                 >
-                  {/* สีม่วงของธีมเหมือนปุ่มเลือกจังหวัด/อำเภอ/ตำบล ให้ดูเป็นชุดเดียวกันและดูออกว่ากดได้ */}
-                  {accepted && <Check size={26} strokeWidth={3} className="text-[var(--primary)]" aria-hidden="true" />}
+                  {/* Figma node 2917:16420: ขอบ #D9D9D9 — ติ๊กแล้วใช้ฟ้าเหมือนตัวเลือกที่เลือกอยู่ */}
+                  {accepted && <Check size={26} strokeWidth={3} className="text-[#00A3E0]" aria-hidden="true" />}
                 </button>
                 <p className="flex-1 text-[18px] font-normal leading-[26px]">
                   ข้าพเจ้าได้อ่านและยอมรับ
