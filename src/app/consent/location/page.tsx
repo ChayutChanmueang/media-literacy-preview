@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { AlertCircle, Check } from "lucide-react";
 import locationData from "@/data/thailand-location.json";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
@@ -25,6 +25,18 @@ const LIST_MIN_HEIGHT = ROW_HEIGHT * 3 + LIST_BORDER * 2;
 const LIST_GAP = 10; // ขอบล่างปุ่ม → ขอบบนรายการ (ใช้ใน keyframe dropdown-slide-down ด้วย)
 const VIEWPORT_MARGIN = 16; // เว้นจากขอบล่างจอ
 
+// ช่องที่ยังไม่กรอกตอนกดปุ่มยินยอม: ขอบ/ข้อความแดง + ไอคอน (ไม่สื่อด้วยสีอย่างเดียว)
+// #D92D20 บนพื้นขาว ~4.9:1 ผ่าน contrast 4.5:1
+
+function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <p id={id} role="alert" className="flex items-center gap-[8px] text-[20px] font-semibold leading-[30px] text-[#D92D20]">
+      <AlertCircle size={24} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />
+      {children}
+    </p>
+  );
+}
+
 type Placement = { left: number; width: number; top: number; maxHeight: number };
 
 // Figma node 2917:16430 (Component 56) — ปุ่มเลือกแบบกดแล้วกางรายการ (ไม่ใช้ <select> ของเบราว์เซอร์ เพื่อให้หน้าตาตรงดีไซน์)
@@ -38,6 +50,9 @@ function SelectCard({
   open,
   onOpenChange,
   scrollRef,
+  invalid = false,
+  errorMessage,
+  fieldRef,
 }: {
   placeholder: string;
   value: string;
@@ -48,7 +63,13 @@ function SelectCard({
   onOpenChange: (open: boolean) => void;
   /** กล่องเลื่อนของหน้า — เลื่อนขึ้นให้ก่อนถ้าใต้ปุ่มมีที่ไม่พอ 3 ตัวเลือก */
   scrollRef: React.RefObject<HTMLDivElement | null>;
+  /** ยังไม่ได้เลือกตอนกดปุ่มยินยอม → ขอบแดง + ข้อความ errorMessage ใต้ปุ่ม */
+  invalid?: boolean;
+  errorMessage?: string;
+  /** ให้หน้าเพจเลื่อนมาหา/โฟกัส/สั่นปุ่มนี้ได้ */
+  fieldRef?: React.RefObject<HTMLButtonElement | null>;
 }) {
+  const errorId = useId();
   const [placement, setPlacement] = useState<Placement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -107,82 +128,93 @@ function SelectCard({
   }, [open, options.length, scrollRef]);
 
   return (
-    <div className="relative h-[64px] w-full">
-      {/* ปุ่มเปิดรายการ (Figma node 2917:16430): พื้นขาว ขอบ #A5A5A5 ตัวอักษร+ลูกศร #7F7F7F
-          เลือกค่าแล้ว = สไตล์เดียวกับช่วงอายุที่เลือก (พื้นฟ้าอ่อน ขอบ+ตัวอักษรฟ้า) ให้สองหน้าดูเป็นชุดเดียวกัน
-          ปิดใช้งาน (เช่น อำเภอก่อนเลือกจังหวัด) = เทาอ่อนกว่า */}
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        disabled={disabled}
-        aria-label={placeholder}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:translate-y-0 ${
-          value ? "border-[#00A3E0] bg-[#D9F1FA] text-[#00A3E0]" : "border-[#A5A5A5] bg-white text-[#7F7F7F]"
-        }`}
-      >
-        {value || placeholder}
-        {/* same shape as /images/consent/dropdown-arrow.svg, drawn inline so it follows the text colour */}
-        <svg
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          className={`pointer-events-none absolute right-[22px] size-[24px] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+    <div className="flex w-full flex-col gap-[8px]">
+      <div className="relative h-[64px] w-full">
+        {/* ปุ่มเปิดรายการ (Figma node 2917:16430): พื้นขาว ขอบ #A5A5A5 ตัวอักษร+ลูกศร #7F7F7F
+            เลือกค่าแล้ว = สไตล์เดียวกับช่วงอายุที่เลือก (พื้นฟ้าอ่อน ขอบ+ตัวอักษรฟ้า) ให้สองหน้าดูเป็นชุดเดียวกัน
+            ปิดใช้งาน (เช่น อำเภอก่อนเลือกจังหวัด) = เทาอ่อนกว่า */}
+        <button
+          ref={(el) => {
+            triggerRef.current = el;
+            if (fieldRef) fieldRef.current = el;
+          }}
+          type="button"
+          onClick={() => onOpenChange(!open)}
+          disabled={disabled}
+          aria-label={placeholder}
+          aria-describedby={invalid ? errorId : undefined}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:translate-y-0 ${
+            value
+              ? "border-[#00A3E0] bg-[#D9F1FA] text-[#00A3E0]"
+              : invalid
+                ? "border-[#D92D20] bg-[#FEF3F2] text-[#D92D20]"
+                : "border-[#A5A5A5] bg-white text-[#7F7F7F]"
+          }`}
         >
-          <path
-            fill="currentColor"
-            d="M10.7791 17.4255L2.34884 8.17021C2.23256 8.04255 2.14574 7.90468 2.08837 7.7566C2.03101 7.60851 2.00155 7.44851 2 7.2766C2 6.93617 2.10698 6.6383 2.32093 6.38298C2.53488 6.12766 2.8155 6 3.16279 6H20.8372C21.186 6 21.4674 6.12766 21.6814 6.38298C21.8953 6.6383 22.0015 6.93617 22 7.2766C22 7.3617 21.8837 7.65958 21.6511 8.17021L13.2209 17.4255C13.0271 17.6383 12.8333 17.7872 12.6395 17.8723C12.4457 17.9574 12.2325 18 12 18C11.7674 18 11.5543 17.9574 11.3605 17.8723C11.1667 17.7872 10.9729 17.6383 10.7791 17.4255Z"
-          />
-        </svg>
-      </button>
-
-      {open &&
-        placement &&
-        createPortal(
-          // Clip window starts at the trigger's bottom edge, so the list slides out from under the
-          // button — same idea as Figma Component 58 (list tucked behind the trigger)
-          <div
-            ref={listRef}
-            className={`${notoLoopedThai.className} pointer-events-none fixed z-40 overflow-hidden`}
-            style={{ left: placement.left, width: placement.width, top: placement.top, paddingTop: LIST_GAP }}
+          {value || placeholder}
+          {/* same shape as /images/consent/dropdown-arrow.svg, drawn inline so it follows the text colour */}
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className={`pointer-events-none absolute right-[22px] size-[24px] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           >
-            {/* scroll bar วาดเอง (CustomScrollArea) ให้เห็นตลอดทุกเบราว์เซอร์/มือถือเมื่อรายการยาวเกินกรอบ */}
-            <CustomScrollArea
-              className="dropdown-slide-down pointer-events-auto overflow-hidden rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white"
-              maxHeight={placement.maxHeight - LIST_BORDER * 2}
-              contentClassName="flex flex-col overscroll-contain"
-              contentProps={{ role: "listbox", "aria-label": placeholder }}
-              trackClassName={LIST_SCROLL_TRACK_CLASS}
-              thumbClassName={SCROLL_THUMB_CLASS}
+            <path
+              fill="currentColor"
+              d="M10.7791 17.4255L2.34884 8.17021C2.23256 8.04255 2.14574 7.90468 2.08837 7.7566C2.03101 7.60851 2.00155 7.44851 2 7.2766C2 6.93617 2.10698 6.6383 2.32093 6.38298C2.53488 6.12766 2.8155 6 3.16279 6H20.8372C21.186 6 21.4674 6.12766 21.6814 6.38298C21.8953 6.6383 22.0015 6.93617 22 7.2766C22 7.3617 21.8837 7.65958 21.6511 8.17021L13.2209 17.4255C13.0271 17.6383 12.8333 17.7872 12.6395 17.8723C12.4457 17.9574 12.2325 18 12 18C11.7674 18 11.5543 17.9574 11.3605 17.8723C11.1667 17.7872 10.9729 17.6383 10.7791 17.4255Z"
+            />
+          </svg>
+        </button>
+  
+        {open &&
+          placement &&
+          createPortal(
+            // Clip window starts at the trigger's bottom edge, so the list slides out from under the
+            // button — same idea as Figma Component 58 (list tucked behind the trigger)
+            <div
+              ref={listRef}
+              className={`${notoLoopedThai.className} pointer-events-none fixed z-40 overflow-hidden`}
+              style={{ left: placement.left, width: placement.width, top: placement.top, paddingTop: LIST_GAP }}
             >
-              {/* Figma node 2222:4106: แถวสูง 62px คั่นด้วยเส้น #D9D9D9 ตัวอักษร #595959
-                  ตัวที่เลือกอยู่ = พื้นฟ้าอ่อน ตัวอักษรฟ้า + ✓ กำกับ (ไม่สื่อด้วยสีอย่างเดียว) */}
-              {options.map((o) => {
-                const selected = value === o;
-                return (
-                  <button
-                    key={o}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    onClick={() => {
-                      onChange(o);
-                      onOpenChange(false);
-                    }}
-                    className={`flex min-h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] border-b-2 border-solid border-[#D9D9D9] px-[32px] text-[20px] font-semibold leading-[30px] last:border-b-0 active:bg-[#F2F2F2] ${
-                      selected ? "bg-[#D9F1FA] text-[#00A3E0]" : "bg-white text-[#595959]"
-                    }`}
-                  >
-                    {selected && <span aria-hidden="true">✓</span>}
-                    {o}
-                  </button>
-                );
-              })}
-            </CustomScrollArea>
-          </div>,
-          document.body
-        )}
+              {/* scroll bar วาดเอง (CustomScrollArea) ให้เห็นตลอดทุกเบราว์เซอร์/มือถือเมื่อรายการยาวเกินกรอบ */}
+              <CustomScrollArea
+                className="dropdown-slide-down pointer-events-auto overflow-hidden rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white"
+                maxHeight={placement.maxHeight - LIST_BORDER * 2}
+                contentClassName="flex flex-col overscroll-contain"
+                contentProps={{ role: "listbox", "aria-label": placeholder }}
+                trackClassName={LIST_SCROLL_TRACK_CLASS}
+                thumbClassName={SCROLL_THUMB_CLASS}
+              >
+                {/* Figma node 2222:4106: แถวสูง 62px คั่นด้วยเส้น #D9D9D9 ตัวอักษร #595959
+                    ตัวที่เลือกอยู่ = พื้นฟ้าอ่อน ตัวอักษรฟ้า + ✓ กำกับ (ไม่สื่อด้วยสีอย่างเดียว) */}
+                {options.map((o) => {
+                  const selected = value === o;
+                  return (
+                    <button
+                      key={o}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => {
+                        onChange(o);
+                        onOpenChange(false);
+                      }}
+                      className={`flex min-h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] border-b-2 border-solid border-[#D9D9D9] px-[32px] text-[20px] font-semibold leading-[30px] last:border-b-0 active:bg-[#F2F2F2] ${
+                        selected ? "bg-[#D9F1FA] text-[#00A3E0]" : "bg-white text-[#595959]"
+                      }`}
+                    >
+                      {selected && <span aria-hidden="true">✓</span>}
+                      {o}
+                    </button>
+                  );
+                })}
+              </CustomScrollArea>
+            </div>,
+            document.body
+          )}
+      </div>
+      {invalid && errorMessage && <FieldError id={errorId}>{errorMessage}</FieldError>}
     </div>
   );
 }
@@ -204,6 +236,13 @@ export default function ConsentLocationPage() {
     open: openMenu === name,
     onOpenChange: (open: boolean) => setOpenMenu(open ? name : null),
   });
+  // กดปุ่มยินยอมทั้งที่ยังกรอกไม่ครบ → ไฮไลต์ช่องที่ขาด (หายเองทีละช่องเมื่อกรอกแล้ว)
+  const [showErrors, setShowErrors] = useState(false);
+  const provinceRef = useRef<HTMLButtonElement>(null);
+  const districtRef = useRef<HTMLButtonElement>(null);
+  const subdistrictRef = useRef<HTMLButtonElement>(null);
+  const pdpaRef = useRef<HTMLButtonElement>(null);
+  const pdpaErrorId = useId();
 
   useEffect(() => {
     const session = progressService.getOrCreateSession();
@@ -228,9 +267,53 @@ export default function ConsentLocationPage() {
     setSubdistrict(other ? OTHER_PROVINCE : "");
   };
 
+  // ไม่เลือกตำบลให้อัตโนมัติ — ผู้เล่นต้องเลือกเอง ไม่งั้นอาจข้ามไปและได้ข้อมูลที่ไม่ตรงจริง
   const handleDistrictChange = (value: string) => {
     setDistrict(value);
-    setSubdistrict(districts.find((d) => d.name === value)?.subdistricts[0] ?? "");
+    setSubdistrict("");
+  };
+
+  // อำเภอ/ตำบลนับว่า "ขาด" ก็ต่อเมื่อกดเลือกได้แล้ว (ช่องก่อนหน้าเลือกแล้ว) — ช่องที่ยังเทาอยู่ไม่ต้องแดง
+  const provinceMissing = !province;
+  const districtMissing = !isOtherProvince && !!province && !district;
+  const subdistrictMissing = !isOtherProvince && !!district && !subdistrict;
+
+  const handleContinue = () => {
+    const missing = [
+      provinceMissing && { field: "province", el: provinceRef.current },
+      districtMissing && { field: "district", el: districtRef.current },
+      subdistrictMissing && { field: "subdistrict", el: subdistrictRef.current },
+      !accepted && { field: "pdpa", el: pdpaRef.current },
+    ].filter((m): m is { field: string; el: HTMLButtonElement | null } => !!m);
+
+    if (missing.length === 0) {
+      submit({ province, district, subdistrict });
+      return;
+    }
+
+    setShowErrors(true);
+    loggingService.logEvent("consent_submit_incomplete", { missing: missing.map((m) => m.field) });
+
+    // เลื่อนไปหาช่องแรกที่ขาด (บนจอมือถืออาจมองไม่เห็นช่องติ๊ก PDPA) แล้วสั่นช่องที่ขาดให้สะดุดตา
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const first = missing[0].el;
+    first?.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+    first?.focus({ preventScroll: true });
+    if (!reduceMotion) {
+      for (const { el } of missing) {
+        el?.animate(
+          [
+            { transform: "translateX(0)" },
+            { transform: "translateX(-6px)" },
+            { transform: "translateX(6px)" },
+            { transform: "translateX(-6px)" },
+            { transform: "translateX(6px)" },
+            { transform: "translateX(0)" },
+          ],
+          { duration: 400, easing: "ease-in-out" }
+        );
+      }
+    }
   };
 
   const submit = async (values: { province: string; district: string; subdistrict: string }) => {
@@ -293,6 +376,9 @@ export default function ConsentLocationPage() {
                   options={[...locationData.provinces.map((p) => p.name), OTHER_PROVINCE]}
                   {...menuProps("จังหวัด")}
                   scrollRef={scrollRef}
+                  fieldRef={provinceRef}
+                  invalid={showErrors && provinceMissing}
+                  errorMessage="กรุณาเลือกจังหวัด"
                 />
                 {!isOtherProvince && (
                   <>
@@ -304,6 +390,9 @@ export default function ConsentLocationPage() {
                       disabled={!province}
                       {...menuProps("อำเภอ")}
                       scrollRef={scrollRef}
+                      fieldRef={districtRef}
+                      invalid={showErrors && districtMissing}
+                      errorMessage="กรุณาเลือกอำเภอ"
                     />
                     <SelectCard
                       placeholder="ตำบล"
@@ -313,36 +402,51 @@ export default function ConsentLocationPage() {
                       disabled={!district}
                       {...menuProps("ตำบล")}
                       scrollRef={scrollRef}
+                      fieldRef={subdistrictRef}
+                      invalid={showErrors && subdistrictMissing}
+                      errorMessage="กรุณาเลือกตำบล"
                     />
                   </>
                 )}
               </div>
 
-              <div className="flex w-full items-center gap-[16px]">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={accepted}
-                  aria-label="ข้าพเจ้าได้อ่านและยอมรับนโยบายความเป็นส่วนตัว (PDPA) แล้ว"
-                  onClick={() => setAccepted((prev) => !prev)}
-                  className={`flex size-[40px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-2 border-solid active:bg-[#F2F2F2] ${
-                    accepted ? "border-[#00A3E0] bg-[#D9F1FA]" : "border-[#D9D9D9] bg-white"
-                  }`}
-                >
-                  {/* Figma node 2917:16420: ขอบ #D9D9D9 — ติ๊กแล้วใช้ฟ้าเหมือนตัวเลือกที่เลือกอยู่ */}
-                  {accepted && <Check size={26} strokeWidth={3} className="text-[#00A3E0]" aria-hidden="true" />}
-                </button>
-                <p className="flex-1 text-[18px] font-normal leading-[26px]">
-                  ข้าพเจ้าได้อ่านและยอมรับ
+              <div className="flex w-full flex-col gap-[8px]">
+                <div className="flex w-full items-center gap-[16px]">
                   <button
+                    ref={pdpaRef}
                     type="button"
-                    onClick={() => setShowPDPA(true)}
-                    className="cursor-pointer text-[#0078A8] underline"
+                    role="checkbox"
+                    aria-checked={accepted}
+                    aria-label="ข้าพเจ้าได้อ่านและยอมรับนโยบายความเป็นส่วนตัว (PDPA) แล้ว"
+                    aria-invalid={(showErrors && !accepted) || undefined}
+                    aria-describedby={showErrors && !accepted ? pdpaErrorId : undefined}
+                    onClick={() => setAccepted((prev) => !prev)}
+                    className={`flex size-[40px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-2 border-solid active:bg-[#F2F2F2] ${
+                      accepted
+                        ? "border-[#00A3E0] bg-[#D9F1FA]"
+                        : showErrors
+                          ? "border-[#D92D20] bg-[#FEF3F2]"
+                          : "border-[#D9D9D9] bg-white"
+                    }`}
                   >
-                    นโยบายความเป็นส่วนตัว
+                    {/* Figma node 2917:16420: ขอบ #D9D9D9 — ติ๊กแล้วใช้ฟ้าเหมือนตัวเลือกที่เลือกอยู่; ยังไม่ติ๊กตอนกดยินยอม = แดง */}
+                    {accepted && <Check size={26} strokeWidth={3} className="text-[#00A3E0]" aria-hidden="true" />}
                   </button>
-                  (PDPA)แล้ว
-                </p>
+                  <p className="flex-1 text-[18px] font-normal leading-[26px]">
+                    ข้าพเจ้าได้อ่านและยอมรับ
+                    <button
+                      type="button"
+                      onClick={() => setShowPDPA(true)}
+                      className="cursor-pointer text-[#0078A8] underline"
+                    >
+                      นโยบายความเป็นส่วนตัว
+                    </button>
+                    (PDPA)แล้ว
+                  </p>
+                </div>
+                {showErrors && !accepted && (
+                  <FieldError id={pdpaErrorId}>กรุณาติ๊กยอมรับนโยบายความเป็นส่วนตัวก่อน</FieldError>
+                )}
               </div>
             </>
           )}
@@ -351,10 +455,8 @@ export default function ConsentLocationPage() {
 
       {/* รายการที่เปิดอยู่วาดทับแถบนี้ได้ — ระหว่างนั้นปิดการกด (แตะตรงนี้ = แค่ปิดรายการ ไม่ submit) */}
       <div inert={!!openMenu} className={`shrink-0 px-[24px] pb-[64px] pt-[24px] ${openMenu ? "pointer-events-none" : ""}`}>
-        <Button3D
-          onClick={() => submit({ province, district, subdistrict })}
-          disabled={!locationDone || !accepted}
-        >
+        {/* ยังกรอกไม่ครบ = ปุ่มสีเทา (ให้รู้ว่ายังขาดอะไรอยู่) แต่ยังกดได้ — กดแล้วไฮไลต์ช่องที่ขาดแทนการ submit */}
+        <Button3D onClick={handleContinue} inactive={!locationDone || !accepted}>
           ยินยอมและเริ่มเรียนรู้
         </Button3D>
       </div>
