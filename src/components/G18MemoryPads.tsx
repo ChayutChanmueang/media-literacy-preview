@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
-import GameStageHeader from "./GameStageHeader";
+import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { Brain, Eye, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
@@ -338,7 +337,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
               logEvent("g18_dev_skip_level", { game_id: "G18", run: runRef.current, level: levelRef.current });
               completeLevel();
             }}
-            className={`${HUD_DEV_BUTTON_CLASS} self-center`}
+            className={HUD_DEV_BUTTON_CLASS}
             data-dev-only="g18-skip-level"
           >
             จบรอบ

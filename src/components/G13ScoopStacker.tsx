@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import GameHudBar, { GameHudItem, HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
-import { ArrowRight, Clock3, GraduationCap, RotateCcw, Trophy } from "lucide-react";
+import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
+import { Trophy } from "lucide-react";
+import { notoLoopedThai } from "@/lib/fonts";
+import Button3D from "./Button3D";
 import {
   clampToRange,
   getBombDropCount,
@@ -19,7 +21,7 @@ import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 type Props = {
   onFinish: (score: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
-  // โหมดอิสระ: ปุ่มจบเกมในหน้าสรุปคะแนนใช้ข้อความ "ต่อไป" แทน "เสร็จสิ้นบทเรียน" (ค่าเริ่มต้น "flow" กันไม่ให้ Dev Hub เปลี่ยนพฤติกรรม)
+  // โหมดอิสระ: ปุ่มจบเกมในหน้าสรุปคะแนนใช้ข้อความ "จบเกม" (แบบ G18–G20) แทน "เสร็จสิ้นบทเรียน" (ค่าเริ่มต้น "flow" กันไม่ให้ Dev Hub เปลี่ยนพฤติกรรม)
   learningMode?: "flow" | "manual";
 };
 
@@ -384,6 +386,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   const [timeLeft, setTimeLeft] = useState(SESSION_TIME_SECONDS);
   const [height, setHeight] = useState(0);
   const [bestHeight, setBestHeight] = useState(0);
+  const [runs, setRuns] = useState(0); // rounds started since the game was opened — best-score lines show from the 2nd
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number | null>(null);
@@ -1215,6 +1218,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   }, [drawScene, phase, updateWorld]);
 
   const startGame = () => {
+    setRuns((n) => n + 1);
     worldRef.current = createWorld();
     setHeight(0);
     setTimeLeft(SESSION_TIME_SECONDS);
@@ -1295,21 +1299,14 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
 
       {phase === "playing" && (
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <GameHudBar
+          {/* Header card: same as the other fun games (GameStageHeader) — time left (or practice) / tower height */}
+          <GameStageHeader
             left={
-              inTutorial ? (
-                <GameHudItem icon={GraduationCap} tone="tutorial">
-                  ฝึกเล่น
-                </GameHudItem>
-              ) : (
-                <GameHudItem icon={Clock3}>{formatTime(timeLeft)}</GameHudItem>
-              )
+              inTutorial
+                ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" }
+                : { label: "เวลา", value: formatTime(timeLeft), ariaLabel: `เหลือเวลา ${formatTime(timeLeft)}` }
             }
-            right={
-              <GameHudItem icon={Trophy} tone="score">
-                สูง {height} ชั้น
-              </GameHudItem>
-            }
+            right={{ label: "ความสูง", value: `${height} ชั้น`, ariaLabel: `สูง ${height} ชั้น` }}
           >
             {process.env.NODE_ENV === "development" && inTutorial && (
               <button
@@ -1339,7 +1336,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
                 ข้ามเวลา
               </button>
             )}
-          </GameHudBar>
+          </GameStageHeader>
           <div className="relative flex-1 min-h-0 overflow-hidden">
             <canvas
               ref={canvasRef}
@@ -1381,28 +1378,38 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         </div>
       )}
 
+      {/* same end screen as G18 / G19 / G20: trophy, title, one score line, best-score lines, Button3D + finish */}
       {phase === "summary" && (
-        <div className="flex flex-col flex-1 min-h-0 items-center justify-center p-5 text-center bg-gradient-to-b from-sky-100 to-orange-100">
-          <Trophy size={58} className="text-amber-600 mb-3" aria-hidden="true" />
-          <h2 className="text-[clamp(24px,6.3vw,29px)] font-bold text-amber-950 mb-2">ต่อไอติมได้ยอดเยี่ยม!</h2>
-          <p className="text-[clamp(18px,4.8vw,22px)] text-slate-700 mb-5">
-            หอไอติมสูง {height} ชั้น
-            {bestHeight > height ? ` · สูงสุด ${bestHeight} ชั้น` : ""}
-          </p>
-          <div className="flex flex-col gap-3 w-full max-w-xs">
+        <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
+              <Trophy size={88} className="shrink-0 text-[#CA8A04]" aria-hidden="true" />
+              <p className="gp-text-32 font-bold gp-leading-40 text-black">{height > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
+              {height > 0 ? (
+                <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+                  หอไอติมสูง <span className="font-bold text-[#B45309]">{height}</span> ชั้น
+                </p>
+              ) : (
+                <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+                  ลากกรวยไปรับลูกไอติม แล้วหลบลูกระเบิดนะ
+                </p>
+              )}
+              {runs > 1 && height > 0 && height === bestHeight && (
+                <p className="gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
+              )}
+              {runs > 1 && (
+                <p className="gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestHeight} ชั้น</p>
+              )}
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
+            <Button3D onClick={startGame}>เล่นอีกครั้ง</Button3D>
             <button
               type="button"
               onClick={() => onFinish(height)}
-              className="btn btn-primary min-h-16 text-[clamp(18px,4.8vw,22px)]"
+              className="min-h-[56px] rounded-[16px] border-2 border-solid border-[#CBD5E1] bg-white gp-text-22 font-bold text-[#1a1a1a]"
             >
-              {learningMode === "manual" ? "ต่อไป" : "เสร็จสิ้นบทเรียน"} <ArrowRight size={24} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={startGame}
-              className="btn btn-outline min-h-14 text-[clamp(18px,4.8vw,22px)] bg-white"
-            >
-              <RotateCcw size={22} aria-hidden="true" /> เล่นอีกรอบ
+              {learningMode === "manual" ? "จบเกม" : "เสร็จสิ้นบทเรียน"}
             </button>
           </div>
         </div>

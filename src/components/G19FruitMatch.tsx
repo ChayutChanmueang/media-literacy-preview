@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
-import GameStageHeader from "./GameStageHeader";
+import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { Cherry, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
@@ -791,7 +790,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
               logEvent("g19_dev_end_run", { game_id: "G19", run: runRef.current, moves_left: movesRef.current });
               endRun("dev_skip");
             }}
-            className={`${HUD_DEV_BUTTON_CLASS} self-center`}
+            className={HUD_DEV_BUTTON_CLASS}
             data-dev-only="g19-end-run"
           >
             จบรอบ

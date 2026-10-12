@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
-import GameStageHeader from "./GameStageHeader";
+import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { Salad, Trophy } from "lucide-react";
 import { mali, notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
@@ -654,7 +653,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
               logEvent("g20_dev_end_run", { game_id: "G20", run: runRef.current, throws_left: throwsRef.current });
               endRun();
             }}
-            className={`${HUD_DEV_BUTTON_CLASS} self-center`}
+            className={HUD_DEV_BUTTON_CLASS}
             data-dev-only="g20-end-run"
           >
             จบรอบ
