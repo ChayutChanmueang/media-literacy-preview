@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import { firstIncompleteFlowLesson } from "@/lib/flow";
 import { notoLoopedThai } from "@/lib/fonts";
+import CustomScrollArea from "@/components/CustomScrollArea";
+import { PAGE_SCROLL_TRACK_CLASS, SCROLL_THUMB_CLASS } from "@/lib/scrollbarStyles";
 import { getOrderedLessonIds, getVideoByLessonId } from "@/lib/videos";
 
 // 3D press shared by the cards and back button below — same feel as Button3D: the grey base is its own
@@ -42,14 +45,16 @@ function Press3D({
 }
 
 // Figma node "เลือกโหมด" — การ์ดเลือกโหมดเดินเรื่อง (คลิกได้ทั้งใบ ไม่มีปุ่มยืนยันแยก)
-// ช่อง "image 27" ในดีไซน์เป็น checker placeholder ของ Figma เอง (ยังไม่มีภาพจริงให้) จึงคงไว้เป็น placeholder
+// ช่อง "image 27" (132×152) ใช้ไอคอนโหมดจาก public/images/mode-selection — ภาพสี่เหลี่ยมจัตุรัส จึงวางขนาด 132×132 กึ่งกลางช่อง
 function ModeCard({
   name,
+  icon,
   body,
   caption,
   onClick,
 }: {
   name: string;
+  icon: string;
   /** ขึ้นบรรทัดตามที่ Figma ตั้งใจตัดไว้เอง — ภาษาไทยไม่มีเว้นวรรคระหว่างคำ เบราว์เซอร์บางตัว
    * (โดยเฉพาะเบราว์เซอร์ในแอป LINE ที่กลุ่มผู้ใช้หลักเข้าเว็บผ่าน) ตัดคำผิดกลางคำได้ถ้าปล่อยให้ wrap เอง */
   body: string[];
@@ -60,16 +65,10 @@ function ModeCard({
     <Press3D onClick={onClick} className="w-full max-w-[352px]" baseRadius="rounded-[24px]">
       {/* min-h, not h: on narrow screens the wrapped text can need more room than the 152px image — the card must grow, never clip */}
       <div className="flex min-h-[256px] items-center gap-[16px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[24px] py-[20px]">
-        <div
-          className="h-[152px] w-[132px] shrink-0 rounded-[12px]"
-          style={{
-            backgroundImage:
-              "linear-gradient(45deg, #E5E5E5 25%, transparent 25%), linear-gradient(-45deg, #E5E5E5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #E5E5E5 75%), linear-gradient(-45deg, transparent 75%, #E5E5E5 75%)",
-            backgroundSize: "16px 16px",
-            backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
-          }}
-          aria-hidden="true"
-        />
+        <div className="flex h-[152px] w-[132px] shrink-0 items-center justify-center" aria-hidden="true">
+          {/* next/image: the source PNGs are 1254px / ~0.6–0.9 MB — served resized for the 132px slot */}
+          <Image src={icon} alt="" width={132} height={132} className="h-[132px] w-[132px] object-contain" />
+        </div>
         <div className="flex min-w-0 flex-1 flex-col gap-[8px]">
           <p className="text-[28px] font-bold leading-[36px] text-[#4B4B4B]">{name}</p>
           <p className="text-[20px] font-normal leading-[30px] text-[#4B4B4B]">
@@ -315,12 +314,14 @@ export default function LessonSelectorPage() {
             <div className="flex w-full flex-col items-center gap-[24px]">
               <ModeCard
                 name="เนื้อเรื่อง"
+                icon="/images/mode-selection/story_mode_ico.png"
                 body={["การเรียนรู้เรียง", "ต่อไปเรื่อยๆ"]}
                 caption={["เรียนรู้ตามลำดับ", "ขั้นตอนเนื้อหาเข้าใจ", "ง่าย"]}
                 onClick={handleStartFlowMode}
               />
               <ModeCard
                 name="อิสระ"
+                icon="/images/mode-selection/free_mode_ico.png"
                 body={["เลือกการเรียนรู้ได้", "อย่างอิสระ"]}
                 caption={["เลือกหัวข้อที่สนใจ", "เรียนรู้ด้วยตัวเอง"]}
                 onClick={handleStartManualMode}
@@ -364,7 +365,8 @@ export default function LessonSelectorPage() {
   if (activeSubPage === "fun-games") {
     return (
       <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* scroll bar วาดเอง ให้เห็นตลอดเมื่อรายการยาวเกินจอ (native scrollbar บนมือถือซ่อนตัวเอง) */}
+        <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
           <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
             <p className="text-[28px] font-bold leading-[36px]">เกมสนุก</p>
 
@@ -379,7 +381,7 @@ export default function LessonSelectorPage() {
               ))}
             </div>
           </div>
-        </div>
+        </CustomScrollArea>
 
         <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
           <BackPillButton onClick={handleBackToCategories} />
@@ -393,7 +395,8 @@ export default function LessonSelectorPage() {
   if (activeSubPage === "videos") {
     return (
       <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* scroll bar วาดเอง ให้เห็นตลอดเมื่อรายการยาวเกินจอ (native scrollbar บนมือถือซ่อนตัวเอง) */}
+        <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
           <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
             <p className="text-[28px] font-bold leading-[36px]">วิดีโอ</p>
 
@@ -408,7 +411,7 @@ export default function LessonSelectorPage() {
               ))}
             </div>
           </div>
-        </div>
+        </CustomScrollArea>
 
         <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
           <BackPillButton onClick={handleBackToCategories} />
@@ -419,7 +422,8 @@ export default function LessonSelectorPage() {
 
   return (
     <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* scroll bar วาดเอง ให้เห็นตลอดเมื่อรายการยาวเกินจอ (native scrollbar บนมือถือซ่อนตัวเอง) */}
+      <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
         <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
           <p className="text-[28px] font-bold leading-[36px]">เกมเพื่อการเรียนรู้</p>
 
@@ -434,7 +438,7 @@ export default function LessonSelectorPage() {
             ))}
           </div>
         </div>
-      </div>
+      </CustomScrollArea>
 
       <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
         <BackPillButton onClick={handleBackToCategories} />
