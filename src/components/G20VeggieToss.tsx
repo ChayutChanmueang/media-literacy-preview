@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import GameHudBar, { GameHudItem, HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
-import { Hand, Salad, Trophy } from "lucide-react";
+import { HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
+import GameStageHeader from "./GameStageHeader";
+import { Salad, Trophy } from "lucide-react";
 import { mali, notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
@@ -20,18 +21,21 @@ import GameIntro from "@/components/GameIntro";
  * - the 60-second timer is replaced by a throw budget (THROWS_PER_RUN), like G19's move budget
  * - the "จบเกม" overlay is replaced by a positive result screen with play again / finish;
  *   the mock's start overlay is replaced by the shared GameIntro
- * - the mock's floating pills are replaced by the G18/G19 header (level left, throws left right);
+ * - the mock's floating pills are replaced by the shared header card (throws left / level);
  *   no on-screen guide text, but a screen-reader-only status line (what to do, served / missed)
+ * - look follows the Figma design (Scammer Game Prototype, node 3028:13071): green gradient, broccoli
+ *   icon as the veggie — but the bowl is kept (Figma has a plate) and the pan is hidden (SHOW_PAN)
+ * - the aim arrow stops AIM_TIP_GAP short of the finger, so the finger doesn't cover its tip
  * - a short pause in the bowl after a serve so the player sees it land (the mock jumped straight
  *   to the next level)
  * - plate speed is capped lower (MAX_PLATE_SPEED 6, mock: 8)
  * - physics runs on elapsed time, not per frame, so 90/120 Hz phones don't play at double speed
- * - the counter colours are darker for contrast
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
 
 type Props = {
-  onFinish: (stars: number) => void;
+  /** score = best run since the game was opened — goes on the (device-only for now) leaderboard */
+  onFinish: (stars: number, score?: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
 };
 
@@ -72,9 +76,19 @@ const FINISH_HOLD_MS = 1800;
 const FINISH_OUT_MS = 450;
 
 const EMOJI_FONT = `"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial, sans-serif`;
-const BACKGROUND = "linear-gradient(180deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%)";
+const BACKGROUND = "linear-gradient(155.36deg, #EEFEE9 0%, #DCF4D4 100%)"; // Figma
 
-const DEFAULT_MESSAGE = "แตะที่กระทะ แล้วลากนิ้วขึ้น ปล่อยนิ้วเพื่อโยน";
+// The pan under the veggie — hidden for now to match the Figma design (drawPan is kept); set true to bring it back
+const SHOW_PAN = false;
+const TOUCH_HINT = SHOW_PAN ? "แตะที่กระทะ" : "แตะที่ผัก";
+
+// Veggie: Figma's broccoli icon, an 80px box on the 400px-wide design = 108 stage units. The drawing
+// sits inset in that box like in Figma (left 12.51%, top 6.25%, right 10.57%, bottom 5.96%).
+const VEGGIE_SRC = "/assets/g20/broccoli.svg";
+const VEGGIE_SIZE = 108;
+const VEGGIE_INSET = { left: 0.1251, top: 0.0625, right: 0.1057, bottom: 0.0596 };
+
+const DEFAULT_MESSAGE = `${TOUCH_HINT} แล้วลากนิ้วขึ้น ปล่อยนิ้วเพื่อโยน`;
 
 function starsFor(served: number) {
   if (served >= 8) return 3;
@@ -200,12 +214,17 @@ const AIM_ARROW: [number, number][] = [
 ];
 // Drag length that hits the top throw speed (straight up) — the arrow is fully red from here on
 const AIM_MAX_LENGTH = MAX_UP_SPEED / (POWER * 1.5);
+// The drawn arrow is this much shorter than the drag (stage units, ~35px on a 400px-wide phone),
+// so its tip sits just short of — below, on an upward flick — the finger instead of under it.
+// Only the drawing changes; the throw still uses the full drag.
+const AIM_TIP_GAP = 48;
 
 function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
-  const length = Math.hypot(dx, dy);
+  const dragLength = Math.hypot(dx, dy);
+  const length = dragLength - AIM_TIP_GAP;
   if (length < 1) return;
-  const ux = dx / length; // along
-  const uy = dy / length;
+  const ux = dx / dragLength; // along
+  const uy = dy / dragLength;
   ctx.save();
   ctx.beginPath();
   AIM_ARROW.forEach(([along, across], i) => {
@@ -216,17 +235,30 @@ function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: n
   });
   ctx.closePath();
   ctx.lineJoin = "round";
-  ctx.strokeStyle = "#ffffff"; // white edge keeps the red arrow visible over the red middle of the background
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = "#4B4B4B"; // dark edge keeps the green/yellow arrow visible on the light green background
+  ctx.lineWidth = 4;
   ctx.stroke();
   // power colour: green at the veggie → yellow → red at max power, so a short drag stays green
-  const power = ctx.createLinearGradient(x, y, x + ux * AIM_MAX_LENGTH, y + uy * AIM_MAX_LENGTH);
+  // (ends AIM_TIP_GAP early too, so the tip is fully red exactly at max power)
+  const redAt = AIM_MAX_LENGTH - AIM_TIP_GAP;
+  const power = ctx.createLinearGradient(x, y, x + ux * redAt, y + uy * redAt);
   power.addColorStop(0, "#22C55E");
   power.addColorStop(0.5, "#FACC15");
   power.addColorStop(1, "#EF4444");
   ctx.fillStyle = power;
   ctx.fill();
   ctx.restore();
+}
+
+function drawVeggie(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number) {
+  if (img && img.complete && img.naturalWidth > 0) {
+    const { left, top, right, bottom } = VEGGIE_INSET;
+    const box = VEGGIE_SIZE;
+    ctx.drawImage(img, x - box / 2 + box * left, y - box / 2 + box * top, box * (1 - left - right), box * (1 - top - bottom));
+    return;
+  }
+  ctx.font = `80px ${EMOJI_FONT}`;
+  ctx.fillText("🥦", x, y);
 }
 
 export default function G20VeggieToss({ onFinish, logEvent }: Props) {
@@ -251,6 +283,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<(step: number) => void>(() => {});
+  const veggieImgRef = useRef<HTMLImageElement | null>(null);
 
   const clearTimers = () => {
     timersRef.current.forEach((t) => window.clearTimeout(t));
@@ -315,7 +348,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     v.vx = 0;
     v.vy = 0;
     v.y = PLATE_Y + 8; // lower half hidden by the bowl's front, so it reads as "in the bowl"
-    v.plateOffset = Math.max(-30, Math.min(30, v.x - world.plate.x)); // keep the leaves inside the bowl's opening
+    v.plateOffset = Math.max(-16, Math.min(16, v.x - world.plate.x)); // keep the broccoli inside the bowl's opening
     levelRef.current += 1;
     setLevel(levelRef.current);
     say("✓ ลงจานแล้ว! เก่งมาก");
@@ -400,21 +433,21 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.clearRect(0, 0, GAME_W, GAME_H);
 
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const veggieImg = veggieImgRef.current;
+    drawBowlBack(ctx, plate.x);
+    if (veggie.state === "served") drawVeggie(ctx, veggieImg, veggie.x, veggie.y); // tucked between the bowl layers
+    drawBowlFront(ctx, plate.x);
+
+    if (SHOW_PAN) drawPan(ctx);
+
+    // over the bowl (a long aim reaches it), under the veggie so the veggie covers the arrow's tail
     if (veggie.state === "dragging" && drag) {
       drawAimArrow(ctx, veggie.x, veggie.y, drag.x - drag.startX, drag.y - drag.startY);
     }
 
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    drawBowlBack(ctx, plate.x);
-    ctx.font = `80px ${EMOJI_FONT}`;
-    if (veggie.state === "served") ctx.fillText("🥬", veggie.x, veggie.y); // tucked between the bowl layers
-    drawBowlFront(ctx, plate.x);
-
-    drawPan(ctx);
-
-    ctx.font = `80px ${EMOJI_FONT}`;
-    if (veggie.state !== "served") ctx.fillText("🥬", veggie.x, veggie.y);
+    if (veggie.state !== "served") drawVeggie(ctx, veggieImg, veggie.x, veggie.y);
   };
 
   // The loop below keeps one tick for the whole run; it calls the latest update/draw through this ref.
@@ -500,7 +533,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     veggie.state = "flying";
     throwsRef.current -= 1;
     setThrowsLeft(throwsRef.current);
-    say("🥬 ลอยไปแล้ว!");
+    say("ผักลอยไปแล้ว!");
     logEvent("throw", {
       game_id: "G20",
       run: runRef.current,
@@ -518,6 +551,11 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
   };
 
   const startRun = () => {
+    if (!veggieImgRef.current) {
+      const img = new Image();
+      img.src = VEGGIE_SRC;
+      veggieImgRef.current = img;
+    }
     genRef.current += 1;
     clearTimers();
     worldRef.current = { veggie: homeVeggie("idle"), plate: plateFor(1), drag: null };
@@ -537,7 +575,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
   const finish = () => {
     const stars = starsFor(bestRef.current);
     logEvent("game_complete", { game_id: "G20", runs: runRef.current, best_served: bestRef.current, stars });
-    onFinish(stars);
+    onFinish(stars, bestRef.current);
   };
 
   if (phase === "intro") {
@@ -545,7 +583,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="ผักบุ้งลอยฟ้า"
-        objective="แตะที่กระทะแล้วลากนิ้วขึ้น โยนผักบุ้งให้ลอยขึ้นไปลงจานด้านบน โยนชิ่งกำแพงซ้าย-ขวาก็ได้ ลงจานแล้วจะขึ้นเลเวลใหม่"
+        objective={`${TOUCH_HINT}แล้วลากนิ้วขึ้น โยนผักบุ้งให้ลอยขึ้นไปลงจานด้านบน โยนชิ่งกำแพงซ้าย-ขวาก็ได้ ลงจานแล้วจะขึ้นเลเวลใหม่`}
         choices={`โยนได้ ${THROWS_PER_RUN} ครั้ง ไม่จับเวลา ค่อย ๆ เล็งได้เลย`}
         icon={Salad}
         onStart={() => {
@@ -573,7 +611,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
               </p>
             ) : (
               <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
-                แตะที่กระทะแล้วลากนิ้วขึ้น เล็งไปที่จานได้เลย
+                {TOUCH_HINT}แล้วลากนิ้วขึ้น เล็งไปที่จานได้เลย
               </p>
             )}
             {newBest && <p className="gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
@@ -601,14 +639,10 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
       className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
       style={{ background: BACKGROUND }}
     >
-      {/* Header: same bar as G13 / G18 / G19 (GameHudBar) — throws left on the left, level reached right */}
-      <GameHudBar
-        left={<GameHudItem icon={Hand}>โยนได้อีก {throwsLeft}</GameHudItem>}
-        right={
-          <GameHudItem icon={Trophy} tone="score">
-            เลเวล {level}
-          </GameHudItem>
-        }
+      {/* Header card: same as G17 / G18 / G19 (GameStageHeader) — throws left on the left, level right */}
+      <GameStageHeader
+        left={{ label: "โยนได้อีก", value: throwsLeft, ariaLabel: `โยนได้อีก ${throwsLeft} ครั้ง` }}
+        right={{ label: "ด่าน", value: level, ariaLabel: `ด่าน ${level}` }}
       >
         {/* QA only (same idea as G19's) — end the run now to check the result screen */}
         {process.env.NODE_ENV === "development" && (
@@ -620,13 +654,13 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
               logEvent("g20_dev_end_run", { game_id: "G20", run: runRef.current, throws_left: throwsRef.current });
               endRun();
             }}
-            className={HUD_DEV_BUTTON_CLASS}
+            className={`${HUD_DEV_BUTTON_CLASS} self-center`}
             data-dev-only="g20-end-run"
           >
             จบรอบ
           </button>
         )}
-      </GameHudBar>
+      </GameStageHeader>
 
       {/* No on-screen guide; the status text is kept for screen readers only */}
       <p role="status" aria-live="polite" className="sr-only">
@@ -636,14 +670,14 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
       <div ref={wrapRef} className="flex min-h-0 w-full flex-1 items-center justify-center gp-px-8 gp-py-12">
         {stage && stage.w > 0 && (
           <div
-            className="relative shrink-0 overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+            className="relative shrink-0 overflow-hidden"
             style={{ width: stage.w, height: stage.h, containerType: "inline-size" }}
           >
             <canvas
               ref={canvasRef}
               width={Math.round(stage.w * stage.dpr)}
               height={Math.round(stage.h * stage.dpr)}
-              aria-label="สนามโยนผักบุ้ง: กระทะอยู่ด้านล่าง จานอยู่ด้านบน"
+              aria-label={SHOW_PAN ? "สนามโยนผักบุ้ง: กระทะอยู่ด้านล่าง จานอยู่ด้านบน" : "สนามโยนผัก: ผักอยู่ด้านล่าง ชามอยู่ด้านบน"}
               role="img"
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}

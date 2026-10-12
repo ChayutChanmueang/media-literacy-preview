@@ -8,6 +8,39 @@ import { firstIncompleteFlowLesson } from "@/lib/flow";
 import { notoLoopedThai } from "@/lib/fonts";
 import { getOrderedLessonIds, getVideoByLessonId } from "@/lib/videos";
 
+// 3D press shared by the cards and back button below — same feel as Button3D: the grey base is its own
+// layer exactly 8px under the face (so it stays visible however tall the face grows with its text),
+// the face slides down over it in 90ms, and the base hides only once fully covered (no grey sliver at
+// the rounded corners) and comes back at once on release. Face (children) carries the white fill,
+// the #D9D9D9 2px border and the rounding; baseRadius must match that rounding.
+function Press3D({
+  onClick,
+  className = "",
+  baseRadius,
+  children,
+}: {
+  onClick: () => void;
+  className?: string;
+  baseRadius: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative block cursor-pointer border-0 bg-transparent p-0 pb-[8px] text-left ${className}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`absolute inset-x-0 bottom-0 top-[8px] ${baseRadius} bg-[#D9D9D9] transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]`}
+      />
+      <span className="relative block transition-transform duration-[90ms] ease-out group-active:translate-y-[8px]">
+        {children}
+      </span>
+    </button>
+  );
+}
+
 // Figma node "เลือกโหมด" — การ์ดเลือกโหมดเดินเรื่อง (คลิกได้ทั้งใบ ไม่มีปุ่มยืนยันแยก)
 // ช่อง "image 27" ในดีไซน์เป็น checker placeholder ของ Figma เอง (ยังไม่มีภาพจริงให้) จึงคงไว้เป็น placeholder
 function ModeCard({
@@ -24,11 +57,7 @@ function ModeCard({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-[264px] w-full max-w-[352px] cursor-pointer flex-col overflow-clip rounded-[24px] border-0 bg-[#D9D9D9] p-0 text-left active:translate-y-[2px]"
-    >
+    <Press3D onClick={onClick} className="w-full max-w-[352px]" baseRadius="rounded-[24px]">
       {/* min-h, not h: on narrow screens the wrapped text can need more room than the 152px image — the card must grow, never clip */}
       <div className="flex min-h-[256px] items-center gap-[16px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[24px] py-[20px]">
         <div
@@ -60,7 +89,7 @@ function ModeCard({
           </p>
         </div>
       </div>
-    </button>
+    </Press3D>
   );
 }
 
@@ -75,33 +104,25 @@ function CategoryCard({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-[104px] w-full cursor-pointer flex-col overflow-clip rounded-[24px] border-0 bg-[#D9D9D9] p-0 text-left active:translate-y-[2px]"
-    >
+    <Press3D onClick={onClick} className="w-full" baseRadius="rounded-[24px]">
       {/* min-h, not h: some labels (video titles) run longer than the short category names this card was designed around */}
       <div className="flex min-h-[96px] items-center gap-[28px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white py-[8px] pl-[20px] pr-[18px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={icon} alt="" aria-hidden="true" className="size-[60px] shrink-0 rounded-[12px] object-cover" />
         <p className="min-w-0 flex-1 text-[24px] font-semibold leading-[32px] text-[#4B4B4B]">{label}</p>
       </div>
-    </button>
+    </Press3D>
   );
 }
 
 // Figma node "Component 29" — ปุ่มย้อนกลับรอง ตัวเล็ก กึ่งกลาง ตัวอักษรสีเทา (ไม่ใช่ Button3D หลักสีฟ้า)
 function BackPillButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="mx-auto flex h-[64px] w-fit min-w-[172px] cursor-pointer flex-col overflow-clip rounded-[20px] border-0 bg-[#D9D9D9] p-0 active:translate-y-[2px]"
-    >
+    <Press3D onClick={onClick} className="mx-auto w-fit min-w-[172px]" baseRadius="rounded-[20px]">
       <div className="flex h-[56px] items-center justify-center rounded-[20px] border-2 border-solid border-[#D9D9D9] bg-white px-[24px]">
         <span className="text-[20px] font-semibold leading-[30px] text-[#A5A5A5]">ย้อนกลับ</span>
       </div>
-    </button>
+    </Press3D>
   );
 }
 

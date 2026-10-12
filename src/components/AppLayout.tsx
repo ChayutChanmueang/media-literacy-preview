@@ -190,13 +190,35 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
   // จึงซ่อน top bar (☰ + โลโก้) และแถบ progress ทั้งหมด
   const isLanding = pathname === "/";
 
+  // หน้าเล่นเกม (ทั้งเกมเรียนรู้ topic-* และเกมสนุก g13/g15–g20 ใช้ route เดียวกัน) — ซ่อน top bar
+  // ให้เกมได้พื้นที่เต็มจอและไม่มีปุ่ม ☰ ให้กดหลุดออกกลางเกม
+  const isGamePlay = /^\/lessons\/[^/]+\/game$/.test(pathname);
+  const hideHeader = isLanding || isGamePlay;
+
   // หน้าคลิปเรียนเท่านั้นที่มีปุ่ม "ข้าม" มุมขวาบนของ header
   const isLessonVideo = /^\/lessons\/[^/]+\/video$/.test(pathname);
   const showSkipInHeader = isLessonVideo && skipReadyPath === pathname;
 
   return (
     <div id="root-container">
-      {!isLanding && (
+      {/* Dev-only: header ถูกซ่อนบนหน้าเกม จึงย้ายปุ่มข้ามมาลอยมุมขวาบนแทน */}
+      {isGamePlay && DEV_SKIP_ENABLED && devSkip && (
+        <button
+          type="button"
+          onClick={() => {
+            loggingService.logEvent("dev_skip_step", { pathname });
+            devSkip();
+          }}
+          data-dev-only="step-skip"
+          aria-label="ข้ามขั้นตอนนี้ (สำหรับนักพัฒนา)"
+          className="fixed top-2 right-2 z-40 flex items-center gap-1 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50/90 px-2.5 py-1 text-[16px] font-bold text-amber-700 cursor-pointer"
+        >
+          <SkipForward size={18} aria-hidden="true" />
+          DEV ข้าม
+        </button>
+      )}
+
+      {!hideHeader && (
         <>
           {/* Header bar — ☰ (เปิด drawer) + โลโก้ (US-CF-01B; ปุ่มรีเซ็ตย้ายเข้า drawer) */}
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] bg-[var(--bg-card)] z-10 shrink-0 select-none">

@@ -5,15 +5,16 @@ import { Bot, Camera, CheckCircle2, Scissors, Shield } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
+import GameStageHeader from "@/components/GameStageHeader";
 import DATA from "@/data/g17-levels.json";
 import G3_DATA from "@/data/g3-questions.json";
 
 /**
  * G17 — โล่กันโกง (Scam breaker)
  *
- * Brick-breaker adapted from the team's ballbounce.html mock: drag the shield
- * (labelled 191, the Thai police number) left/right to bounce the 🛡️ shield
- * "ball" into the bricks.
+ * Brick-breaker adapted from the team's ballbounce.html mock: drag the paddle
+ * left/right to bounce the ball into the bricks. Look follows the Figma design
+ * (Scammer Game Prototype, node 3028:13103) — the bricks keep the stage picture.
  * Each stage takes one picture from the G3 pool and cuts it across the bricks,
  * in place, so the grid looks like the picture. After the stage the
  * whole picture is shown with G3's verdict (real / AI / edited) and explanation.
@@ -76,17 +77,20 @@ const PICTURES = G3_DATA.pool as Picture[];
 // Each level is a grid sketch: "o" = cells breakable bricks are packed into, any other character = empty.
 const LEVELS = DATA.levels as { grid: string[] }[];
 
-const GRID_TOP = 12;
+// Sizes follow the Figma design (Scammer Game Prototype, node 3028:13103) on a 400px-wide frame
+const GRID_TOP = 24; // gap between the header card and the first row
+const GRID_SIDE = 17; // left/right margin of the brick wall
 const CELL_HEIGHT = 44;
-const BRICK_INSET = 0; // visual gap between neighbouring bricks (0 = bricks touch)
-const PADDLE_HEIGHT = 32;
-const PADDLE_LABEL = "191"; // Thai police emergency number
-const PADDLE_EMOJI_LEFT = "🚨";
-const PADDLE_EMOJI_RIGHT = "👮";
-const PADDLE_EMOJI_PX = 20;
-const PADDLE_BOTTOM = 56;
-const BALL_RADIUS = 16;
-const BALL_RADIUS_MAX = 24;
+const BRICK_GAP = 2; // gap between neighbouring bricks
+const BRICK_BORDER = 1; // white edge around each brick
+const BRICK_FALLBACK = "#8DABD9"; // brick colour until the stage picture has loaded
+const PADDLE_WIDTH = 140;
+const PADDLE_HEIGHT = 20;
+const PADDLE_COLOR = "#595959";
+const PADDLE_BOTTOM = 100; // space under the paddle
+const BALL_SRC = "/assets/g17/ball.svg";
+const BALL_RADIUS = 12; // drawn as a 24px icon
+const BALL_RADIUS_MAX = 20;
 const MAX_BALLS = 6;
 const ITEM_DROP_CHANCE = 0.25;
 const ITEM_SIZE = 32;
@@ -98,16 +102,17 @@ const ui = { s: 1, t: 1 };
 const px = (base: number, min = 0) => Math.max(min, base * ui.s);
 const textPx = (base: number) => Math.max(18, Math.round(base * ui.t));
 const gridTop = () => px(GRID_TOP);
+const gridSide = () => px(GRID_SIDE);
 const cellHeight = () => px(CELL_HEIGHT, 34);
-const paddleHeight = () => px(PADDLE_HEIGHT, 28);
+const paddleHeight = () => px(PADDLE_HEIGHT, 16);
 const itemSize = () => px(ITEM_SIZE, 24);
 const MAX_BOUNCE_ANGLE = (60 * Math.PI) / 180;
 const TAP_SLOP_PX = 10;
 
 const ITEM_INFO: Record<ItemType, { emoji: string; toast: string }> = {
-  split: { emoji: "🪄", toast: "🪄 โล่แยกเป็น 3 อัน!" },
-  grow: { emoji: "🍄", toast: "🍄 โล่ใหญ่ขึ้น!" },
-  slow: { emoji: "🐢", toast: "🐢 โล่ช้าลง เล่นสบายขึ้น" },
+  split: { emoji: "🪄", toast: "🪄 ลูกบอลแยกเป็น 3 ลูก!" },
+  grow: { emoji: "🍄", toast: "🍄 ลูกบอลใหญ่ขึ้น!" },
+  slow: { emoji: "🐢", toast: "🐢 ลูกบอลช้าลง เล่นสบายขึ้น" },
 };
 const ITEM_TYPES = Object.keys(ITEM_INFO) as ItemType[];
 
@@ -137,22 +142,25 @@ const MAX_BOOST = 1.5;
 const SLOW_MULTIPLIER = 0.75; // 🐢: −25% of the current speed
 const SLOW_FLOOR = 0.5; // several 🐢 in a row can't take it below half the start speed
 const currentSpeed = (world: World) => baseSpeed(world.height) * world.speedFactor * world.boost;
-const paddleWidth = (width: number) => Math.max(110, width * 0.34);
-const paddleTop = (height: number) => height - px(PADDLE_BOTTOM);
-
-const labelFont = (px: number) => `700 ${px}px ${notoLoopedThai.style.fontFamily}`;
+const paddleWidth = (width: number) => Math.min(width * 0.45, Math.max(110, px(PADDLE_WIDTH)));
+const paddleTop = (height: number) => height - px(PADDLE_BOTTOM) - paddleHeight();
 
 const gridCols = (world: World) => LEVELS[world.levelIdx].grid[0].length;
+const gridRows = (world: World) => LEVELS[world.levelIdx].grid.length;
 
-const cellRect = (world: World, col: number, row: number, span: number, rowSpan = 1): Rect => {
-  const cellW = world.width / gridCols(world);
-  return { x: col * cellW, y: gridTop() + row * cellHeight(), w: span * cellW, h: rowSpan * cellHeight() };
+/** Cells spread across the width between the side margins, BRICK_GAP apart. */
+const cellWidth = (world: World) => {
+  const cols = gridCols(world);
+  return (world.width - gridSide() * 2 - BRICK_GAP * (cols - 1)) / cols;
 };
 
 const brickRect = (world: World, brick: Brick): Rect => {
-  const r = cellRect(world, brick.col, brick.row, 1);
-  return { x: r.x + BRICK_INSET, y: r.y + BRICK_INSET, w: r.w - BRICK_INSET * 2, h: r.h - BRICK_INSET * 2 };
+  const w = cellWidth(world);
+  const h = cellHeight();
+  return { x: gridSide() + brick.col * (w + BRICK_GAP), y: gridTop() + brick.row * (h + BRICK_GAP), w, h };
 };
+
+const gridBottom = (world: World) => gridTop() + gridRows(world) * (cellHeight() + BRICK_GAP) - BRICK_GAP;
 
 /** Pictures for the stages, one each, no repeats within a game (wraps only if the pool is smaller). */
 const planPictures = (): Picture[] => {
@@ -179,8 +187,13 @@ const layoutLevel = (world: World) => {
   world.layoutPending = false;
 };
 
-/** The whole brick area (all grid rows), which the stage picture covers. */
-const gridRect = (world: World): Rect => cellRect(world, 0, 0, gridCols(world), LEVELS[world.levelIdx].grid.length);
+/** The whole brick area (all grid rows, gaps included), which the stage picture covers. */
+const gridRect = (world: World): Rect => ({
+  x: gridSide(),
+  y: gridTop(),
+  w: world.width - gridSide() * 2,
+  h: gridBottom(world) - gridTop(),
+});
 
 /**
  * Draw the part of `img` that lies under `rect`, as if the picture were scaled to
@@ -278,6 +291,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
   // the picture of each stage — picked once per game, all preloaded when the game starts
   const picturesRef = useRef<Picture[] | null>(null);
   const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
+  const ballImageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<{ pointerId: number; startX: number; moved: boolean } | null>(null);
   const logRef = useRef(logEvent);
   useEffect(() => {
@@ -301,6 +315,11 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
   // start loading every stage's picture up front, so the next stage's bricks are ready when it starts
   const preloadPictures = () => {
+    if (!ballImageRef.current) {
+      const ball = new Image();
+      ball.src = BALL_SRC;
+      ballImageRef.current = ball;
+    }
     for (let i = 0; i < LEVELS.length; i++) {
       const { media } = pictureOf(i);
       if (imagesRef.current.has(media)) continue;
@@ -481,7 +500,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       return;
     }
 
-    // ลูกหลุดหมด = ไม่แพ้ แค่วางลูกใหม่บนโล่แล้วให้กำลังใจ
+    // ลูกหลุดหมด = ไม่แพ้ แค่วางลูกใหม่บนแถบแล้วให้กำลังใจ
     if (world.balls.length === 0) {
       missesRef.current += 1;
       levelMissesRef.current += 1;
@@ -518,16 +537,14 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         ctx.clip();
         drawPictureCut(ctx, picture, area, rect);
       } else {
-        ctx.fillStyle = "#E2E8F0";
+        ctx.fillStyle = BRICK_FALLBACK;
         ctx.fill();
       }
       ctx.restore();
-      // light edge so neighbouring cuts still read as separate blocks
-      ctx.beginPath();
-      ctx.rect(rect.x, rect.y, rect.w, rect.h);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = picture ? "rgba(255, 255, 255, 0.7)" : "#94A3B8";
-      ctx.stroke();
+      // 1px white edge, drawn inside the brick
+      ctx.lineWidth = BRICK_BORDER;
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.strokeRect(rect.x + BRICK_BORDER / 2, rect.y + BRICK_BORDER / 2, rect.w - BRICK_BORDER, rect.h - BRICK_BORDER);
     }
 
     ctx.font = `${itemSize()}px sans-serif`;
@@ -537,37 +554,28 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     const py = paddleTop(height);
     ctx.beginPath();
     ctx.roundRect(world.paddleX - pw / 2, py, pw, paddleHeight(), paddleHeight() / 2);
-    ctx.fillStyle = "#0F766E"; // darker teal — white 191 on it passes 4.5:1
+    ctx.fillStyle = PADDLE_COLOR;
     ctx.fill();
-    // 🚨 191 👮 — emoji and number drawn separately (different fonts), laid out as one centred row
-    const labelY = py + paddleHeight() / 2 + 1;
-    const emojiFont = `${textPx(PADDLE_EMOJI_PX)}px sans-serif`;
-    ctx.font = labelFont(textPx(22));
-    const numberW = ctx.measureText(PADDLE_LABEL).width;
-    ctx.font = emojiFont;
-    const emojiW = ctx.measureText(PADDLE_EMOJI_LEFT).width;
-    const gap = 6;
-    const left = world.paddleX - (emojiW * 2 + gap * 2 + numberW) / 2;
-    ctx.fillText(PADDLE_EMOJI_LEFT, left + emojiW / 2, labelY);
-    ctx.fillText(PADDLE_EMOJI_RIGHT, left + emojiW * 1.5 + gap * 2 + numberW, labelY);
-    ctx.font = labelFont(textPx(22));
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillText(PADDLE_LABEL, left + emojiW + gap + numberW / 2, labelY);
 
-    ctx.font = `${world.radius * 2}px sans-serif`;
-    for (const ball of world.balls) ctx.fillText("🛡️", ball.x, ball.y + 1);
+    const ballImg = ballImageRef.current;
+    if (pictureReady(ballImg ?? undefined)) {
+      const d = world.radius * 2;
+      for (const ball of world.balls) ctx.drawImage(ballImg!, ball.x - d / 2, ball.y - d / 2, d, d);
+    } else {
+      ctx.font = `${world.radius * 2}px sans-serif`;
+      for (const ball of world.balls) ctx.fillText("⚪", ball.x, ball.y + 1);
+    }
 
     if (world.attached) {
-      const label = "แตะจอเพื่อปล่อยโล่";
+      const label = "แตะจอเพื่อปล่อยลูก";
       ctx.font = `600 ${textPx(22)}px ${fontFamily}`;
       const w = ctx.measureText(label).width + px(32);
       const pillH = px(44, 36);
       // halfway between the grid and the shield, so it never covers bricks on a short screen
-      const gridBottom = gridTop() + LEVELS[world.levelIdx].grid.length * cellHeight();
-      const y = (gridBottom + py - world.radius * 2) / 2;
+      const y = (gridBottom(world) + py - world.radius * 2) / 2;
       ctx.beginPath();
       ctx.roundRect(width / 2 - w / 2, y - pillH / 2, w, pillH, pillH / 2);
-      ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
+      ctx.fillStyle = "rgba(75, 75, 75, 0.9)"; // #4B4B4B text tone — white on it passes 4.5:1
       ctx.fill();
       ctx.fillStyle = "#FFFFFF";
       ctx.fillText(label, width / 2, y);
@@ -654,7 +662,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     world.paddleX = clamp(clientX - bounds.left, half, world.width - half);
   };
 
-  // ลากตรงไหนของจอก็ได้ โล่ตามนิ้ว — แตะเฉย ๆ (ไม่ลาก) = ปล่อยลูก
+  // ลากตรงไหนของจอก็ได้ แถบตามนิ้ว — แตะเฉย ๆ (ไม่ลาก) = ปล่อยลูก
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (dragRef.current) return;
     try {
@@ -704,8 +712,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="โล่กันโกง"
-        objective="ลากแถบเบอร์ตำรวจ 191 ด้านล่างไปซ้าย-ขวา รับโล่ 🛡️ ให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริง ภาพ AI หรือภาพตัดต่อ"
-        choices="ของช่วย: 🪄 โล่แยกเป็น 3 อัน · 🍄 โล่ใหญ่ขึ้น · 🐢 โล่ช้าลง"
+        objective="ลากแถบด้านล่างไปซ้าย-ขวา รับลูกบอลให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริง ภาพ AI หรือภาพตัดต่อ"
+        choices="ของช่วย: 🪄 ลูกบอลแยกเป็น 3 ลูก · 🍄 ลูกบอลใหญ่ขึ้น · 🐢 ลูกบอลช้าลง"
         icon={Shield}
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G17" });
@@ -760,11 +768,14 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
   }
 
   return (
-    <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F1F5F9] select-none`}>
-      <div className="flex gp-min-h-52 shrink-0 items-center justify-between border-b-2 border-solid border-[#E2E8F0] bg-white gp-px-16 gp-text-20 font-semibold gp-leading-28 text-[#1a1a1a]">
-        <span>
-          ด่าน {levelIdx + 1} / {LEVELS.length}
-        </span>
+    <div
+      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col overflow-hidden select-none`}
+      style={{ backgroundImage: "linear-gradient(155.36deg, #E6F6FC 0%, #C4CFE1 100%)" }}
+    >
+      <GameStageHeader
+        left={{ label: "เหลือ", value: bricksLeft, ariaLabel: `เหลือ ${bricksLeft} กล่อง` }}
+        right={{ label: "ด่าน", value: levelIdx + 1, ariaLabel: `ด่าน ${levelIdx + 1} จาก ${LEVELS.length}` }}
+      >
         {/* QA only (same idea as G13's skip-timer) — jump to the next stage layout without playing it out */}
         {process.env.NODE_ENV === "development" && (
           <button
@@ -773,19 +784,18 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
               logEvent("g17_dev_skip_level", { game_id: "G17", level: levelIdx + 1 });
               if (!worldRef.current.ended) finishLevel();
             }}
-            className="min-h-[48px] rounded-[12px] border-2 border-dashed border-violet-500 bg-violet-50 gp-px-12 gp-text-20 font-bold text-violet-800"
+            className="min-h-[48px] self-center rounded-[12px] border-2 border-dashed border-violet-500 bg-violet-50 gp-px-12 gp-text-20 font-bold text-violet-800"
             data-dev-only="g17-skip-level"
           >
             ข้ามด่าน
           </button>
         )}
-        <span>เหลือ {bricksLeft} กล่อง</span>
-      </div>
+      </GameStageHeader>
 
       <div className="relative min-h-0 flex-1">
         <canvas
           ref={canvasRef}
-          aria-label="พื้นที่เกม ลากซ้ายขวาเพื่อขยับแถบ 191 แตะเพื่อปล่อยโล่"
+          aria-label="พื้นที่เกม ลากซ้ายขวาเพื่อขยับแถบ แตะเพื่อปล่อยลูกบอล"
           className="absolute inset-0 block h-full w-full cursor-pointer touch-none"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -796,7 +806,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         {toast && (
           <div
             role="status"
-            className="pointer-events-none absolute inset-x-[16px] top-[12px] mx-auto w-fit max-w-full rounded-full bg-[rgba(15,23,42,0.85)] gp-px-20 gp-py-8 text-center gp-text-20 font-semibold gp-leading-28 text-white"
+            className="pointer-events-none absolute inset-x-[16px] top-[12px] mx-auto w-fit max-w-full rounded-full bg-[rgba(75,75,75,0.9)] gp-px-20 gp-py-8 text-center gp-text-20 font-semibold gp-leading-28 text-white"
           >
             {toast}
           </div>

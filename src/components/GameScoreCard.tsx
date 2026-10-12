@@ -45,9 +45,15 @@ export default function GameScoreCard({
       <button
         type="button"
         onClick={onNext}
-        className="group relative block h-[64px] w-full max-w-[220px] cursor-pointer overflow-clip rounded-[20px] bg-[#0078A8]"
+        className="group relative block h-[64px] w-full max-w-[220px] cursor-pointer rounded-[20px]"
       >
-        <span className="absolute inset-x-0 top-0 flex h-[56px] items-center justify-center rounded-[20px] bg-[#00A3E0] text-[20px] font-semibold leading-[30px] text-white group-active:top-[6px]">
+        {/* Same press as Button3D: the dark base is its own layer, the face slides down 8px onto it in 90ms,
+            and the base hides only once fully covered (no dark sliver at the rounded corners), back at once on release */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-[56px] rounded-[20px] bg-[#0078A8] transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]"
+        />
+        <span className="absolute inset-x-0 top-0 flex h-[56px] items-center justify-center rounded-[20px] bg-[#00A3E0] text-[20px] font-semibold leading-[30px] text-white transition-transform duration-[90ms] ease-out group-active:translate-y-[8px]">
           {nextLabel}
         </span>
       </button>

@@ -36,7 +36,7 @@ const G19FruitMatch = dynamic(() => import("@/components/G19FruitMatch"), { ssr:
 const G20VeggieToss = dynamic(() => import("@/components/G20VeggieToss"), { ssr: false });
 
 type GameProps = {
-  onFinish: (stars: number) => void;
+  onFinish: (stars: number, score?: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
   /** optional — prototypes that end with their own "back to hub" button call this instead of onFinish */
   onExit?: () => void;
@@ -224,7 +224,7 @@ const GAMES: GameEntry[] = [
     id: "G17",
     title: "โล่กันโกง",
     lesson: "โหมดอิสระ › เกมเพื่อการเรียนรู้ (g17)",
-    note: "เกมเด้งลูกทำลายบล็อก (brick breaker) — ลากแถบ 191 รับโล่ให้เด้งไปทำลายบล็อก 3 ด่านบนกริด (มีกำแพงทึบด่าน 2–3) แต่ละด่านบล็อกต่อกันเป็นภาพ 1 ภาพจากคลัง G3 จบด่านเฉลยว่าภาพจริง/AI/ตัดต่อ ไม่มีจับเวลา/แพ้",
+    note: "เกมเด้งลูกทำลายบล็อก (brick breaker) — ลากแถบรับลูกบอลให้เด้งไปทำลายบล็อก 3 ด่านบนกริด (มีกำแพงทึบด่าน 2–3) แต่ละด่านบล็อกต่อกันเป็นภาพ 1 ภาพจากคลัง G3 จบด่านเฉลยว่าภาพจริง/AI/ตัดต่อ ไม่มีจับเวลา/แพ้",
     status: "qa",
     component: G17ScamBreaker,
     designDoc: "docs/gdd/design-g17-scam-breaker.md",
@@ -290,8 +290,8 @@ export default function DevGameHubClient() {
   }, []);
 
   const handleFinish = useCallback(
-    (stars: number) => {
-      logEvent("onFinish (mock)", { stars });
+    (stars: number, score?: number) => {
+      logEvent("onFinish (mock)", score === undefined ? { stars } : { stars, score });
       setFinishedStars(stars);
     },
     [logEvent]

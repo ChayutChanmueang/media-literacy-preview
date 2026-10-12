@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import GameHudBar, { GameHudItem, HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
-import { Brain, Eye, Flag, Trophy } from "lucide-react";
+import { HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
+import GameStageHeader from "./GameStageHeader";
+import { Brain, Eye, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
@@ -19,9 +20,11 @@ import DATA from "@/data/g18-simon-pads.json";
  * Like the mock, one wrong tap ends the run and the right pad is not revealed.
  * Differences from the HTML mock, to follow AGENT.md (elderly-first):
  * - the run ends on a positive score screen instead of "จบเกม", with play again / finish
- * - pads and board keep the mock's design (plain colour pads + centre circle); a
- *   written status banner says what the circle means
- * - a "ดูอีกครั้ง" button replays the sequence any time it's the player's turn
+ * - play screen follows the Figma design (Scammer Game Prototype, node 3028:13081):
+ *   dark board, raised colour pads, centre circle, and a status pill under the board
+ *   ("จำปุ่มสีให้ดี" while the lights play, "กดปุ่มสีตามที่เห็น" on the player's turn)
+ * - a "ดูอีกครั้ง" button can replay the sequence on the player's turn — hidden for now
+ *   (SHOW_REPLAY_BUTTON) because the Figma design has none
  * - no input timeout
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
@@ -37,7 +40,8 @@ type Pad = {
 };
 
 type Props = {
-  onFinish: (stars: number) => void;
+  /** score = best run since the game was opened — goes on the (device-only for now) leaderboard */
+  onFinish: (stars: number, score?: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
 };
 
@@ -51,7 +55,10 @@ const LEAD_IN_MS = 900; // pause before the first light, so the player can look 
 const TIMING = { on: 650, off: 300 };
 const PRESS_FLASH_MS = 250;
 const CORRECT_PAUSE_MS = 1300;
-const RESULT_PAUSE_MS = 1600; // let the "wrong" banner register before the score screen
+const RESULT_PAUSE_MS = 1600; // let the "wrong" message register before the score screen
+// "ดูอีกครั้ง" (replay the sequence) — off to match the Figma design; flip back on if the final design has it
+const SHOW_REPLAY_BUTTON = false;
+const PAD_LIFT_PX = 8; // pad face sits this far above its darker base; a lit/pressed pad drops onto it
 
 // score = levels cleared in the best run
 function starsFor(score: number) {
@@ -235,7 +242,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const finish = () => {
     const stars = starsFor(bestRef.current);
     logEvent("game_complete", { game_id: "G18", runs: runRef.current, best_score: bestRef.current, stars });
-    onFinish(stars);
+    onFinish(stars, bestRef.current);
   };
 
   if (phase === "intro") {
@@ -244,7 +251,11 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
         containerClassName="bg-white gp-compact"
         title="จำให้ขึ้นใจ"
         objective="ดูไฟกะพริบทีละปุ่ม แล้วกดตามให้ถูกลำดับ ผ่านแต่ละด่าน ไฟจะยาวขึ้นอีก 1 ดวง ไปได้ไกลแค่ไหนก็ได้"
-        choices="ถ้ากดผิดแม้แต่ปุ่มเดียว จะจบรอบทันที ลืมลำดับเมื่อไหร่ กด “ดูอีกครั้ง” ก่อนได้"
+        choices={
+          SHOW_REPLAY_BUTTON
+            ? "ถ้ากดผิดแม้แต่ปุ่มเดียว จะจบรอบทันที ลืมลำดับเมื่อไหร่ กด “ดูอีกครั้ง” ก่อนได้"
+            : "ถ้ากดผิดแม้แต่ปุ่มเดียว จะจบรอบทันที"
+        }
         icon={Brain}
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G18" });
@@ -296,34 +307,28 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const length = level;
   const isInput = phase === "input";
 
-  const banner = (() => {
+  const status = (() => {
     switch (phase) {
       case "watch":
-        return { text: "👀 ดูไฟให้จบก่อนนะ", className: "bg-[#334155] text-white" };
+        return "จำปุ่มสีให้ดี";
       case "input":
-        return { text: "👆 ถึงตาคุณแล้ว กดตามได้เลย", className: "bg-[#DCFCE7] text-[#14532D] border-[#16A34A]" };
+        return "กดปุ่มสีตามที่เห็น";
       case "correct":
-        return { text: "✓ ถูกต้อง! เก่งมาก", className: "bg-[#DCFCE7] text-[#14532D] border-[#16A34A]" };
+        return "✓ ถูกต้อง! เก่งมาก";
       case "oops":
-        return { text: "กดผิดปุ่ม — มาดูคะแนนกัน", className: "bg-[#FEF9C3] text-[#422006] border-[#CA8A04]" };
+        return "กดผิดปุ่ม — มาดูคะแนนกัน";
       default:
-        return { text: "", className: "" };
+        return "";
     }
   })();
 
   return (
     <div
-      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-gradient-to-br from-[#F5F7FA] to-[#C3CFE2] select-none`}
+      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
+      style={{ backgroundImage: "linear-gradient(155.36deg, #E6F6FC 0%, #C4CFE1 100%)" }}
     >
-      {/* Header: same bar as G13 / G19 / G20 (GameHudBar) — current level left, levels cleared right */}
-      <GameHudBar
-        left={<GameHudItem icon={Flag}>ด่าน {level}</GameHudItem>}
-        right={
-          <GameHudItem icon={Trophy} tone="score">
-            ผ่าน {level - 1} ด่าน
-          </GameHudItem>
-        }
-      >
+      {/* Header card: same as G17 (GameStageHeader) — Figma leaves the left slot empty */}
+      <GameStageHeader right={{ label: "ด่าน", value: level, ariaLabel: `ด่าน ${level}` }}>
         {/* QA only (same idea as G17) — clear the current level without playing it */}
         {process.env.NODE_ENV === "development" && (
           <button
@@ -333,87 +338,100 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
               logEvent("g18_dev_skip_level", { game_id: "G18", run: runRef.current, level: levelRef.current });
               completeLevel();
             }}
-            className={HUD_DEV_BUTTON_CLASS}
+            className={`${HUD_DEV_BUTTON_CLASS} self-center`}
             data-dev-only="g18-skip-level"
           >
             จบรอบ
           </button>
         )}
-      </GameHudBar>
+      </GameStageHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-16 gp-py-20">
+        <div className="flex min-h-full flex-col items-center justify-center gp-gap-56 gp-px-24 gp-py-24">
+          {/* Board + pads: Figma — 352px dark board, 2×2 raised pads, centre circle */}
+          <div
+            className={`relative aspect-square w-full rounded-[20px] gp-p-16 transition-[background-color,box-shadow] duration-150 ${
+              phase === "correct" ? "bg-white shadow-[0_0_40px_rgba(255,255,255,1)]" : "bg-[#23233A]"
+            }`}
+            // keep the whole board on screen on most phones; very short screens scroll instead
+            style={{ maxWidth: "min(352px, 58dvh)" }}
+          >
+            <div className="grid h-full w-full grid-cols-2 grid-rows-2 gp-gap-16">
+              {PADS.map((pad, i) => {
+                const isLit = lit === i;
+                return (
+                  <button
+                    key={pad.id}
+                    type="button"
+                    aria-label={`ปุ่มสี${pad.colorName}`}
+                    aria-disabled={!isInput}
+                    onPointerDown={(e) => {
+                      if (e.pointerType === "mouse" && e.button !== 0) return;
+                      e.preventDefault();
+                      press(i);
+                    }}
+                    // keyboard Enter/Space fires click with detail 0; pointer taps are already handled above
+                    onClick={(e) => {
+                      if (e.detail === 0) press(i);
+                    }}
+                    className={`relative touch-manipulation overflow-hidden rounded-[20px] border-0 p-0 transition-[box-shadow] duration-100 ${
+                      isInput ? "cursor-pointer" : "cursor-default"
+                    } ${isLit ? "z-10" : ""}`}
+                    style={{
+                      backgroundColor: pad.shadow,
+                      boxShadow: isLit ? `0 0 40px 10px ${pad.glow}` : undefined,
+                    }}
+                  >
+                    {/* face: raised PAD_LIFT_PX above the darker base, drops onto it while lit */}
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 rounded-[20px] transition-[transform,filter] duration-100"
+                      style={{
+                        backgroundColor: pad.color,
+                        transform: isLit ? "translateY(0)" : `translateY(-${PAD_LIFT_PX}px)`,
+                        filter: isLit ? "brightness(1.3)" : undefined,
+                      }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            {/* centre circle: dark ring (Ellipse 21, 100px) + soft white face (Ellipse 20, 84px + 6px blur margin = 96px) */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-1/2 z-20 aspect-square w-[28.41%] -translate-x-1/2 -translate-y-1/2"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
+              <img src="/assets/g18/center-ring.svg" alt="" className="absolute inset-0 block h-full w-full" />
+              {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
+              <img src="/assets/g18/center-face.svg" alt="" className="absolute top-[2%] left-[2%] block h-[96%] w-[96%]" />
+            </div>
+          </div>
+
+          {/* status pill — which stage the player is in (watch the lights / press them back) */}
           <p
             role="status"
             aria-live="polite"
-            className={`w-full max-w-[420px] rounded-[16px] border-2 border-solid border-transparent gp-px-16 gp-py-12 text-center gp-text-22 font-bold gp-leading-32 ${banner.className}`}
+            className="rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white gp-px-12 gp-py-4 text-center gp-text-20 font-normal gp-leading-30 text-black"
           >
-            {banner.text}
+            {status}
           </p>
-
-          {/* Board + pads: same design as simon10.html (.simon-container / .simon-btn / .center-circle) */}
-          <div
-            className={`relative grid aspect-square w-[95%] grid-cols-2 grid-rows-2 gap-[15px] rounded-[30px] border-[8px] border-solid border-[#CBD5E1] p-[20px] transition-[background-color,box-shadow] duration-150 ${
-              phase === "correct"
-                ? "bg-white shadow-[0_0_40px_rgba(255,255,255,1)]"
-                : "bg-[#1E293B] shadow-[0_15px_35px_rgba(0,0,0,0.2),inset_0_5px_15px_rgba(255,255,255,0.1)]"
-            }`}
-            // keep the whole board on screen on most phones; very short screens scroll instead
-            style={{ maxWidth: "min(420px, 58dvh)" }}
-          >
-            {PADS.map((pad, i) => {
-              const isLit = lit === i;
-              return (
-                <button
-                  key={pad.id}
-                  type="button"
-                  aria-label={`ปุ่มสี${pad.colorName}`}
-                  aria-disabled={!isInput}
-                  onPointerDown={(e) => {
-                    if (e.pointerType === "mouse" && e.button !== 0) return;
-                    e.preventDefault();
-                    press(i);
-                  }}
-                  // keyboard Enter/Space fires click with detail 0; pointer taps are already handled above
-                  onClick={(e) => {
-                    if (e.detail === 0) press(i);
-                  }}
-                  className={`relative touch-manipulation rounded-[20px] border-x-0 border-t-[3px] border-b-[2px] border-solid border-t-[rgba(255,255,255,0.3)] border-b-[rgba(0,0,0,0.2)] p-0 transition-[transform,box-shadow,filter] duration-100 ${
-                    isInput ? "cursor-pointer" : "cursor-default"
-                  } ${isLit ? "z-10" : ""}`}
-                  style={{
-                    backgroundColor: pad.color,
-                    transform: isLit ? "translateY(10px)" : undefined,
-                    filter: isLit ? "brightness(1.4)" : undefined,
-                    boxShadow: isLit ? `0 0 0 ${pad.shadow}, 0 0 40px 10px ${pad.glow}` : `0 10px 0 ${pad.shadow}`,
-                  }}
-                />
-              );
-            })}
-            {/* white while watching = wait, dark on the player's turn — same as the mock, the banner says it in words too */}
-            <div
-              aria-hidden="true"
-              className={`absolute top-1/2 left-1/2 z-20 aspect-square w-[28%] -translate-x-1/2 -translate-y-1/2 rounded-full border-[4px] border-solid transition-[background-color,box-shadow] duration-300 ${
-                isInput
-                  ? "border-[#334155] bg-[#0F172A] shadow-[inset_0_0_20px_rgba(0,0,0,0.8),0_0_10px_rgba(0,0,0,0.5)]"
-                  : "border-[#CBD5E1] bg-[#F8FAFC] shadow-[0_0_25px_rgba(255,255,255,0.9),inset_0_0_10px_rgba(0,0,0,0.1)]"
-              }`}
-            />
-          </div>
 
           <p className="sr-only">
             ลำดับนี้มี {length} ปุ่ม กดถูกแล้ว {step} ปุ่ม
           </p>
 
-          <button
-            type="button"
-            onClick={replay}
-            disabled={!isInput}
-            className="flex min-h-[56px] items-center justify-center gap-2 rounded-[16px] border-2 border-solid border-[#2563EB] bg-white gp-px-20 gp-text-22 font-bold text-[#1D4ED8] disabled:border-[#CBD5E1] disabled:text-[#64748B]"
-          >
-            <Eye size={26} aria-hidden="true" />
-            ดูอีกครั้ง
-          </button>
+          {SHOW_REPLAY_BUTTON && (
+            <button
+              type="button"
+              onClick={replay}
+              disabled={!isInput}
+              className="flex min-h-[56px] items-center justify-center gap-2 rounded-[16px] border-2 border-solid border-[#2563EB] bg-white gp-px-20 gp-text-22 font-bold text-[#1D4ED8] disabled:border-[#CBD5E1] disabled:text-[#64748B]"
+            >
+              <Eye size={26} aria-hidden="true" />
+              ดูอีกครั้ง
+            </button>
+          )}
         </div>
       </div>
     </div>

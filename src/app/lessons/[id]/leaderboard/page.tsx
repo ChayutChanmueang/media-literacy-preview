@@ -17,6 +17,7 @@ import {
 import { apiClient } from "@/services/apiClient";
 import { leaderboardPlayerService } from "@/services/leaderboardPlayerService";
 import { leaderboardScoreService } from "@/services/leaderboardScoreService";
+import { localLeaderboardService } from "@/services/localLeaderboardService";
 import BottomActionButton from "@/components/BottomActionButton";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
 import { loggingService } from "@/services/loggingService";
@@ -140,6 +141,9 @@ function LeaderboardPageInner() {
   const lessonId = params.id;
   const game = getLeaderboardGame(lessonId);
   const gid = game?.gid;
+  // G18–G20: กระดานคะแนนในเครื่อง ยังไม่ส่ง/ดึงจากฐานข้อมูล (ดู LOCAL_LEADERBOARD_GAMES)
+  const localOnly = Boolean(game?.localOnly);
+  const localName = game?.name ?? "";
   const [player, setPlayer] = useState<LeaderboardPlayer | null | undefined>(undefined);
   const [browseOnly, setBrowseOnly] = useState(false);
   const [boardStatus, setBoardStatus] = useState<BoardStatus>("loading");
@@ -201,7 +205,18 @@ function LeaderboardPageInner() {
           : null;
         let latestScore: number | null = null;
 
-        if (pendingScore && player) {
+        if (pendingScore && player && localOnly) {
+          latestScore = pendingScore.score;
+          setPlayerScore(pendingScore.score);
+          localLeaderboardService.saveScore(targetGid, player, pendingScore.score);
+          leaderboardScoreService.clearPendingScore(targetGid);
+          loggingService.logEvent("leaderboard_score_saved", {
+            game_id: targetGid,
+            lesson_id: lessonId,
+            score: pendingScore.score,
+            local_only: true,
+          });
+        } else if (pendingScore && player) {
           latestScore = pendingScore.score;
           setPlayerScore(pendingScore.score);
           await apiClient.saveGameResult({
@@ -218,11 +233,10 @@ function LeaderboardPageInner() {
           });
         }
 
-        const response = await apiClient.getLeaderboard(
-          targetGid,
-          10,
-          isBrowse ? undefined : player?.player_uuid,
-        );
+        const viewerUuid = isBrowse ? undefined : player?.player_uuid;
+        const response = localOnly
+          ? localLeaderboardService.getLeaderboard(targetGid, localName, 10, viewerUuid)
+          : await apiClient.getLeaderboard(targetGid, 10, viewerUuid);
         if (cancelled) return;
         setEntries(response.entries);
         setCurrentPlayer(response.currentPlayer ?? null);
@@ -244,7 +258,7 @@ function LeaderboardPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [gid, lessonId, player, reloadKey, viewState, isBrowse]);
+  }, [gid, lessonId, player, reloadKey, viewState, isBrowse, localOnly, localName]);
 
   const closeConfirm = () => {
     setConfirmAction(null);
@@ -314,7 +328,8 @@ function LeaderboardPageInner() {
     setReloadKey((currentKey) => currentKey + 1);
   };
 
-  const handleFinishG13 = () => {
+  // ปุ่มจบของเกมสนุกที่มาหน้านี้ตรงจากเกม (G13 + G18–G20)
+  const handleFinishFunGame = () => {
     // "ไม่เก็บคะแนน" becomes final only when the player leaves this flow.
     if (browseOnly && gid) {
       leaderboardScoreService.clearPendingScore(gid);
@@ -510,7 +525,7 @@ function LeaderboardPageInner() {
               เลือกเกม
             </BottomActionButton>
           </div>
-        ) : gid === "G13" ? (
+        ) : gid === "G13" || localOnly ? (
           <div className="shrink-0">
             {browseOnly ? (
               <div className="flex overflow-hidden rounded-t-[25px] rounded-b-none border-2 border-b-0 border-[var(--border)] divide-x-2 divide-[var(--border)] bg-[var(--bg-card)] shadow-[0_-8px_25px_rgba(0,0,0,0.5)]">
@@ -526,7 +541,7 @@ function LeaderboardPageInner() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleFinishG13}
+                  onClick={handleFinishFunGame}
                   className="flex min-h-[100px] flex-1 flex-col items-center justify-center gap-1.5 bg-[var(--bg-card)] px-1 py-3 text-[var(--primary-dark)] transition-colors active:bg-[var(--primary-light)]"
                 >
                   <ArrowRight size={34} strokeWidth={2.25} aria-hidden="true" />
@@ -536,7 +551,7 @@ function LeaderboardPageInner() {
                 </button>
               </div>
             ) : (
-              <BottomActionButton type="button" onClick={handleFinishG13}>
+              <BottomActionButton type="button" onClick={handleFinishFunGame}>
                 {learningMode === "manual" ? "ต่อไป" : "เสร็จสิ้นบทเรียน"}
                 <ArrowRight size={28} aria-hidden="true" />
               </BottomActionButton>

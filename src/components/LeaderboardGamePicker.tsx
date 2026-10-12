@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, X } from "lucide-react";
 import { loggingService } from "@/services/loggingService";
+import { LOCAL_BROWSABLE_LEADERBOARD_GAMES } from "@/lib/leaderboard";
+
+// G18–G20 ยังไม่มีในตาราง game_id จึงไม่มาจาก API — ต่อท้ายจาก config (กระดานของเกมเหล่านี้เก็บในเครื่อง)
+const LOCAL_GAMES: BrowsableGame[] = LOCAL_BROWSABLE_LEADERBOARD_GAMES.map((game) => ({
+  gid: game.gid,
+  lessonId: game.lessonId,
+  name: game.name ?? game.gid,
+  icon: game.icon ?? null,
+}));
 
 interface LeaderboardGamePickerProps {
   open: boolean;
@@ -22,7 +31,8 @@ type PickerStatus = "loading" | "ready" | "error";
 /**
  * US-CF-52: popup เลือกเกมเพื่อเปิดกระดานคะแนนแบบ browse
  * ใช้ร่วมกันทั้งใน navigation drawer (AppLayout) และปุ่ม "เลือกเกม" บนหน้า leaderboard โหมด browse
- * รายชื่อ + ชื่อเกม โหลดจากฐานข้อมูลทั้งหมดผ่าน GET /api/leaderboard/games (ไม่มีชื่อ hardcode)
+ * รายชื่อ + ชื่อเกม โหลดจากฐานข้อมูลผ่าน GET /api/leaderboard/games (ไม่มีชื่อ hardcode)
+ * ยกเว้นเกมที่ยังไม่ต่อ DB (G18–G20) ซึ่งต่อท้ายจาก config — ดู LOCAL_GAMES
  */
 export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGamePickerProps) {
   const router = useRouter();
@@ -41,7 +51,7 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as { games?: BrowsableGame[] };
         if (cancelled) return;
-        setGames(Array.isArray(data.games) ? data.games : []);
+        setGames([...(Array.isArray(data.games) ? data.games : []), ...LOCAL_GAMES]);
         setStatus("ready");
       } catch {
         if (!cancelled) setStatus("error");

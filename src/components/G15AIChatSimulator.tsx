@@ -1,17 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowUp,
-  CheckCircle2,
-  Menu,
-  Paperclip,
-  SquarePen,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import FullscreenImageViewer from "@/components/FullscreenImageViewer";
 import ITEMS from "@/data/g15-chat-items.json";
+import { notoLoopedThai } from "@/lib/fonts";
 
 /**
  * G15 — ลองถาม AI (Generative AI chat simulator)
@@ -106,7 +99,6 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
   // wait in line to replace whichever chip the player taps.
   const [queue] = useState<ChatItem[]>(() => shuffle(POOL));
   const [choices, setChoices] = useState<ChatItem[]>(() => queue.slice(0, CHOICE_COUNT));
-  const [nextInQueue, setNextInQueue] = useState(CHOICE_COUNT);
   const [asked, setAsked] = useState<string[]>([]);
   const [stage, setStage] = useState<Stage>("idle");
   const [thinkingStep, setThinkingStep] = useState(0);
@@ -124,6 +116,9 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
   const readingLeft = useRef(READING_MS);
   const scrollIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoScroll = useRef(0);
+  const nextInQueue = useRef(CHOICE_COUNT);
+  // The tapped chip is swapped out only after the answer, so the list fading out still shows what was tapped
+  const pendingSwap = useRef<string | null>(null);
 
   const currentId = asked[asked.length - 1] ?? null;
   const currentItem = POOL.find((item) => item.id === currentId) ?? null;
@@ -163,6 +158,17 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
           logEvent("reading_start", { game_id: "G15", reading_ms: READING_MS });
           setStage("reading");
         } else {
+          // Swap the tapped chip for the next unseen question, in the same slot so
+          // the other chips don't jump around. Pool runs dry → the chip just drops.
+          const askedId = pendingSwap.current;
+          if (askedId) {
+            pendingSwap.current = null;
+            const replacement = queue[nextInQueue.current];
+            if (replacement) nextInQueue.current += 1;
+            setChoices((prev) =>
+              prev.flatMap((c) => (c.id !== askedId ? [c] : replacement ? [replacement] : []))
+            );
+          }
           setStage("idle");
         }
         return;
@@ -176,7 +182,7 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
       setRevealed(next);
     }, STREAM_TICK_MS);
     return () => clearTimeout(t);
-  }, [stage, revealed, currentId, parsed, asked.length, logEvent]);
+  }, [stage, revealed, currentId, parsed, asked.length, logEvent, queue]);
 
   // reading time after the last answer → end page. Counts down only while not
   // paused; each pause banks the time already spent in readingLeft.
@@ -216,12 +222,24 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
   }, []);
 
   // keep the newest text in view unless the player scrolled up to re-read
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     const el = scrollRef.current;
     if (!el || !stickToBottom.current) return;
     lastAutoScroll.current = performance.now();
     el.scrollTop = el.scrollHeight;
-  }, [asked.length, stage, thinkingStep, revealed]);
+  }, []);
+
+  useEffect(scrollToBottom, [asked.length, stage, thinkingStep, revealed, scrollToBottom]);
+
+  // The question panel grows/shrinks over PANEL_MS — follow every frame of it so the
+  // answer rides up with the panel instead of sliding underneath it
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(scrollToBottom);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [scrollToBottom]);
 
   const handleScroll = () => {
     const el = scrollRef.current;
@@ -243,13 +261,7 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
     if (stage !== "idle") return;
     logEvent("question_select", { game_id: "G15", topic_id: item.id, order: asked.length + 1 });
     stickToBottom.current = true;
-    // Swap the tapped chip for the next unseen question, in the same slot so
-    // the other chips don't jump around. Pool runs dry → the chip just drops.
-    const replacement = queue[nextInQueue];
-    setChoices((prev) =>
-      prev.flatMap((c) => (c.id !== item.id ? [c] : replacement ? [replacement] : []))
-    );
-    if (replacement) setNextInQueue((n) => n + 1);
+    pendingSwap.current = item.id;
     setAsked((prev) => [...prev, item.id]);
     setThinkingStep(0);
     setRevealed(0);
@@ -298,44 +310,44 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
     );
   }
 
+  // Figma 3076:13534 / 13563 / 13548 — gradient behind the question list, flat while the AI answers
+  const showChoices = stage === "idle" && choices.length > 0;
+  const gradientBg = showChoices || stage === "reading";
   return (
-    <div className="gp-compact flex flex-col flex-1 min-h-0 bg-[var(--bg-card)]">
-      {/* App bar — generic chatbot, no real brand. Hidden on small screens (gp-hide-compact). */}
-      <div className="gp-hide-compact flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border)] shrink-0">
-        <span className="gp-size-60 flex items-center justify-center text-[var(--text-secondary)]" aria-hidden="true">
-          <Menu size={24} />
-        </span>
-        <div className="flex flex-col items-center leading-tight">
-          <span className="flex items-center gap-1.5 font-bold text-[clamp(18px,5vw,22px)] text-[var(--text-primary)]">
-            <Sparkles size={20} className="text-[var(--primary)]" />
-            AI ผู้ช่วย
-          </span>
-          <span className="text-[clamp(14px,4vw,20px)] text-[var(--text-secondary)]">แอป AI (จำลอง)</span>
-        </div>
-        <span className="gp-size-60 flex items-center justify-center text-[var(--text-secondary)]" aria-hidden="true">
-          <SquarePen size={22} />
-        </span>
-      </div>
+    <div className={`${notoLoopedThai.className} gp-compact relative isolate flex flex-col flex-1 min-h-0 bg-[#E8EAF3]`}>
+      {/* gradient as its own layer so it fades with the panel (a background-image can't transition) */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-[#E8EAF3] from-50% to-[#B0E2F5] to-95% transition-opacity duration-[400ms] ease-out motion-reduce:transition-none ${
+          gradientBg ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      {/* Header — generic chatbot name, no real brand. Figma caption is 18px; 20px here per the AGENT.md minimum. */}
+      <p className="shrink-0 gp-pt-40 gp-pb-12 px-[24px] text-center gp-text-20 font-normal gp-leading-30">
+        <span className="text-[#4B4B4B]">AI ผู้ช่วยแอป</span> <span className="text-[#A5A5A5]">AI (จำลอง)</span>
+      </p>
 
       {/* Conversation */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
         onPointerDown={handlePointerDown}
-        className="flex-1 min-h-0 overflow-y-auto px-4 gp-py-20"
+        className="flex-1 min-h-0 overflow-y-auto px-[24px] gp-py-12"
       >
-        <div className="flex flex-col gp-gap-25 min-h-full">
+        <div className="flex flex-col gp-gap-20 min-h-full">
           {asked.length === 0 && (
-            <div className="flex flex-col items-center justify-center text-center gp-gap-15 flex-1 gp-py-40">
-              <div className="gp-size-100 rounded-full bg-[var(--primary-light)] flex items-center justify-center">
-                <Sparkles size={40} className="text-[var(--primary-dark)]" />
+            <div className="flex flex-col items-center justify-center text-center gp-gap-20 flex-1 gp-py-20">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/games/g15-ai-avatar-large.svg" alt="" aria-hidden="true" className="gp-size-104 shrink-0" />
+              <div className="flex flex-col items-center gp-gap-8">
+                <p className="gp-text-24 font-semibold gp-leading-32 text-black">
+                  สวัสดีค่ะ
+                  <br />
+                  วันนี้อยากรู้อะไรคะ
+                </p>
+                {/* Figma 18px → 20px (AGENT.md minimum) */}
+                <p className="gp-text-20 font-normal gp-leading-30 text-[#595959]">แตะเลือกคำถามด้านล่างได้เลย</p>
               </div>
-              <p className="text-[clamp(22px,6vw,28px)] font-bold text-[var(--text-primary)]">
-                สวัสดีค่ะ วันนี้อยากรู้อะไรคะ?
-              </p>
-              <p className="text-[clamp(18px,5vw,22px)] text-[var(--text-secondary)]">
-                แตะเลือกคำถามด้านล่างได้เลย
-              </p>
             </div>
           )}
 
@@ -358,36 +370,36 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
         </div>
       </div>
 
-      {/* Suggestion chips + composer */}
-      <div className="shrink-0 border-t border-[var(--border)] px-3 gp-pt-15 gp-pb-15 flex flex-col gp-gap-10 bg-[var(--bg-card)]">
-        {stage === "idle" && choices.length > 0 && (
-          <div className="flex flex-col gp-gap-6">
-            <p className="text-[clamp(16px,4.5vw,20px)] font-bold text-[var(--text-secondary)] px-1 leading-snug">
-              {asked.length === 0 ? "เลือกคำถาม 1 ข้อ" : `ลองถามอีก ${QUESTIONS_TO_ASK - asked.length} ข้อ`}
-            </p>
-            {choices.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleAsk(item)}
-                className="flex items-center gap-3 w-full gp-tap-min-h-48 px-4 gp-py-4 leading-snug rounded-[var(--radius-lg)] border-2 border-[var(--primary)] bg-[var(--bg-card)] text-left text-[clamp(18px,5vw,22px)] font-semibold text-[var(--primary-dark)] cursor-pointer hover:bg-[var(--primary-light)] active:scale-[0.98] transition"
-              >
-                <span className="flex-1">{item.chip_label}</span>
-                {item.image && <Paperclip size={20} className="shrink-0 opacity-70" aria-label="แนบรูป" />}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Question choices — only between answers (Figma: hidden while the AI is answering) */}
+      <SlidePanel open={showChoices}>
+        <div className="px-[24px] gp-pt-20 gp-pb-action-bar flex flex-col gp-gap-12">
+          <p className="text-center gp-text-20 font-semibold gp-leading-30 text-black">เลือกคำถาม 1 ข้อ</p>
+          {choices.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleAsk(item)}
+              className="flex w-full items-center justify-center gp-tap-min-h-60 px-[16px] gp-py-4 rounded-[20px] border-2 border-solid border-[#A5A5A5] bg-white text-center gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B] cursor-pointer transition-colors active:bg-[#D9F1FA]"
+            >
+              {item.chip_label}
+            </button>
+          ))}
+        </div>
+      </SlidePanel>
 
+      <SlidePanel open={stage === "reading"}>
+        {/* Mounted only in "reading": the bar's CSS animation starts on mount, so it must mount
+            together with the READING_MS timer — mounted earlier (hidden) it would already be full */}
         {stage === "reading" && (
-          <div className="flex flex-col gap-2 px-1" role="status">
-            <p className="text-[clamp(16px,4.5vw,20px)] text-[var(--text-secondary)]">
+          <div className="px-[24px] gp-pt-20 gp-pb-action-bar flex flex-col gp-gap-12" role="status">
+            <p className="text-center gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]">
               {readingPaused
                 ? "หยุดเวลาไว้ให้แล้ว อ่านได้ตามสบายค่ะ"
                 : "ถามครบแล้ว ค่อยๆ อ่านคำตอบได้เลยค่ะ (แตะค้างหรือเลื่อนจอเพื่อหยุดเวลา)"}
             </p>
-            <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden" aria-hidden="true">
+            <div className="h-2 rounded-full bg-white overflow-hidden" aria-hidden="true">
               <div
-                className="h-full bg-[var(--primary)] rounded-full"
+                className="h-full bg-[#00A3E0] rounded-full"
                 style={{
                   animation: `g15-reading ${READING_MS}ms linear forwards`,
                   animationPlayState: readingPaused ? "paused" : "running",
@@ -396,25 +408,7 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
             </div>
           </div>
         )}
-
-        {/* Composer is decorative — questions are asked via the chips above. Hidden on small
-            screens (gp-hide-compact) so the panel doesn't cover the answer. */}
-        <div
-          className="gp-hide-compact flex items-center gap-2 gp-min-h-56 pl-3 pr-2 rounded-[var(--radius-pill)] border border-[var(--border)] bg-[var(--bg-app)]"
-          aria-hidden="true"
-        >
-          <Paperclip size={22} className="text-[var(--text-secondary)] shrink-0" />
-          <span className="flex-1 text-[clamp(16px,4.5vw,20px)] text-[var(--text-secondary)] truncate">
-            {stage === "thinking" || stage === "streaming" ? "AI กำลังตอบ..." : "ถาม AI ได้เลย"}
-          </span>
-          <span className="gp-size-50 rounded-full bg-[var(--border)] flex items-center justify-center text-[var(--text-secondary)]">
-            <ArrowUp size={22} />
-          </span>
-        </div>
-        <p className="text-center text-[clamp(14px,4vw,20px)] text-[var(--text-secondary)] leading-snug">
-          AI อาจให้ข้อมูลผิดพลาดได้ โปรดตรวจสอบข้อมูลสำคัญ
-        </p>
-      </div>
+      </SlidePanel>
 
       {viewerImage && (
         <FullscreenImageViewer src={viewerImage.src} alt={viewerImage.alt} caption={null} onClose={closeViewer} />
@@ -425,20 +419,44 @@ export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props
   );
 }
 
+// Bottom panel that fades in + slides up while its height opens (pushing the chat up), and the
+// reverse on close. Height animates via grid rows 0fr ↔ 1fr, so no measuring is needed.
+function SlidePanel({ open, children }: { open: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      inert={!open}
+      className={`grid shrink-0 transition-[grid-template-rows] duration-[400ms] ease-out motion-reduce:transition-none ${
+        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+      }`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`transition-[opacity,translate] duration-[400ms] ease-out motion-reduce:transition-none ${
+            open ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[48px]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserBubble({ item, onOpenImage }: { item: ChatItem; onOpenImage: (img: ChatImage) => void }) {
   return (
     <div className="flex flex-col items-end gap-2">
       {item.image && (
         <button
           onClick={() => onOpenImage(item.image!)}
-          className="rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border)] cursor-pointer max-w-[60%]"
+          className="rounded-[20px] overflow-hidden border-2 border-[#D9D9D9] cursor-pointer max-w-[60%]"
           aria-label={`ดูรูปเต็มจอ: ${item.image.alt}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.image.src} alt={item.image.alt} className="block w-full gp-max-h-240 object-cover" />
         </button>
       )}
-      <div className="max-w-[85%] px-4 py-2.5 rounded-[20px] rounded-br-[6px] bg-[var(--primary-light)] text-[var(--text-primary)] text-[clamp(18px,5vw,22px)] leading-relaxed">
+      {/* Figma 3076:13565 — white pill, grey border */}
+      <div className="max-w-[85%] px-[20px] gp-py-16 rounded-[40px] border-2 border-solid border-[#D9D9D9] bg-white gp-text-20 font-semibold gp-leading-30 text-[#595959]">
         {item.question}
       </div>
     </div>
@@ -458,11 +476,9 @@ function AiMessage({
 }) {
   if (stage === "thinking") {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-[8px]">
         <AiAvatar pulsing />
-        <span className="text-[clamp(18px,5vw,22px)] text-[var(--text-secondary)] motion-safe:animate-pulse">
-          {thinkingLabel}
-        </span>
+        <span className="gp-text-20 gp-leading-30 text-[#595959] motion-safe:animate-pulse">{thinkingLabel}</span>
       </div>
     );
   }
@@ -492,10 +508,11 @@ function AiMessage({
   const renderParts = (parts: Inline[]) =>
     parts.map((part, i) => (part.bold ? <strong key={i}>{part.text}</strong> : <span key={i}>{part.text}</span>));
 
+  // Figma 3076:13567 — 40px avatar, 8px gap, 20/30 body text
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-[8px]">
       <AiAvatar />
-      <div className="flex-1 min-w-0 flex flex-col gap-2.5 text-[clamp(18px,5vw,22px)] leading-relaxed text-[var(--text-primary)]">
+      <div className="flex-1 min-w-0 flex flex-col gp-gap-8 gp-text-20 font-normal gp-leading-30 text-[#4B4B4B]">
         {groups.map((group, gi) =>
           group.kind === "li" ? (
             <ul key={gi} className="list-disc pl-6 flex flex-col gap-1.5">
@@ -508,10 +525,7 @@ function AiMessage({
           )
         )}
         {stage === "streaming" && (
-          <span
-            className="inline-block w-3 h-3 rounded-full bg-[var(--primary)] motion-safe:animate-pulse"
-            aria-hidden="true"
-          />
+          <span className="inline-block w-3 h-3 rounded-full bg-[#00A3E0] motion-safe:animate-pulse" aria-hidden="true" />
         )}
       </div>
     </div>
@@ -520,15 +534,14 @@ function AiMessage({
 
 function AiAvatar({ pulsing = false }: { pulsing?: boolean }) {
   return (
-    <span
-      className={`w-9 h-9 shrink-0 rounded-full bg-[var(--primary-light)] flex items-center justify-center ${
-        pulsing ? "motion-safe:animate-spin" : ""
-      }`}
-      style={pulsing ? { animationDuration: "2.5s" } : undefined}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/images/games/g15-ai-avatar.svg"
+      alt=""
       aria-hidden="true"
-    >
-      <Sparkles size={20} className="text-[var(--primary-dark)]" />
-    </span>
+      className={`size-[40px] shrink-0 ${pulsing ? "motion-safe:animate-spin" : ""}`}
+      style={pulsing ? { animationDuration: "2.5s" } : undefined}
+    />
   );
 }
 

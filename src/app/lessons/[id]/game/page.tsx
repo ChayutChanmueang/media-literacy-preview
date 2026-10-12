@@ -10,6 +10,7 @@ import { leaderboardScoreService } from "@/services/leaderboardScoreService";
 import { FLOW_G13_ID, FLOW_POST_TEST_ID, FLOW_POST_TEST_PATH, nextFlowLessonAfterGame } from "@/lib/flow";
 import { useDevSkip } from "@/lib/devSkip";
 import { TEMP_AWARDED_STARS } from "@/lib/gameScore";
+import { getLeaderboardGame } from "@/lib/leaderboard";
 
 // Dynamic imports with SSR disabled to prevent window/speechSynthesis undefined crashes
 const G1FactCheck = dynamic(() => import("@/components/G1FactCheck"), { ssr: false });
@@ -71,7 +72,8 @@ export default function GameShellPage() {
     setLoading(false);
   }, [lessonId, router]);
 
-  const handleFinishGame = async (starsEarned: number) => {
+  // score: คะแนนสำหรับกระดานคะแนน — ส่งมาเฉพาะเกมที่มีกระดาน (G18–G20 ส่งสถิติดีที่สุด)
+  const handleFinishGame = async (starsEarned: number, score?: number) => {
     const session = progressService.getOrCreateSession();
     const sessionId = session?.sessionId || "";
     const progress = progressService.getProgress();
@@ -118,6 +120,16 @@ export default function GameShellPage() {
       ...progress,
       stars: { ...progress.stars, [lessonId]: TEMP_AWARDED_STARS },
     };
+
+    // G18–G20: กระดานคะแนนในเครื่อง (ยังไม่ต่อ DB) — ข้ามหน้าคะแนนกลางไปกระดานคะแนนเลยแบบ G13
+    // เพราะตัวเกมมีหน้าสรุปคะแนนของตัวเองแล้ว; ปุ่มจบบนกระดานพากลับหน้าหมวดหมู่ (เกมพวกนี้มีเฉพาะโหมดอิสระ)
+    const leaderboardGame = getLeaderboardGame(lessonId);
+    if (leaderboardGame?.localOnly && typeof score === "number") {
+      leaderboardScoreService.savePendingScore(leaderboardGame.gid, score);
+      progressService.saveProgress({ ...withStars, currentStep: "leaderboard", currentLessonId: lessonId });
+      router.push(`/lessons/${lessonId}/leaderboard`);
+      return;
+    }
 
     if (learningMode === "flow") {
       // US-CF-32: flow ไม่มีหน้าสรุปคะแนนคั่นแล้ว → จบเกมไป "หน้าชื่อคลิป" ของบทถัดไปเลย (video intro) หรือด่านปิดท้าย

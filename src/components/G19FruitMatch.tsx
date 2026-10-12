@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import GameHudBar, { GameHudItem, HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
-import { ArrowLeftRight, Cherry, Trophy } from "lucide-react";
+import { HUD_DEV_BUTTON_CLASS } from "./GameHudBar";
+import GameStageHeader from "./GameStageHeader";
+import { Cherry, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
@@ -21,18 +22,20 @@ import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
  * - the "จบเกม" overlay is replaced by a positive score screen with play again / finish;
  *   the mock's start overlay is replaced by the shared GameIntro
  * - besides swiping, tapping two neighbouring fruits swaps them (easier than a drag)
- * - a written status line, and a guide (blinking outlines + a 👆 hand pressing the right fruit
- *   and sliding onto its neighbour, on a loop) shown at the start and after a few idle seconds
+ * - a guide (blinking outlines + a 👆 hand pressing the right fruit and sliding onto its
+ *   neighbour, on a loop) shown at the start and after a few idle seconds
  * - when no swap can make a match any more (the mock just got stuck) the run ends on a
  *   positive note; an automatic reshuffle is kept behind RULES.onNoMoves to switch back to
- * - the header's orange numbers are darker for contrast
+ * - play screen follows the Figma design (Scammer Game Prototype, node 3028:13037): green
+ *   gradient, shared header card (moves left / score), 5×5 tinted fruit tiles with SVG fruit
  * - the board is seeded by today's date (Bangkok time), so every player gets the same level
  *   that day: same starting board, same refill fruit per column, same reshuffles
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
 
 type Props = {
-  onFinish: (stars: number) => void;
+  /** score = best run since the game was opened — goes on the (device-only for now) leaderboard */
+  onFinish: (stars: number, score?: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
 };
 
@@ -43,16 +46,33 @@ type Grid = (Tile | null)[][];
 type TypeGrid = (number | null)[][];
 type FinishPopup = "enter" | "show" | "leave" | null;
 
+// tile colours from the Figma design: light fill + darker border and 2px bottom edge
 const FRUITS = [
-  { emoji: "🍎", name: "แอปเปิล" },
-  { emoji: "🍉", name: "แตงโม" },
-  { emoji: "🍇", name: "องุ่น" },
-  { emoji: "🍌", name: "กล้วย" },
-  { emoji: "🍊", name: "ส้ม" },
+  { icon: "/assets/g19/apple.svg", name: "แอปเปิล", bg: "#FEE2E2", edge: "#F87171" },
+  { icon: "/assets/g19/watermelon.svg", name: "แตงโม", bg: "#DCFCE7", edge: "#4ADE80" },
+  { icon: "/assets/g19/grape.svg", name: "องุ่น", bg: "#F3E8FF", edge: "#C084FC" },
+  { icon: "/assets/g19/banana.svg", name: "กล้วย", bg: "#FEF9C3", edge: "#FACC15" },
+  { icon: "/assets/g19/orange.svg", name: "ส้ม", bg: "#FFEDD5", edge: "#FB923C" },
 ];
 
 const SIZE = 5; // rows = cols, same as the mock
-const CELL_PCT = 100 / SIZE;
+// Board geometry from the Figma design (352px wide): 64px tiles, 8px between columns, 12px between rows.
+// Everything below is in % of the board, so it scales with the board on any phone.
+const TILE_PX = 64;
+const GAP_X_PX = 8;
+const GAP_Y_PX = 12;
+const BOARD_W_PX = SIZE * TILE_PX + (SIZE - 1) * GAP_X_PX; // 352
+const BOARD_H_PX = SIZE * TILE_PX + (SIZE - 1) * GAP_Y_PX; // 368
+const TILE_W_PCT = (TILE_PX / BOARD_W_PX) * 100;
+const TILE_H_PCT = (TILE_PX / BOARD_H_PX) * 100;
+const STEP_X_PCT = ((TILE_PX + GAP_X_PX) / BOARD_W_PX) * 100;
+const STEP_Y_PCT = ((TILE_PX + GAP_Y_PX) / BOARD_H_PX) * 100;
+const tileBox = (c: Cell) => ({
+  left: `${c.c * STEP_X_PCT}%`,
+  top: `${c.r * STEP_Y_PCT}%`,
+  width: `${TILE_W_PCT}%`,
+  height: `${TILE_H_PCT}%`,
+});
 const MOVES_PER_RUN = 20;
 const POINTS_PER_FRUIT = 10;
 const SWIPE_MIN_PX = 20; // shorter than this = a tap
@@ -79,8 +99,9 @@ type EndReason = "moves_used" | "no_moves";
 
 // tips are kept short enough to fit one line at 20px on a 360px-wide phone
 const TIP = "💡 ลากหรือแตะ 2 ช่องที่ติดกันเพื่อสลับ";
+// tip line under the board — off to match the Figma design (the hint hand still teaches the swipe)
+const SHOW_TIP = false;
 
-// text colour only (no panel) — all ≥ 4.5:1 on the #DCF4D4 background
 function starsFor(score: number) {
   if (score >= 900) return 3;
   if (score >= 500) return 2;
@@ -188,12 +209,10 @@ function HintGuide({ from, to }: { from: Cell; to: Cell }) {
         className="g19-guide-hand absolute"
         style={
           {
-            left: `${from.c * CELL_PCT}%`,
-            top: `${from.r * CELL_PCT}%`,
-            width: `${CELL_PCT}%`,
-            height: `${CELL_PCT}%`,
-            "--dx": `${(to.c - from.c) * 100}%`,
-            "--dy": `${(to.r - from.r) * 100}%`,
+            ...tileBox(from),
+            // translate % is of the tile itself — one step = tile + gap
+            "--dx": `${((to.c - from.c) * STEP_X_PCT * 100) / TILE_W_PCT}%`,
+            "--dy": `${((to.r - from.r) * STEP_Y_PCT * 100) / TILE_H_PCT}%`,
             ...loop,
           } as React.CSSProperties
         }
@@ -290,15 +309,14 @@ function ScoreTicker({ value }: { value: number }) {
     );
   }, [value, stop]);
 
-  // the score sits at the right end of the header, so "+ 30" shows on its left (before the trophy)
+  // the score sits at the right of the header card, so "+ 30" shows on its left
   return (
-    <GameHudItem icon={Trophy} tone="score">
-      {shown} คะแนน
-      {/* aria-hidden: the status line already says "+30" */}
+    <span className="relative">
+      {shown}
       {gain && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute right-full top-1/2 mr-2 whitespace-nowrap text-[#15803D]"
+          className="pointer-events-none absolute right-full top-1/2 mr-2 whitespace-nowrap gp-text-24 text-[#15803D]"
           style={{
             opacity: gain.phase === "show" ? 1 : 0,
             transform: `translateY(-50%) ${
@@ -313,7 +331,7 @@ function ScoreTicker({ value }: { value: number }) {
           + {gain.amount}
         </span>
       )}
-    </GameHudItem>
+    </span>
   );
 }
 
@@ -328,6 +346,8 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const [movesLeft, setMovesLeft] = useState(MOVES_PER_RUN);
   const [selected, setSelected] = useState<Cell | null>(null);
   const [pressedId, setPressedId] = useState<number | null>(null);
+  // neighbour the current drag would swap with (highlighted while dragging, match or not)
+  const [dragTarget, setDragTarget] = useState<Cell | null>(null);
   const [hint, setHint] = useState<[Cell, Cell] | null>(null);
   const [finishPopup, setFinishPopup] = useState<FinishPopup>(null);
   const [endReason, setEndReason] = useState<EndReason>("moves_used");
@@ -597,11 +617,16 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     }
   };
 
+  // a touch in the gap counts for the nearest tile (each tile's hit area reaches halfway into the gap)
   const cellAt = (clientX: number, clientY: number): Cell | null => {
     const rect = boardRef.current?.getBoundingClientRect();
     if (!rect) return null;
-    const c = Math.floor((clientX - rect.left) / (rect.width / SIZE));
-    const r = Math.floor((clientY - rect.top) / (rect.height / SIZE));
+    const stepX = (rect.width * STEP_X_PCT) / 100;
+    const stepY = (rect.height * STEP_Y_PCT) / 100;
+    const gapX = (rect.width * GAP_X_PX) / BOARD_W_PX;
+    const gapY = (rect.height * GAP_Y_PX) / BOARD_H_PX;
+    const c = Math.floor((clientX - rect.left + gapX / 2) / stepX);
+    const r = Math.floor((clientY - rect.top + gapY / 2) / stepY);
     return r >= 0 && r < SIZE && c >= 0 && c < SIZE ? { r, c } : null;
   };
 
@@ -617,22 +642,39 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     clearHint();
   };
 
+  // The neighbour a drag points at: "tap" while it's still shorter than SWIPE_MIN_PX,
+  // null when it points off the board.
+  const dragTargetOf = (drag: { x: number; y: number; cell: Cell }, clientX: number, clientY: number): Cell | "tap" | null => {
+    const dx = clientX - drag.x;
+    const dy = clientY - drag.y;
+    if (Math.abs(dx) < SWIPE_MIN_PX && Math.abs(dy) < SWIPE_MIN_PX) return "tap";
+    const target = { ...drag.cell };
+    if (Math.abs(dx) > Math.abs(dy)) target.c += dx > 0 ? 1 : -1;
+    else target.r += dy > 0 ? 1 : -1;
+    return target.r >= 0 && target.r < SIZE && target.c >= 0 && target.c < SIZE ? target : null;
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const target = dragTargetOf(drag, e.clientX, e.clientY);
+    const next = target === "tap" ? null : target;
+    setDragTarget((cur) => (cur === next || (cur && next && sameCell(cur, next)) ? cur : next));
+  };
+
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     dragRef.current = null;
     setPressedId(null);
+    setDragTarget(null);
     if (!drag || busyRef.current || !playingRef.current) return;
 
-    const dx = e.clientX - drag.x;
-    const dy = e.clientY - drag.y;
-    if (Math.abs(dx) < SWIPE_MIN_PX && Math.abs(dy) < SWIPE_MIN_PX) {
+    const target = dragTargetOf(drag, e.clientX, e.clientY);
+    if (target === "tap") {
       tapCell(drag.cell);
       return;
     }
-    const target = { ...drag.cell };
-    if (Math.abs(dx) > Math.abs(dy)) target.c += dx > 0 ? 1 : -1;
-    else target.r += dy > 0 ? 1 : -1;
-    if (target.r < 0 || target.r >= SIZE || target.c < 0 || target.c >= SIZE) {
+    if (!target) {
       armHint();
       return;
     }
@@ -643,6 +685,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const onPointerCancel = () => {
     dragRef.current = null;
     setPressedId(null);
+    setDragTarget(null);
   };
 
   const startRun = () => {
@@ -665,6 +708,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     select(null);
     setHint(null);
     setPressedId(null);
+    setDragTarget(null);
     setFinishPopup(null);
     sync();
     setPhase("play");
@@ -675,7 +719,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const finish = () => {
     const stars = starsFor(bestRef.current);
     logEvent("game_complete", { game_id: "G19", runs: runRef.current, best_score: bestRef.current, stars });
-    onFinish(stars);
+    onFinish(stars, bestRef.current);
   };
 
   if (phase === "intro") {
@@ -728,11 +772,14 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const isHint = (cell: Cell) => !!hint && (sameCell(hint[0], cell) || sameCell(hint[1], cell));
 
   return (
-    <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-[#DCF4D4] select-none`}>
-      {/* Header: same bar as G13 / G18 / G20 (GameHudBar) — moves left on the left, score right */}
-      <GameHudBar
-        left={<GameHudItem icon={ArrowLeftRight}>สลับได้อีก {movesLeft}</GameHudItem>}
-        right={<ScoreTicker value={score} />}
+    <div
+      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
+      style={{ backgroundImage: "linear-gradient(155.36deg, #EEFEE9 0%, #DCF4D4 100%)" }}
+    >
+      {/* Header card: same as G17 / G18 (GameStageHeader) — moves left on the left, score right */}
+      <GameStageHeader
+        left={{ label: "สลับได้อีก", value: movesLeft, ariaLabel: `สลับได้อีก ${movesLeft} ครั้ง` }}
+        right={{ label: "คะแนน", value: <ScoreTicker value={score} />, ariaLabel: `คะแนน ${score}` }}
       >
         {/* QA only (same idea as G18's skip) — end the run now to check the score screen */}
         {process.env.NODE_ENV === "development" && (
@@ -744,40 +791,40 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
               logEvent("g19_dev_end_run", { game_id: "G19", run: runRef.current, moves_left: movesRef.current });
               endRun("dev_skip");
             }}
-            className={HUD_DEV_BUTTON_CLASS}
+            className={`${HUD_DEV_BUTTON_CLASS} self-center`}
             data-dev-only="g19-end-run"
           >
             จบรอบ
           </button>
         )}
-      </GameHudBar>
+      </GameStageHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex min-h-full flex-col items-center justify-center gp-gap-16 gp-px-12 gp-py-16">
+        <div className="flex min-h-full flex-col items-center justify-center gp-gap-16 gp-px-24 gp-py-24">
           {/* keep the whole board on screen on most phones; very short screens scroll instead */}
-          {/* one large panel behind all the fruit tiles */}
-          <div
-            className="relative w-full rounded-[24px] bg-[#A7D99A] p-[2%] shadow-[inset_0_2px_6px_rgba(0,0,0,0.12),0_3px_10px_rgba(0,0,0,0.08)]"
-            style={{ maxWidth: "min(420px, 58dvh)" }}
-          >
+          <div className="relative w-full" style={{ maxWidth: `min(${BOARD_W_PX}px, 56dvh)` }}>
             {/* board + hint hand share this box so the hand's % positions match the tiles */}
             <div className="relative">
-              {/* Board: same look as the mock's #board / .item / .item-inner */}
               <div
                 ref={boardRef}
                 aria-label="กระดานผลไม้"
                 role="group"
                 onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerCancel}
-                className="relative aspect-square w-full touch-none overflow-hidden"
-                style={{ containerType: "inline-size" }}
+                className="relative w-full touch-none overflow-hidden"
+                style={{ aspectRatio: `${BOARD_W_PX} / ${BOARD_H_PX}`, containerType: "inline-size" }}
               >
                 {tiles.map((t) => {
                   const cell = { r: t.r, c: t.c };
                   const fruit = FRUITS[t.type];
                   const isSelected = sameCell(selected, cell);
                   const hinted = isHint(cell);
+                  const pressed = pressedId === t.id;
+                  // held tile looks "picked" like a tap-selected one; the drag target gets a dashed outline
+                  const picked = isSelected || pressed;
+                  const isDragTarget = !t.popping && sameCell(dragTarget, cell);
                   return (
                     <button
                       key={t.id}
@@ -788,29 +835,39 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                       onClick={(e) => {
                         if (e.detail === 0) tapCell(cell);
                       }}
-                      className="absolute flex cursor-pointer items-center justify-center border-0 bg-transparent p-[1.2cqw] transition-[top,left] ease-in-out"
-                      style={{ transitionDuration: `${slideMs}ms`, left: `${t.c * CELL_PCT}%`, top: `${t.r * CELL_PCT}%`, width: `${CELL_PCT}%`, height: `${CELL_PCT}%` }}
+                      // bottom padding = room for the tile's 2px bottom edge, so it isn't clipped on the last row
+                      className="absolute flex cursor-pointer border-0 bg-transparent p-0 pb-[2px] transition-[top,left] ease-in-out"
+                      style={{ transitionDuration: `${slideMs}ms`, ...tileBox(cell) }}
                     >
+                      {/* tile: Figma fruit tile — tinted fill, 2px border, 2px bottom edge, 48px fruit */}
                       <span
-                        className={`flex h-full w-full items-center justify-center rounded-[12px] bg-white leading-none ${
+                        className={`flex h-full w-full items-center justify-center rounded-[12px] border-2 border-solid ${
                           hinted ? "animate-pulse" : ""
                         }`}
                         style={{
-                          fontSize: "11cqw",
-                          transform: t.popping ? "scale(0)" : pressedId === t.id ? "translateY(3px)" : undefined,
+                          backgroundColor: fruit.bg,
+                          borderColor: fruit.edge,
+                          transform: t.popping ? "scale(0)" : pressed ? "translateY(2px)" : undefined,
                           opacity: t.popping ? 0 : 1,
-                          filter: pressedId === t.id ? "brightness(0.95)" : undefined,
-                          boxShadow: pressedId === t.id ? "0 1px 3px rgba(0,0,0,0.1)" : "0 3px 8px rgba(0,0,0,0.12)",
+                          filter: pressed || isDragTarget ? "brightness(0.95)" : undefined,
+                          boxShadow: pressed ? "none" : `0 2px 0 0 ${fruit.edge}`,
                           transition: t.popping
                             ? // shrink to nothing (a tiny swell first), fading only at the very end
                               `transform ${POP_MS}ms cubic-bezier(0.4, -0.4, 0.7, 0.6), opacity ${POP_MS * 0.35}ms ease ${POP_MS * 0.65}ms`
                             : "transform 0.1s, box-shadow 0.1s",
-                          // added: selected fruit (tap mode) and the idle hint
-                          outline: isSelected ? "4px solid #2563EB" : hinted ? "4px dashed #B45309" : undefined,
-                          outlineOffset: isSelected || hinted ? "-4px" : undefined,
+                          // added: picked fruit (tap-selected or held), the drag's swap target, and the idle hint
+                          outline: picked
+                            ? "4px solid #2563EB"
+                            : isDragTarget
+                              ? "4px dashed #2563EB"
+                              : hinted
+                                ? "4px dashed #B45309"
+                                : undefined,
+                          outlineOffset: picked || isDragTarget || hinted ? "-2px" : undefined,
                         }}
                       >
-                        {fruit.emoji}
+                        {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
+                        <img src={fruit.icon} alt="" draggable={false} className="pointer-events-none block h-[75%] w-[75%]" />
                       </span>
                     </button>
                   );
@@ -850,9 +907,11 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
             )}
           </div>
 
-          <p className="w-full max-w-[420px] overflow-hidden text-ellipsis whitespace-nowrap gp-px-8 text-center gp-text-20 font-bold gp-leading-32 text-[#1a1a1a]">
-            {TIP}
-          </p>
+          {SHOW_TIP && (
+            <p className="w-full max-w-[420px] overflow-hidden text-ellipsis whitespace-nowrap gp-px-8 text-center gp-text-20 font-bold gp-leading-32 text-[#1a1a1a]">
+              {TIP}
+            </p>
+          )}
         </div>
       </div>
     </div>
