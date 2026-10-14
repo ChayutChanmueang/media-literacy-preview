@@ -19,6 +19,7 @@ G13 เป็นเกมแอ็กชันปิดท้าย Flow ที�
 
 - Gameplay render บน HTML `<canvas>`: ไอติม, ระเบิด, กรวย/หอ, collision, wobble และชิ้นส่วนที่ร่วง
 - React/DOM ดูแลเฉพาะ tutorial, HUD, feedback และ summary
+- ตัวเลขคะแนนเด้ง (วาดบน canvas): เหนือยอดหอทุกครั้งที่ความสูงเปลี่ยน "+1" / "+2" สีเขียว, "−n" สีแดง (ขอบขาว 24px) จางเข้า ลอยขึ้นเล็กน้อย แล้วจางออกใน 1.1 วิ — reduced motion ไม่ลอย
 - HUD ใช้การ์ดหัวจอ `GameStageHeader` แบบเดียวกับเกมสนุกอื่น (G17–G20, ตาม Figma): ซ้าย "เวลา / m:ss" (ระหว่างฝึกเล่นเป็น "โหมด / ฝึกเล่น") ขวา "ความสูง / n ชั้น" ปุ่ม QA เฉพาะ dev อยู่ตรงกลาง
 - ใช้ `requestAnimationFrame` + delta time; logical coordinates แยกจาก backing store
 - Canvas backing store scale ตาม `devicePixelRatio` (cap 3) โดย physics ไม่เปลี่ยนตาม display scale

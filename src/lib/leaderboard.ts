@@ -53,6 +53,12 @@ const LOCAL_LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {
 
 export const LOCAL_BROWSABLE_LEADERBOARD_GAMES: LeaderboardGame[] = Object.values(LOCAL_LEADERBOARD_GAMES);
 
+// รุ่นทดลอง: กระดานในเครื่องแยกของตัวเอง (คะแนนไม่ปนกับเกมจริง) ให้จบเกมแล้วไปกระดานคะแนนแบบเดียวกับเกมจริง
+// แต่ไม่อยู่ในรายการเลือกเกมของเมนู "กระดานคะแนน" (ไม่รวมใน LOCAL_BROWSABLE_LEADERBOARD_GAMES)
+const EXPERIMENTAL_LOCAL_LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {
+  g20k: { lessonId: "g20k", gid: "G20K", localOnly: true, name: "ผักบุ้งลอยฟ้า (ทดลอง)", icon: "/images/lessons/category-fun.png" },
+};
+
 // US-CF-52: เกมที่เก็บคะแนนจริงและเปิดให้ browse กระดานคะแนนจากเมนู (ตอนนี้พร้อมเฉพาะ G13)
 // เพิ่มเกมใหม่ที่นี่เมื่อพร้อมเล่น+เก็บคะแนน โดยไม่ต้องแก้ UI
 export const BROWSABLE_LEADERBOARD_GAMES: LeaderboardGame[] = [LEADERBOARD_GAMES["flow-g13"]];
@@ -68,7 +74,7 @@ const MAX_SCORE_BY_GID: Record<string, number> = {
 };
 
 export function getLeaderboardGame(lessonId: string): LeaderboardGame | null {
-  return LEADERBOARD_GAMES[lessonId] ?? LOCAL_LEADERBOARD_GAMES[lessonId] ?? null;
+  return LEADERBOARD_GAMES[lessonId] ?? LOCAL_LEADERBOARD_GAMES[lessonId] ?? EXPERIMENTAL_LOCAL_LEADERBOARD_GAMES[lessonId] ?? null;
 }
 
 export function isSupportedLeaderboardGid(gid: string): boolean {

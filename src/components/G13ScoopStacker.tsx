@@ -67,6 +67,9 @@ type Debris = {
   flavor: Flavor;
 };
 
+// "+1" / "+2" / "-2" over the tower top when its height changes — screen position, fixed at the moment it changes
+type ScorePopup = { x: number; y: number; amount: number; age: number };
+
 type GameWorld = {
   width: number;
   height: number;
@@ -80,6 +83,7 @@ type GameWorld = {
   falling: FallingObject[];
   stack: Flavor[];
   debris: Debris[];
+  popups: ScorePopup[];
   flash: number;
   flashColor: string;
   lastSecond: number;
@@ -92,6 +96,13 @@ type GameWorld = {
 };
 
 const SESSION_TIME_SECONDS = 120;
+// Score popup: small text (24px — the app's ≥ 20px rule still applies) that fades in, drifts up a
+// little and fades out; green for a gain, red for a loss, white outline so it reads on day and night sky
+const POPUP_LIFE_S = 1.1;
+const POPUP_FADE_IN_S = 0.15;
+const POPUP_FADE_OUT_S = 0.4;
+const POPUP_RISE_PX = 36;
+const POPUP_FONT_PX = 24;
 // US-CF-14: sprites scaled 1.85× from original values; then × SPRITE_SCALE so about 5 scoops
 // fit across a phone screen. Scoops, bombs (same radius), the cone and the stack spacing all
 // scale together, and the catch reaches / camera heights below follow.
@@ -225,6 +236,7 @@ const createWorld = (): GameWorld => ({
   falling: [],
   stack: [],
   debris: [],
+  popups: [],
   flash: 0,
   flashColor: "rgba(249,115,22,",
   lastSecond: SESSION_TIME_SECONDS,
@@ -381,6 +393,55 @@ const getTowerGeometry = (world: GameWorld, reduceMotion: boolean) => {
   return { coneTop, x, wobble, topCenterY, visibleHeight };
 };
 
+/**
+ * The sky (day gradient → night, stars, clouds) for the band y ∈ [top, bottom) in game-canvas
+ * coordinates (0 = top of the game canvas). Negative y = above the canvas (behind the header card):
+ * the gradient just carries on with its top colour, so nothing is stretched. Stars are spread over the
+ * game canvas plus the `inset` above it, so they continue into that band too.
+ */
+function drawSky(context: CanvasRenderingContext2D, world: GameWorld, top: number, bottom: number, inset: number) {
+  const band = bottom - top;
+  const altitude = getSkyAltitudeProgress(world.cameraOffset, world.height);
+  const sky = context.createLinearGradient(0, 0, 0, world.height);
+  sky.addColorStop(0, "#dbeafe");
+  sky.addColorStop(0.58, "#fef3c7");
+  sky.addColorStop(1, "#fed7aa");
+  context.fillStyle = sky;
+  context.fillRect(0, top, world.width, band);
+
+  // ไล่ความมืดต่อเนื่อง ไม่กระโดดตาม color stop อย่างเดียว
+  context.fillStyle = `rgba(2,6,23,${altitude * 0.92})`;
+  context.fillRect(0, top, world.width, band);
+
+  // ดาวค่อย ๆ ปรากฏหลังพ้นชั้นฟ้ากลางวัน ตำแหน่ง deterministic ไม่กระพริบสุ่ม
+  const starOpacity = clampToRange((altitude - 0.24) / 0.5, 0, 1);
+  if (starOpacity > 0) {
+    const span = world.height + inset; // game canvas + the band above it
+    for (let i = 0; i < 42; i += 1) {
+      const x = ((i * 83 + 37) % 431) / 431 * world.width;
+      const baseY = ((i * 137 + 19) % 503) / 503 * span;
+      const y = ((baseY + world.cameraOffset * (0.025 + (i % 3) * 0.012)) % span) - inset;
+      if (y < top - 2 || y > bottom + 2) continue;
+      const radius = i % 9 === 0 ? 1.8 : i % 4 === 0 ? 1.25 : 0.75;
+      const twinkle = 0.72 + Math.sin(world.elapsed * 1.7 + i) * 0.18;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fillStyle = `rgba(255,255,255,${starOpacity * twinkle})`;
+      context.fill();
+    }
+  }
+
+  const cloudOpacity = 0.38 * (1 - altitude);
+  context.fillStyle = `rgba(255,255,255,${cloudOpacity})`;
+  for (let i = 0; i < 5; i += 1) {
+    const x = ((i * 113 + world.elapsed * 7) % (world.width + 120)) - 60;
+    const y = 48 + (i % 3) * 54 + world.cameraOffset * 0.14;
+    context.beginPath();
+    context.ellipse(x, y, 42, 14, 0, 0, Math.PI * 2);
+    context.fill();
+  }
+}
+
 export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "flow" }: Props) {
   const [phase, setPhase] = useState<GamePhase>("intro");
   const [timeLeft, setTimeLeft] = useState(SESSION_TIME_SECONDS);
@@ -389,6 +450,11 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   const [runs, setRuns] = useState(0); // rounds started since the game was opened — best-score lines show from the 2nd
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Sky strip behind the header card: the same sky as the game canvas, continued upward at the same
+  // scale (not stretched) — the game area itself stays where it is, so gameplay/input are unchanged
+  const playAreaRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLCanvasElement>(null);
+  const backdropInsetRef = useRef(0); // header height = how far the sky continues above the game canvas
   const frameRef = useRef<number | null>(null);
   const worldRef = useRef<GameWorld>(createWorld());
   const coneImageRef = useRef<HTMLImageElement | null>(null);
@@ -493,6 +559,20 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     });
   }, []);
 
+  // score popup just above the tower top (where the change happened); kept inside the canvas
+  const addScorePopup = useCallback((amount: number) => {
+    if (amount === 0) return;
+    const world = worldRef.current;
+    const geometry = getTowerGeometry(world, reduceMotionRef.current);
+    const top = world.stack.length > 0 ? geometry.topCenterY - SCOOP_RADIUS : geometry.coneTop;
+    world.popups.push({
+      x: clampToRange(geometry.x + geometry.wobble, 36, Math.max(36, world.width - 36)),
+      y: clampToRange(top - 36, POPUP_FONT_PX + POPUP_RISE_PX, Math.max(POPUP_FONT_PX + POPUP_RISE_PX, world.height - 20)),
+      amount,
+      age: 0,
+    });
+  }, []);
+
   const removeTopScoops = useCallback((count: number) => {
     const world = worldRef.current;
     const removedCount = Math.min(count, getBombDropCount(world.stack.length));
@@ -526,6 +606,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           const flavor = falling.flavor ?? FLAVORS[0];
           world.stack.push(flavor);
           setHeight(world.stack.length);
+          addScorePopup(1);
           setBestHeight((previous) => Math.max(previous, world.stack.length));
           logRef.current("scoop_catch", {
             game_id: "g13",
@@ -545,6 +626,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           const flavor2 = falling.flavor2 ?? FLAVORS[1];
           world.stack.push(flavor1, flavor2);
           setHeight(world.stack.length);
+          addScorePopup(2);
           setBestHeight((previous) => Math.max(previous, world.stack.length));
           world.flash = 0.35;
           world.flashColor = "rgba(234,179,8,"; // Golden flash
@@ -562,6 +644,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         }
       } else if (caught) {
         const removed = removeTopScoops(2);
+        addScorePopup(-removed);
         world.flash = 0.42;
         world.flashColor = "rgba(249,115,22,"; // Orange flash for bomb
         logRef.current("bomb_hit", {
@@ -587,7 +670,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         world.spawnDelay2 = ((falling.kind === "bomb" ? 0.65 : 0.45) + spawnRngsRef.current.spawner2Delay() * 0.4) * delayMultiplier2;
       }
     },
-    [removeTopScoops]
+    [addScorePopup, removeTopScoops]
   );
 
   // Starts the timed round: seeded drops from here on (after the tutorial, or straight away on a replay)
@@ -696,7 +779,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           return;
         }
         // same as the real game, so the player sees what a bomb does
-        removeTopScoops(2);
+        addScorePopup(-removeTopScoops(2));
         world.flash = 0.42;
         world.flashColor = "rgba(249,115,22,";
         tutorial.wait = TUTORIAL_RETRY_S;
@@ -708,13 +791,14 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       if (caught) {
         world.stack.push(falling.flavor ?? FLAVORS[0]);
         setHeight(world.stack.length);
+        addScorePopup(1);
         advanceTutorial("catch", "dodge");
         return;
       }
       tutorial.wait = TUTORIAL_RETRY_S;
       setTutorialBanner({ text: TUTORIAL_TEXT.catchRetry, tone: "retry" });
     },
-    [advanceTutorial, removeTopScoops]
+    [addScorePopup, advanceTutorial, removeTopScoops]
   );
 
   const updateTutorial = useCallback(
@@ -920,42 +1004,15 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       context.setTransform(world.dpr, 0, 0, world.dpr, 0, 0);
       context.clearRect(0, 0, world.width, world.height);
 
-      const altitude = getSkyAltitudeProgress(world.cameraOffset, world.height);
-      const sky = context.createLinearGradient(0, 0, 0, world.height);
-      sky.addColorStop(0, "#dbeafe");
-      sky.addColorStop(0.58, "#fef3c7");
-      sky.addColorStop(1, "#fed7aa");
-      context.fillStyle = sky;
-      context.fillRect(0, 0, world.width, world.height);
+      drawSky(context, world, 0, world.height, backdropInsetRef.current);
 
-      // ไล่ความมืดต่อเนื่อง ไม่กระโดดตาม color stop อย่างเดียว
-      context.fillStyle = `rgba(2,6,23,${altitude * 0.92})`;
-      context.fillRect(0, 0, world.width, world.height);
-
-      // ดาวค่อย ๆ ปรากฏหลังพ้นชั้นฟ้ากลางวัน ตำแหน่ง deterministic ไม่กระพริบสุ่ม
-      const starOpacity = clampToRange((altitude - 0.24) / 0.5, 0, 1);
-      if (starOpacity > 0) {
-        for (let i = 0; i < 42; i += 1) {
-          const x = ((i * 83 + 37) % 431) / 431 * world.width;
-          const baseY = ((i * 137 + 19) % 503) / 503 * world.height;
-          const y = (baseY + world.cameraOffset * (0.025 + (i % 3) * 0.012)) % world.height;
-          const radius = i % 9 === 0 ? 1.8 : i % 4 === 0 ? 1.25 : 0.75;
-          const twinkle = 0.72 + Math.sin(world.elapsed * 1.7 + i) * 0.18;
-          context.beginPath();
-          context.arc(x, y, radius, 0, Math.PI * 2);
-          context.fillStyle = `rgba(255,255,255,${starOpacity * twinkle})`;
-          context.fill();
-        }
-      }
-
-      const cloudOpacity = 0.38 * (1 - altitude);
-      context.fillStyle = `rgba(255,255,255,${cloudOpacity})`;
-      for (let i = 0; i < 5; i += 1) {
-        const x = ((i * 113 + world.elapsed * 7) % (world.width + 120)) - 60;
-        const y = 48 + (i % 3) * 54 + world.cameraOffset * 0.14;
-        context.beginPath();
-        context.ellipse(x, y, 42, 14, 0, 0, Math.PI * 2);
-        context.fill();
+      // same sky, the band above the game canvas, on the strip behind the header card
+      const backdrop = backdropRef.current?.getContext("2d");
+      const inset = backdropInsetRef.current;
+      if (backdrop && inset > 0) {
+        backdrop.setTransform(world.dpr, 0, 0, world.dpr, 0, inset * world.dpr);
+        backdrop.clearRect(0, -inset, world.width, inset);
+        drawSky(backdrop, world, -inset, 0, inset);
       }
 
       const geometry = getTowerGeometry(world, reduceMotionRef.current);
@@ -1017,6 +1074,28 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       if (handPose) drawTutorialHand(context, handPose);
       context.restore();
 
+      // score popups: fade in → drift up → fade out (no drift with reduced motion)
+      if (world.popups.length > 0) {
+        context.save();
+        context.font = `700 ${POPUP_FONT_PX}px ${notoLoopedThai.style.fontFamily}`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.lineJoin = "round";
+        context.lineWidth = 5;
+        context.strokeStyle = "#FFFFFF";
+        world.popups.forEach((popup) => {
+          const fadeIn = Math.min(1, popup.age / POPUP_FADE_IN_S);
+          const fadeOut = Math.min(1, (POPUP_LIFE_S - popup.age) / POPUP_FADE_OUT_S);
+          const rise = reduceMotionRef.current ? 0 : (popup.age / POPUP_LIFE_S) * POPUP_RISE_PX;
+          const text = popup.amount > 0 ? `+${popup.amount}` : `−${-popup.amount}`;
+          context.globalAlpha = Math.max(0, Math.min(fadeIn, fadeOut));
+          context.strokeText(text, popup.x, popup.y - rise);
+          context.fillStyle = popup.amount > 0 ? "#16A34A" : "#DC2626";
+          context.fillText(text, popup.x, popup.y - rise);
+        });
+        context.restore();
+      }
+
       if (world.flash > 0) {
         const colorPrefix = world.flashColor ?? "rgba(249,115,22,";
         context.fillStyle = `${colorPrefix}${Math.min(world.flash, 0.28)})`;
@@ -1074,6 +1153,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       world.debris = world.debris.filter(
         (piece) => piece.y - piece.radius < world.height + 50 && piece.x + piece.radius > -50 && piece.x - piece.radius < world.width + 50
       );
+      world.popups.forEach((popup) => (popup.age += delta));
+      world.popups = world.popups.filter((popup) => popup.age < POPUP_LIFE_S);
 
       if (world.tutorial) {
         updateTutorial(delta);
@@ -1175,6 +1256,16 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       world.dpr = dpr;
       canvas.width = Math.round(world.width * dpr);
       canvas.height = Math.round(world.height * dpr);
+
+      const backdrop = backdropRef.current;
+      const playArea = playAreaRef.current;
+      if (backdrop && playArea) {
+        const inset = Math.max(0, bounds.top - playArea.getBoundingClientRect().top);
+        backdropInsetRef.current = inset;
+        backdrop.style.height = `${inset}px`;
+        backdrop.width = Math.round(world.width * dpr);
+        backdrop.height = Math.max(1, Math.round(inset * dpr));
+      }
 
       if (previousWidth > 1 && previousHeight > 1) {
         const scaleX = world.width / previousWidth;
@@ -1298,7 +1389,9 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       )}
 
       {phase === "playing" && (
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div ref={playAreaRef} className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
+          {/* sky continued up behind the header card (drawn with the game canvas, see drawSky) */}
+          <canvas ref={backdropRef} aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 block w-full" />
           {/* Header card: same as the other fun games (GameStageHeader) — time left (or practice) / tower height */}
           <GameStageHeader
             left={

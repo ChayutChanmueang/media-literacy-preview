@@ -86,6 +86,10 @@ const TOUCH_HINT = SHOW_PAN ? "แตะที่กระทะ" : "แตะ�
 const VEGGIE_SRC = "/assets/g20/broccoli.svg";
 const VEGGIE_SIZE = 108;
 const VEGGIE_INSET = { left: 0.1251, top: 0.0625, right: 0.1057, bottom: 0.0596 };
+// "เหลือ n ต้น" just under the veggie drawing (4px gap); on a short stage it moves up only as far as
+// needed to stay fully inside (30px = the pill's height + 2px)
+const VEGGIE_BOTTOM_PCT = ((VEGGIE_HOME.y + VEGGIE_SIZE / 2 - VEGGIE_SIZE * VEGGIE_INSET.bottom) / GAME_H) * 100;
+const LEFT_COUNT_TOP = `min(calc(${VEGGIE_BOTTOM_PCT}% + 4px), calc(100% - 32px))`;
 
 const DEFAULT_MESSAGE = `${TOUCH_HINT} แล้วลากนิ้วขึ้น ปล่อยนิ้วเพื่อโยน`;
 
@@ -684,6 +688,14 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
               onPointerCancel={onPointerCancel}
               className="block h-full w-full touch-none"
             />
+            {/* veggies left, under the veggie's spot — aria-hidden: the header already says "โยนได้อีก n" */}
+            <p
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[12px] text-[20px] font-semibold leading-[26px] text-[#4B4B4B]"
+              style={{ top: LEFT_COUNT_TOP }}
+            >
+              เหลือ {throwsLeft} ต้น
+            </p>
             {/* Finish text over the stage (as G19). aria-hidden: the screen-reader status already says the run is over. */}
             {finishPopup && (
               <div

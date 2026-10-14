@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getLeaderboardGame, isSupportedLeaderboardGid } from "@/lib/leaderboard";
+import { getLeaderboardGame, isSupportedLeaderboardGid, LOCAL_BROWSABLE_LEADERBOARD_GAMES } from "@/lib/leaderboard";
 import { LOCAL_LEADERBOARD_KEY, localLeaderboardService } from "@/services/localLeaderboardService";
 
 const somporn = { player_uuid: "11111111-1111-4111-8111-111111111111", name: "ยายสมพร" };
@@ -17,6 +17,12 @@ describe("local leaderboard (G18–G20, not yet on the database)", () => {
       expect(game?.name).toBeTruthy();
       expect(isSupportedLeaderboardGid(gid)).toBe(false);
     }
+  });
+
+  it("gives the experimental G20K its own local board, off the leaderboard menu's game list", () => {
+    expect(getLeaderboardGame("g20k")).toMatchObject({ lessonId: "g20k", gid: "G20K", localOnly: true });
+    expect(isSupportedLeaderboardGid("G20K")).toBe(false);
+    expect(LOCAL_BROWSABLE_LEADERBOARD_GAMES.map((game) => game.gid)).not.toContain("G20K");
   });
 
   it("ranks players by their best score and flags the current player", () => {

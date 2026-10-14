@@ -138,6 +138,8 @@ const FUN_GAMES = [
   { id: "g18", icon: "/images/lessons/category-fun.png", label: "จำให้ขึ้นใจ" },
   { id: "g19", icon: "/images/lessons/category-fun.png", label: "เรียงผลไม้" },
   { id: "g20", icon: "/images/lessons/category-fun.png", label: "ผักบุ้งลอยฟ้า" },
+  // รุ่นทดลอง (ฉากร้านอาหาร) ให้ผู้ทดสอบเล่นเทียบกับ G20 — ชื่อมี "(ทดลอง)" กำกับ
+  { id: "g20k", icon: "/images/lessons/category-fun.png", label: "ผักบุ้งลอยฟ้า (ทดลอง)" },
 ];
 
 // Figma node "เกมเพื่อการเรียนรู้" — mockup มี 3 แถว (แถวสุดท้ายซ้ำข้อความแถวแรกในต้นฉบับ ดูเป็น

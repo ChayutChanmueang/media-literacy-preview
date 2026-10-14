@@ -34,6 +34,7 @@ const G17ScamBreaker = dynamic(() => import("@/components/G17ScamBreaker"), { ss
 const G18MemoryPads = dynamic(() => import("@/components/G18MemoryPads"), { ssr: false });
 const G19FruitMatch = dynamic(() => import("@/components/G19FruitMatch"), { ssr: false });
 const G20VeggieToss = dynamic(() => import("@/components/G20VeggieToss"), { ssr: false });
+const G20KVeggieTossKitchen = dynamic(() => import("@/components/G20KVeggieTossKitchen"), { ssr: false });
 
 type GameProps = {
   onFinish: (stars: number, score?: number) => void;
@@ -254,6 +255,15 @@ const GAMES: GameEntry[] = [
     note: "เกมโยนผักบุ้งลงจานแบบ shootball7.html — แตะกระทะแล้วลากนิ้วขึ้นเพื่อโยน ชิ่งกำแพงซ้าย-ขวาได้ ลงจานแล้วขึ้นเลเวล (จานย้ายที่ → เลื่อนไปมา) โยนได้ 15 ครั้งต่อรอบ (แทนตัวจับเวลา 60 วิ) จบรอบด้วยหน้าผลงาน + สถิติดีที่สุด (ไม่มีหน้าแพ้/จับเวลา)",
     status: "qa",
     component: G20VeggieToss,
+    designDoc: "docs/gdd/design-g20-veggie-toss.md",
+  },
+  {
+    id: "G20K",
+    title: "ผักบุ้งลอยฟ้า (ทดลอง: ร้านอาหาร)",
+    lesson: "โหมดอิสระ › เกมสนุก (g20k) — ชื่อ \"ผักบุ้งลอยฟ้า (ทดลอง)\"",
+    note: "สำเนาทดลองของ G20 — กติกา/UI เหมือนเดิม แต่ฉากใหม่: ชามวางบนโต๊ะใต้ผนังร้าน ผักอยู่ในกระทะบนเตาด้านล่าง ผนังกระเบื้องคั่นกลาง ดูว่าฉากที่เห็นความสูงช่วยให้ผู้เล่นโยนเป็นวิถีโค้งไหม (log เป็น game_id G20K)",
+    status: "prototype",
+    component: G20KVeggieTossKitchen,
     designDoc: "docs/gdd/design-g20-veggie-toss.md",
   },
 ];

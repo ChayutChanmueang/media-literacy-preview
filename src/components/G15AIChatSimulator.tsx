@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Bot, CheckCircle2 } from "lucide-react";
 import FullscreenImageViewer from "@/components/FullscreenImageViewer";
+import GameIntro from "@/components/GameIntro";
 import ITEMS from "@/data/g15-chat-items.json";
 import { notoLoopedThai } from "@/lib/fonts";
 
@@ -82,7 +83,30 @@ const parseAnswer = (lines: string[]): Block[] =>
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export default function G15AIChatSimulator({ onFinish, logEvent, onExit }: Props) {
+export default function G15AIChatSimulator(props: Props) {
+  const [showHowTo, setShowHowTo] = useState(true);
+
+  // Intro panel like G16 — the chat mounts only after start so its scroll observers attach to the real DOM
+  if (showHowTo) {
+    return (
+      <GameIntro
+        containerClassName="bg-white gp-compact"
+        title="ลองถาม AI"
+        objective="เลือกคำถามที่อยากรู้ แล้วดูว่า AI ตอบอย่างไร เรียนรู้ว่า AI ช่วยอะไรได้ และต้องระวังอะไรบ้าง"
+        choices="เลือกถาม 3 เรื่อง"
+        icon={Bot}
+        onStart={() => {
+          setShowHowTo(false);
+          props.logEvent("game_intro_start", { game_id: "G15" });
+        }}
+      />
+    );
+  }
+
+  return <G15Chat {...props} />;
+}
+
+function G15Chat({ onFinish, logEvent, onExit }: Props) {
   const parsed = useMemo(
     () =>
       Object.fromEntries(
