@@ -795,6 +795,17 @@ h2 {
   74%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
 }
 
+/* G18 level-1 tutorial hand (G18MemoryPads.tsx) — same bounce as the simon13.html mock.
+   Kept running under prefers-reduced-motion on purpose, like G19's: it is the instruction. */
+.g18-tutorial-hand {
+  filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.4));
+  animation: g18-tutorial-hand 0.8s infinite alternate;
+}
+@keyframes g18-tutorial-hand {
+  0% { transform: translate(-50%, -50%) scale(1) rotate(-15deg); }
+  100% { transform: translate(-50%, -30%) scale(1.1) rotate(-15deg); }
+}
+
 @keyframes gp1-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.35); }
   50% { box-shadow: 0 0 0 6px rgba(13, 148, 136, 0); }

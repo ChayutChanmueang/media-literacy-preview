@@ -11,6 +11,7 @@ import { FLOW_G13_ID, FLOW_POST_TEST_ID, FLOW_POST_TEST_PATH, nextFlowLessonAfte
 import { useDevSkip } from "@/lib/devSkip";
 import { TEMP_AWARDED_STARS } from "@/lib/gameScore";
 import { getLeaderboardGame } from "@/lib/leaderboard";
+import SaveScorePopup from "@/components/SaveScorePopup";
 
 // Dynamic imports with SSR disabled to prevent window/speechSynthesis undefined crashes
 const G1FactCheck = dynamic(() => import("@/components/G1FactCheck"), { ssr: false });
@@ -55,6 +56,9 @@ export default function GameShellPage() {
   const [loading, setLoading] = useState(true);
   // โหมดอิสระ: ปุ่มจบเกม G13 ในหน้าสรุปคะแนนของตัวเกมเองใช้ข้อความ "ต่อไป" แทน "เสร็จสิ้นบทเรียน"
   const [learningMode, setLearningMode] = useState<"flow" | "manual">("flow");
+  // เกมสนุกที่มีกระดานคะแนน (G13, G18–G20K): จบเกมแล้วถามก่อนว่าจะเก็บคะแนนไหม (Figma 3157:15321)
+  // คะแนนรอไว้เป็น pending score — "ใช่" ไปหน้ากรอกชื่อ, "ไม่" ทิ้งคะแนนแล้วไปกระดานคะแนนของเกมนี้
+  const [scorePrompt, setScorePrompt] = useState<{ gid: string; score: number } | null>(null);
 
   useEffect(() => {
     // Verification of session
@@ -102,8 +106,8 @@ export default function GameShellPage() {
         currentStep: "leaderboard",
         currentLessonId: FLOW_G13_ID,
       });
-      // TEMP: ข้ามหน้าคะแนนกลาง (GameScorePage) ไปกระดานคะแนนตรงๆ — กระดานคะแนนของ G13 มีหน้าคะแนนของตัวเองอยู่แล้ว
-      router.push(`/lessons/${FLOW_G13_ID}/leaderboard`);
+      // TEMP: ข้ามหน้าคะแนนกลาง (GameScorePage) — G13 มีหน้าคะแนนของตัวเองอยู่แล้ว ถามเก็บคะแนนแล้วไปกระดานคะแนน
+      setScorePrompt({ gid: "G13", score: starsEarned });
       return;
     }
 
@@ -124,13 +128,13 @@ export default function GameShellPage() {
       stars: { ...progress.stars, [lessonId]: TEMP_AWARDED_STARS },
     };
 
-    // G18–G20: กระดานคะแนนในเครื่อง (ยังไม่ต่อ DB) — ข้ามหน้าคะแนนกลางไปกระดานคะแนนเลยแบบ G13
-    // เพราะตัวเกมมีหน้าสรุปคะแนนของตัวเองแล้ว; ปุ่มจบบนกระดานพากลับหน้าหมวดหมู่ (เกมพวกนี้มีเฉพาะโหมดอิสระ)
+    // G18–G20: กระดานคะแนนในเครื่อง (ยังไม่ต่อ DB) — ข้ามหน้าคะแนนกลางแบบ G13 เพราะตัวเกมมีหน้าสรุปคะแนนของตัวเองแล้ว
+    // ถามเก็บคะแนนแล้วไปกระดานคะแนน; ปุ่มจบบนกระดานพากลับหน้าหมวดหมู่ (เกมพวกนี้มีเฉพาะโหมดอิสระ)
     const leaderboardGame = getLeaderboardGame(lessonId);
     if (leaderboardGame?.localOnly && typeof score === "number") {
       leaderboardScoreService.savePendingScore(leaderboardGame.gid, score);
       progressService.saveProgress({ ...withStars, currentStep: "leaderboard", currentLessonId: lessonId });
-      router.push(`/lessons/${lessonId}/leaderboard`);
+      setScorePrompt({ gid: leaderboardGame.gid, score });
       return;
     }
 
@@ -159,6 +163,23 @@ export default function GameShellPage() {
   };
 
   useDevSkip(() => handleFinishGame(0));
+
+  // "ใช่" → หน้ากรอกชื่อเพื่อเก็บคะแนน (Figma 3157:15657) เก็บเสร็จแล้วไปกระดานคะแนน
+  // "ไม่" → ทิ้งคะแนนรอบนี้ แล้วไปดูกระดานคะแนนของเกมนี้เลย
+  const handleSaveScoreChoice = (save: boolean) => {
+    if (!scorePrompt) return;
+    loggingService.logEvent(save ? "leaderboard_save_chosen" : "leaderboard_save_declined", {
+      game_id: scorePrompt.gid,
+      lesson_id: lessonId,
+      score: scorePrompt.score,
+    });
+    if (save) {
+      router.push(`/lessons/${lessonId}/leaderboard?step=save`);
+    } else {
+      leaderboardScoreService.clearPendingScore(scorePrompt.gid);
+      router.push(`/lessons/${lessonId}/leaderboard?skipped=1`);
+    }
+  };
 
   const renderGameContent = () => {
     const logEventBound = loggingService.logEvent.bind(loggingService);
@@ -209,6 +230,9 @@ export default function GameShellPage() {
       <div className="flex flex-col flex-1 min-h-0">
         {renderGameContent()}
       </div>
+      {scorePrompt && (
+        <SaveScorePopup onYes={() => handleSaveScoreChoice(true)} onNo={() => handleSaveScoreChoice(false)} />
+      )}
     </div>
   );
 }

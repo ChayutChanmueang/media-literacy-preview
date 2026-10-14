@@ -16,14 +16,19 @@ import GameIntro from "@/components/GameIntro";
  * Question it's here to answer: does a scene with visible height make players throw in a curve?
  * The veggie and pan sit a little higher than in G20 (on the stove), so the throw is slightly shorter.
  * Events log as game_id "G20K" so they can be compared with G20. Dev Game Hub only.
+ * Tutorial and level ramp are the same as G20 (see its notes): 3 practice steps on entering the game
+ * (bowl middle / right for the curve / left for the throw off the right wall, live aim hints and a target
+ * arrow while dragging, nothing scored), and the bowl stays still for levels 1–7 then speeds up every
+ * 2 levels. The tutorial flicks are re-checked for G20K's higher veggie spot (TUTORIAL_FLICK), and the
+ * message box is placed through the stage layout (s/ox/oy) instead of percentages.
  *
  * --- G20's notes, still true here ---
  * G20 — ผักบุ้งลอยฟ้า (flick-to-basket)
  *
  * Ported from the team's "shootball7.html" mock: touch the pan and flick upwards to toss the
  * morning glory (🥬) into the bowl (canvas-drawn, side view) at the top; it can bounce off the left/right walls.
- * Every serve is a new level — level 1 the plate is centred, level 2 it moves to a random spot,
- * level 3+ it slides left and right, a little faster each level.
+ * Every serve is a new level — level 1 the plate is centred, levels 2–7 it sits still at a random spot,
+ * level 8+ it slides left and right, slowly at first and a little faster every 2 levels.
  * A pure fun game — no lesson content.
  * Same canvas scene as the mock (540×960 stage, pan, physics, catch zone, level ramp, colours).
  * Differences from the HTML mock, to follow AGENT.md (elderly-first):
@@ -37,7 +42,8 @@ import GameIntro from "@/components/GameIntro";
  * - the aim arrow stops AIM_TIP_GAP short of the finger, so the finger doesn't cover its tip
  * - a short pause in the bowl after a serve so the player sees it land (the mock jumped straight
  *   to the next level)
- * - plate speed is capped lower (MAX_PLATE_SPEED 6, mock: 8)
+ * - gentler plate ramp: still until level 8 (mock: moves from level 3), starts slower and speeds up every
+ *   2 levels instead of every level, capped lower (MAX_PLATE_SPEED 6, mock: 8)
  * - physics runs on elapsed time, not per frame, so 90/120 Hz phones don't play at double speed
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
@@ -75,6 +81,11 @@ const PLATE_W = 140;
 const PLATE_CATCH = 30; // catch window above/below the plate's centre line
 const PLATE_MARGIN = 40;
 const MAX_PLATE_SPEED = 6;
+// plate ramp (see plateSpeedFor): still for levels 1–7, slides from level 8 at 1.5, +0.75 every 2 levels
+const FIRST_MOVING_LEVEL = 8;
+const PLATE_START_SPEED = 1.5;
+const PLATE_SPEED_STEP = 0.75;
+const PLATE_SPEED_UP_EVERY = 2;
 const FRAME_MS = 1000 / 60;
 
 const THROWS_PER_RUN = 15;
@@ -100,25 +111,143 @@ const LEFT_COUNT_Y = STOVE_TOP + 18;
 
 const DEFAULT_MESSAGE = `${TOUCH_HINT} แล้วลากนิ้วขึ้น ปล่อยนิ้วเพื่อโยน`;
 
+// Tutorial (as G20, from the shootball10.html mock's drawTutorial), in stage units
+type TutorialStep = 1 | 2 | 3;
+const TUTORIAL_STEPS = 3;
+const TUTORIAL_LOOP_MS = 1800; // hand slides from the veggie along the flick, then starts over
+// step 1 hand, as in the mock: straight up from just under the veggie to just above the middle
+const TUTORIAL_HAND_START_Y = VEGGIE_HOME.y + 10;
+const TUTORIAL_HAND_END_Y = GAME_H / 2 - 30;
+const TUTORIAL_HAND_DX = 40; // hand sits this far right of the veggie, next to the dashed line
+const TUTORIAL_GLOW_R = 120;
+// message box: mock's 210×75 box at (25, GAME_H/2 − 130) — placed through the stage layout when drawn
+const TUTORIAL_BOX = { x: 25, y: GAME_H / 2 - 130, minW: 210 };
+// bowl per step: middle (mock) · right, so the curve shows · left, for the throw off the right wall
+const TUTORIAL_PLATE_X: Record<TutorialStep, number> = { 1: GAME_W / 2, 2: 400, 3: 130 };
+const TUTORIAL_TEXT: Record<TutorialStep, string> = {
+  1: "เอานิ้วลากเพื่อ\nโยนให้ลงถ้วย",
+  2: "ผักจะลอยเป็นเส้นโค้ง\nลองโยนเฉียงไปทางถ้วย",
+  3: "โยนชิ่งกำแพงก็ได้นะ\nลองโยนตามเส้นประ",
+};
+const TUTORIAL_MISS_TEXT: Record<TutorialStep, string> = {
+  1: "ยังไม่ลงถ้วย ลองใหม่นะ\nลากนิ้วขึ้นตามมือได้เลย",
+  2: "ยังไม่ลงถ้วย ลองใหม่นะ\nผักลอยโค้ง ลองทำตามมือ",
+  3: "ยังไม่ลงถ้วย ลองใหม่นะ\nลองโยนตามเส้นประ",
+};
+const TUTORIAL_SERVED_TEXT: Record<TutorialStep, string> = {
+  1: "✓ ลงถ้วยแล้ว เก่งมาก!",
+  2: "✓ เก่งมาก! เห็นไหม\nผักลอยเป็นเส้นโค้ง",
+  3: "✓ เก่งมาก!\nต่อไปเล่นจริงแล้วนะ",
+};
+const TUTORIAL_SERVED_PAUSE_MS = 2200; // longer than SERVED_PAUSE_MS, so the praise can be read
+const TRAIL_GAP = 18; // stage units between the dots of the flight trail (steps 2–3)
+
+type Point = { x: number; y: number };
+
+// The flick (drag dx, dy in stage units) that lands in each step's bowl from G20K's veggie spot (y 760),
+// picked so it still lands at 60 and 120 Hz with the most room for error: step 1 = the mock's hand path,
+// straight up; step 2 = a little right (sideways ±16 still lands, any power above −247);
+// step 3 = hard right, off the right wall (sideways ±25, power ±16 — the tightest one)
+const TUTORIAL_FLICK: Record<TutorialStep, Point> = {
+  1: { x: 0, y: TUTORIAL_HAND_END_Y - TUTORIAL_HAND_START_Y },
+  2: { x: 30, y: -270 },
+  3: { x: 153, y: -273 },
+};
+// how far (stage units of drag) the aim can be off before the hint says which way to fix it
+const TUTORIAL_AIM_TOLERANCE: Record<TutorialStep, Point> = { 1: { x: 11, y: 60 }, 2: { x: 16, y: 20 }, 3: { x: 25, y: 16 } };
+
+type AimHint = "short" | "ok" | "weak" | "strong" | "left" | "right";
+const AIM_HINT_TEXT: Record<AimHint, string> = {
+  short: "ลากนิ้วขึ้น\nให้ลูกศรทับลูกศรจาง ๆ",
+  ok: "✓ ตรงแล้ว\nปล่อยนิ้วได้เลย",
+  weak: "แรงยังไม่พอ\nลากนิ้วให้ยาวขึ้นอีกนิด",
+  strong: "แรงมากไป\nลากนิ้วให้สั้นลงหน่อย",
+  left: "ยังไม่ตรง\nเอียงไปทางซ้ายอีกนิด",
+  right: "ยังไม่ตรง\nเอียงไปทางขวาอีกนิด",
+};
+
+// Same as onPointerUp: drag → throw speed
+function flickVelocity(dx: number, dy: number) {
+  return { vx: dx * POWER, vy: Math.max(dy * POWER * 1.5, -MAX_UP_SPEED) };
+}
+
+// One throw from the veggie's spot, frame by frame with the same rules as update(), until it falls
+// through the bowl's height (or off the bottom)
+function simulateThrow(vx0: number, vy0: number) {
+  let { x, y } = VEGGIE_HOME;
+  let vx = vx0;
+  let vy = vy0;
+  const path: Point[] = [{ x, y }];
+  let bounce: Point | null = null;
+  let bounces = 0;
+  for (let i = 0; i < 600; i++) {
+    const prevY = y;
+    vy += GRAVITY;
+    x += vx;
+    y += vy;
+    if (x - VEGGIE_RADIUS < 0 || x + VEGGIE_RADIUS > GAME_W) {
+      x = x < GAME_W / 2 ? VEGGIE_RADIUS : GAME_W - VEGGIE_RADIUS;
+      vx *= -WALL_BOUNCE;
+      bounces += 1;
+      bounce ??= { x, y };
+    }
+    path.push({ x, y });
+    if (vy > 0 && prevY <= PLATE_Y + PLATE_CATCH && y >= PLATE_Y - PLATE_CATCH) return { path, bounce, bounces, landX: x };
+    if (y > GAME_H + 100) return null;
+  }
+  return null;
+}
+
+// Step 3's dotted guide line: the path of its fixed flick
+const STEP3_GUIDE = (() => {
+  const { vx, vy } = flickVelocity(TUTORIAL_FLICK[3].x, TUTORIAL_FLICK[3].y);
+  const r = simulateThrow(vx, vy);
+  return { path: r?.path ?? [], bounce: r?.bounce ?? null };
+})();
+
+// What to tell the player about the drag they are holding: "ok" when it would land in the bowl,
+// otherwise the bigger of the two errors against the step's flick (sideways / power)
+function aimHint(step: TutorialStep, dx: number, dy: number): AimHint {
+  if (dy >= -MIN_DRAG_UP) return "short";
+  const { vx, vy } = flickVelocity(dx, dy);
+  const r = simulateThrow(vx, vy);
+  if (r && Math.abs(r.landX - TUTORIAL_PLATE_X[step]) < PLATE_W / 2) return "ok";
+  const target = flickVelocity(TUTORIAL_FLICK[step].x, TUTORIAL_FLICK[step].y);
+  const tol = TUTORIAL_AIM_TOLERANCE[step];
+  const ex = (vx - target.vx) / (tol.x * POWER);
+  const ey = (vy - target.vy) / (tol.y * POWER * 1.5);
+  if (Math.abs(ex) >= Math.abs(ey)) return ex > 0 ? "left" : "right";
+  return ey > 0 ? "weak" : "strong"; // vy is up-negative: bigger = weaker
+}
+
 function starsFor(served: number) {
   if (served >= 8) return 3;
   if (served >= 4) return 2;
   return 1;
 }
 
-// Mock's updateLevelDifficulty
+// Plate speed per level (mock's updateLevelDifficulty, slower ramp): still for the first 7 levels,
+// then it starts sliding slowly and speeds up every PLATE_SPEED_UP_EVERY levels, up to MAX_PLATE_SPEED
+function plateSpeedFor(level: number) {
+  if (level < FIRST_MOVING_LEVEL) return 0;
+  const tier = Math.floor((level - FIRST_MOVING_LEVEL) / PLATE_SPEED_UP_EVERY);
+  return Math.min(PLATE_START_SPEED + tier * PLATE_SPEED_STEP, MAX_PLATE_SPEED);
+}
+
+// level 1 centred (mock), then a random spot each level
 function plateFor(level: number): World["plate"] {
   if (level === 1) return { x: GAME_W / 2, speed: 0, direction: 1 };
   return {
     x: 100 + Math.random() * (GAME_W - 200),
-    speed: level >= 3 ? Math.min(2 + (level - 3) * 0.5, MAX_PLATE_SPEED) : 0,
+    speed: plateSpeedFor(level),
     direction: Math.random() > 0.5 ? 1 : -1,
   };
 }
 
 function levelMessage(level: number) {
   if (level === 2) return "เลเวล 2 — จานย้ายที่แล้ว เล็งใหม่นะ";
-  if (level === 3) return "เลเวล 3 — จานเริ่มเลื่อนไปมาแล้ว";
+  if (level === FIRST_MOVING_LEVEL) return `เลเวล ${level} — จานเริ่มเลื่อนไปมาแล้ว`;
+  if (plateSpeedFor(level) > plateSpeedFor(level - 1)) return `เลเวล ${level} — จานเลื่อนเร็วขึ้นแล้ว`;
   return `เลเวล ${level} แล้ว โยนต่อเลย`;
 }
 
@@ -459,13 +588,13 @@ function drawTrajectory(ctx: CanvasRenderingContext2D, x: number, y: number, dx:
   ctx.restore();
 }
 
-function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
+// Outline of the aim arrow for a drag (dx, dy) as the current path; null when too short to draw
+function traceAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
   const dragLength = Math.hypot(dx, dy);
   const length = dragLength - AIM_TIP_GAP;
-  if (length < 1) return;
+  if (length < 1) return null;
   const ux = dx / dragLength; // along
   const uy = dy / dragLength;
-  ctx.save();
   ctx.beginPath();
   AIM_ARROW.forEach(([along, across], i) => {
     const px = x + ux * along * length - uy * across * length;
@@ -474,6 +603,111 @@ function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: n
     else ctx.lineTo(px, py);
   });
   ctx.closePath();
+  return { ux, uy, tip: { x: x + ux * length, y: y + uy * length } };
+}
+
+// Tutorial target: where the aim arrow should be for the step's flick — the same shape, faint, dashed
+// blue edge (solid green once the player's aim would land). Returns its tip, for the parked 👆.
+function drawTargetArrow(ctx: CanvasRenderingContext2D, x: number, y: number, flick: Point, onTarget: boolean) {
+  ctx.save();
+  const arrow = traceAimArrow(ctx, x, y, flick.x, flick.y);
+  if (arrow) {
+    ctx.fillStyle = onTarget ? "rgba(34, 197, 94, 0.35)" : "rgba(255, 255, 255, 0.45)";
+    ctx.fill();
+    ctx.lineJoin = "round";
+    ctx.setLineDash(onTarget ? [] : [10, 8]);
+    ctx.strokeStyle = onTarget ? "#16A34A" : "#2563EB";
+    ctx.lineWidth = onTarget ? 5 : 4;
+    ctx.stroke();
+  }
+  ctx.restore();
+  return arrow?.tip ?? null;
+}
+
+// Mock's drawTutorial, minus the text box (DOM): glow behind the veggie, then (over it) the dashed
+// line and the 👆 moving up together
+function drawTutorialGlow(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  const grad = ctx.createRadialGradient(x, y, 10, x, y, TUTORIAL_GLOW_R);
+  grad.addColorStop(0, "rgba(37, 99, 235, 0.25)");
+  grad.addColorStop(1, "rgba(37, 99, 235, 0)");
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(x, y, TUTORIAL_GLOW_R, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// The 👆 at `progress` (0 → 1) of the way from `from` to `to`, with (unless `line` is false) a dashed
+// line from the veggie (x, y) to it
+function drawTutorialHand(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  from: Point,
+  to: Point,
+  progress: number,
+  line = true
+) {
+  const handX = from.x + (to.x - from.x) * progress;
+  const handY = from.y + (to.y - from.y) * progress;
+  ctx.save();
+  if (line) {
+    ctx.beginPath();
+    ctx.setLineDash([8, 8]);
+    ctx.moveTo(x, y);
+    ctx.lineTo(handX, handY);
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.font = `55px ${EMOJI_FONT}`;
+  ctx.fillText("👆", handX + TUTORIAL_HAND_DX, handY);
+  ctx.restore();
+}
+
+// Step 3: where the throw goes — dotted line from the veggie, off the wall (ring), into the bowl
+function drawGuidePath(ctx: CanvasRenderingContext2D, guide: { path: Point[]; bounce: Point | null }) {
+  if (guide.path.length < 2) return;
+  ctx.save();
+  ctx.beginPath();
+  guide.path.forEach(({ x, y }, i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+  ctx.setLineDash([2, 16]);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "rgba(37, 99, 235, 0.7)";
+  ctx.lineWidth = 9;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (guide.bounce) {
+    ctx.beginPath();
+    ctx.arc(guide.bounce.x, guide.bounce.y, 26, 0, Math.PI * 2);
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 5;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// Steps 2–3: dots where the veggie has been, so the curve (and the bounce) stays visible
+function drawTrail(ctx: CanvasRenderingContext2D, trail: Point[]) {
+  ctx.save();
+  ctx.fillStyle = "rgba(37, 99, 235, 0.45)";
+  trail.forEach(({ x, y }) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
+  ctx.save();
+  const arrow = traceAimArrow(ctx, x, y, dx, dy);
+  if (!arrow) {
+    ctx.restore();
+    return;
+  }
+  const { ux, uy } = arrow;
   ctx.lineJoin = "round";
   ctx.strokeStyle = "#4B4B4B"; // dark edge keeps the green/yellow arrow visible on the light green background
   ctx.lineWidth = 4;
@@ -515,6 +749,8 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const [bestServed, setBestServed] = useState(0); // best run since the game was opened
   const [runs, setRuns] = useState(0);
+  const [tutorialStep, setTutorialStep] = useState<0 | TutorialStep>(0); // 0 = not in the tutorial
+  const [tutorialBox, setTutorialBox] = useState<string | null>(null); // the tutorial's message box (DOM)
 
   // Refs drive the game (read every animation frame); state above is only what the DOM shows.
   const worldRef = useRef<World>({ veggie: homeVeggie("idle"), plate: plateFor(1), drag: null });
@@ -529,6 +765,11 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<(step: number) => void>(() => {});
   const veggieImgRef = useRef<HTMLImageElement | null>(null);
+  const tutorialStepRef = useRef<0 | TutorialStep>(0);
+  const tutorialDoneRef = useRef(false);
+  const guideRef = useRef(false); // hand + glow showing — the game is paused, like the mock's isTutorial
+  const trailRef = useRef<Point[]>([]);
+  const aimHintRef = useRef<AimHint | null>(null); // tutorial: hint for the drag being held (box + target colour)
 
   const clearTimers = () => {
     timersRef.current.forEach((t) => window.clearTimeout(t));
@@ -549,6 +790,74 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     });
 
   const say = (text: string) => setMessage(text); // screen readers only (role="status")
+
+  // tutorial guide: message box + (on the canvas) glow and 👆; the game waits until the next drag
+  const showGuide = (text: string) => {
+    guideRef.current = true;
+    setTutorialBox(text);
+    say(text.replace("\n", " "));
+  };
+
+  const hideGuide = () => {
+    guideRef.current = false;
+    setTutorialBox(null);
+  };
+
+  const loadVeggieImage = () => {
+    if (veggieImgRef.current) return;
+    const img = new Image();
+    img.src = VEGGIE_SRC;
+    veggieImgRef.current = img;
+  };
+
+  const startTutorialStep = (step: TutorialStep) => {
+    tutorialStepRef.current = step;
+    setTutorialStep(step);
+    trailRef.current = [];
+    worldRef.current = { veggie: homeVeggie("idle"), plate: { x: TUTORIAL_PLATE_X[step], speed: 0, direction: 1 }, drag: null };
+    showGuide(TUTORIAL_TEXT[step]);
+    logEvent("tutorial_step", { game_id: "G20K", step });
+  };
+
+  // Practice before the first run (not a run: nothing scored, no throws used)
+  const startTutorial = () => {
+    loadVeggieImage();
+    genRef.current += 1;
+    clearTimers();
+    playingRef.current = true;
+    setFinishPopup(null);
+    setPhase("play");
+    logEvent("tutorial_start", { game_id: "G20K" });
+    startTutorialStep(1);
+  };
+
+  const endTutorial = (skipped: boolean) => {
+    tutorialDoneRef.current = true;
+    tutorialStepRef.current = 0;
+    setTutorialStep(0);
+    hideGuide();
+    trailRef.current = [];
+    logEvent("tutorial_complete", { game_id: "G20K", skipped });
+    startRun();
+  };
+
+  const startRun = () => {
+    loadVeggieImage();
+    genRef.current += 1;
+    clearTimers();
+    worldRef.current = { veggie: homeVeggie("idle"), plate: plateFor(1), drag: null };
+    levelRef.current = 1;
+    throwsRef.current = THROWS_PER_RUN;
+    playingRef.current = true;
+    runRef.current += 1;
+    setRuns(runRef.current);
+    setLevel(1);
+    setThrowsLeft(THROWS_PER_RUN);
+    setFinishPopup(null);
+    say(DEFAULT_MESSAGE);
+    setPhase("play");
+    logEvent("run_start", { game_id: "G20K", run: runRef.current });
+  };
 
   const served = level - 1;
 
@@ -594,6 +903,19 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     v.vy = 0;
     v.y = PLATE_Y + 8; // lower half hidden by the bowl's front, so it reads as "in the bowl"
     v.plateOffset = Math.max(-16, Math.min(16, v.x - world.plate.x)); // keep the broccoli inside the bowl's opening
+
+    const tStep = tutorialStepRef.current;
+    if (tStep) {
+      setTutorialBox(TUTORIAL_SERVED_TEXT[tStep]);
+      say(TUTORIAL_SERVED_TEXT[tStep].replace("\n", " "));
+      logEvent("tutorial_serve", { game_id: "G20K", step: tStep });
+      await delay(TUTORIAL_SERVED_PAUSE_MS);
+      if (gen !== genRef.current) return;
+      if (tStep < TUTORIAL_STEPS) startTutorialStep((tStep + 1) as TutorialStep);
+      else endTutorial(false);
+      return;
+    }
+
     levelRef.current += 1;
     setLevel(levelRef.current);
     say("✓ ลงจานแล้ว! เก่งมาก");
@@ -612,6 +934,15 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
 
   const onMiss = () => {
     const world = worldRef.current;
+    const tStep = tutorialStepRef.current;
+    if (tStep) {
+      // practice: no throws used — back to the spot with the guide again (the missed flight's trail is cleared)
+      logEvent("tutorial_miss", { game_id: "G20K", step: tStep });
+      trailRef.current = [];
+      world.veggie = homeVeggie("idle");
+      showGuide(TUTORIAL_MISS_TEXT[tStep]);
+      return;
+    }
     logEvent("miss", { game_id: "G20K", run: runRef.current, level: levelRef.current, throws_left: throwsRef.current });
     if (throwsRef.current <= 0) {
       void finishRun(genRef.current);
@@ -624,6 +955,9 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
   // Mock's update(), scaled by `step` (1 = one 60 fps frame)
   const update = (step: number) => {
     const { plate, veggie } = worldRef.current;
+
+    // like the mock, the game is paused while the tutorial guide shows
+    if (guideRef.current) return;
 
     if (plate.speed > 0) {
       plate.x += plate.speed * plate.direction * step;
@@ -653,6 +987,12 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     } else if (veggie.x + VEGGIE_RADIUS > GAME_W) {
       veggie.x = GAME_W - VEGGIE_RADIUS;
       veggie.vx *= -WALL_BOUNCE;
+    }
+
+    if (tutorialStepRef.current >= 2) {
+      const trail = trailRef.current;
+      const last = trail[trail.length - 1];
+      if (!last || Math.hypot(veggie.x - last.x, veggie.y - last.y) >= TRAIL_GAP) trail.push({ x: veggie.x, y: veggie.y });
     }
 
     // Falling through the catch window this frame (checks the whole path, so a fast fall can't skip it)
@@ -695,6 +1035,17 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     drawStove(ctx);
     drawPanBack(ctx);
 
+    const tStep = tutorialStepRef.current;
+    if (tStep === 3 && veggie.state !== "served") drawGuidePath(ctx, STEP3_GUIDE);
+    if (tStep >= 2) drawTrail(ctx, trailRef.current);
+    const showGuide = tStep !== 0 && guideRef.current && veggie.state === "idle";
+    const aiming = tStep !== 0 && veggie.state === "dragging";
+    if (showGuide) drawTutorialGlow(ctx, veggie.x, veggie.y);
+    // target arrow only once the player is dragging (the guide before that is the mock's hand + dashed line)
+    const targetTip = aiming
+      ? drawTargetArrow(ctx, veggie.x, veggie.y, TUTORIAL_FLICK[tStep as TutorialStep], aimHintRef.current === "ok")
+      : null;
+
     // over the bowl (a long aim reaches it), under the veggie so the veggie covers the arrow's tail
     if (veggie.state === "dragging" && drag) {
       drawAimArrow(ctx, veggie.x, veggie.y, drag.x - drag.startX, drag.y - drag.startY);
@@ -704,6 +1055,17 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     if (veggie.state !== "served") drawVeggie(ctx, veggieImg, veggie.x, veggie.y);
     // the pan's front covers the veggie's stem, so it sits in the pan (and rises out of it when thrown)
     drawPanFront(ctx);
+
+    // tutorial hand on top of everything
+    if (showGuide) {
+      // the finger's path for the flick (step 1 starts just under the veggie, as in the mock)
+      const flick = TUTORIAL_FLICK[tStep as TutorialStep];
+      const from = { x: veggie.x, y: tStep === 1 ? TUTORIAL_HAND_START_Y : veggie.y };
+      const to = { x: from.x + flick.x, y: from.y + flick.y };
+      drawTutorialHand(ctx, veggie.x, veggie.y, from, to, (performance.now() % TUTORIAL_LOOP_MS) / TUTORIAL_LOOP_MS);
+    } else if (aiming && targetTip) {
+      drawTutorialHand(ctx, veggie.x, veggie.y, targetTip, targetTip, 0, false); // parked at the target's tip
+    }
   };
 
   // The loop below keeps one tick for the whole run; it calls the latest update/draw through this ref.
@@ -767,6 +1129,35 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     world.drag = { startX: pos.x, startY: pos.y, x: pos.x, y: pos.y };
     world.veggie.state = "dragging";
     say("ลากขึ้นไปทางจาน แล้วปล่อยนิ้ว");
+    // starting a drag closes the tutorial guide (unlike the mock, a touch elsewhere keeps it up);
+    // from here the box gives live hints on the aim
+    if (guideRef.current) {
+      hideGuide();
+      logEvent("tutorial_dismiss", { game_id: "G20K", step: tutorialStepRef.current });
+    }
+    if (tutorialStepRef.current) {
+      aimHintRef.current = null;
+      updateAimHint(0, 0);
+    }
+  };
+
+  // tutorial: live hint for the drag being held — only re-rendered when it changes
+  const updateAimHint = (dx: number, dy: number) => {
+    const step = tutorialStepRef.current;
+    if (!step) return;
+    const hint = aimHint(step, dx, dy);
+    if (hint === aimHintRef.current) return;
+    aimHintRef.current = hint;
+    setTutorialBox(AIM_HINT_TEXT[hint]);
+    say(AIM_HINT_TEXT[hint].replace("\n", " "));
+  };
+
+  // tutorial: drag ended without a throw — back to the step's guide
+  const backToGuide = () => {
+    const step = tutorialStepRef.current;
+    if (!step) return;
+    aimHintRef.current = null;
+    showGuide(TUTORIAL_TEXT[step]);
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -779,6 +1170,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     const k = Math.min(1, MAX_DRAG / (Math.hypot(dx, dy) || 1));
     world.drag.x = world.drag.startX + dx * k;
     world.drag.y = world.drag.startY + dy * k;
+    updateAimHint(dx * k, dy * k);
   };
 
   const onPointerUp = () => {
@@ -792,11 +1184,27 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     if (dy >= -MIN_DRAG_UP) {
       veggie.state = "idle";
       say("ลากขึ้นด้านบนอีกนิด แล้วปล่อยนิ้วนะ");
+      backToGuide();
       return;
     }
     veggie.vx = dx * POWER;
     veggie.vy = Math.max(dy * POWER * 1.5, -MAX_UP_SPEED);
     veggie.state = "flying";
+    const tStep = tutorialStepRef.current;
+    if (tStep) {
+      // practice throw: doesn't use up a throw
+      trailRef.current = [];
+      aimHintRef.current = null;
+      setTutorialBox(null);
+      say("ผักลอยไปแล้ว!");
+      logEvent("tutorial_throw", {
+        game_id: "G20K",
+        step: tStep,
+        vx: Math.round(veggie.vx * 10) / 10,
+        vy: Math.round(veggie.vy * 10) / 10,
+      });
+      return;
+    }
     throwsRef.current -= 1;
     setThrowsLeft(throwsRef.current);
     say("ผักลอยไปแล้ว!");
@@ -813,29 +1221,10 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
   const onPointerCancel = () => {
     const world = worldRef.current;
     world.drag = null;
-    if (world.veggie.state === "dragging") world.veggie.state = "idle";
-  };
-
-  const startRun = () => {
-    if (!veggieImgRef.current) {
-      const img = new Image();
-      img.src = VEGGIE_SRC;
-      veggieImgRef.current = img;
+    if (world.veggie.state === "dragging") {
+      world.veggie.state = "idle";
+      backToGuide();
     }
-    genRef.current += 1;
-    clearTimers();
-    worldRef.current = { veggie: homeVeggie("idle"), plate: plateFor(1), drag: null };
-    levelRef.current = 1;
-    throwsRef.current = THROWS_PER_RUN;
-    playingRef.current = true;
-    runRef.current += 1;
-    setRuns(runRef.current);
-    setLevel(1);
-    setThrowsLeft(THROWS_PER_RUN);
-    setFinishPopup(null);
-    say(DEFAULT_MESSAGE);
-    setPhase("play");
-    logEvent("run_start", { game_id: "G20K", run: runRef.current });
   };
 
   const finish = () => {
@@ -854,7 +1243,9 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
         icon={Salad}
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G20K" });
-          startRun();
+          // entering the game: practice first (once per opening)
+          if (tutorialDoneRef.current) startRun();
+          else startTutorial();
         }}
       />
     );
@@ -907,12 +1298,33 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     >
       {/* Header card on top of the scene, whose top runs up behind the card's rounded corners */}
       <div ref={headerRef} className="relative z-10 shrink-0">
+      {/* during the tutorial: "โหมด ฝึกเล่น" + step, like G13's practice */}
       <GameStageHeader
-        left={{ label: "โยนได้อีก", value: throwsLeft, ariaLabel: `โยนได้อีก ${throwsLeft} ครั้ง` }}
-        right={{ label: "ด่าน", value: level, ariaLabel: `ด่าน ${level}` }}
+        left={
+          tutorialStep
+            ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" }
+            : { label: "โยนได้อีก", value: throwsLeft, ariaLabel: `โยนได้อีก ${throwsLeft} ครั้ง` }
+        }
+        right={
+          tutorialStep
+            ? { label: "ขั้นที่", value: `${tutorialStep}/${TUTORIAL_STEPS}`, ariaLabel: `ฝึกขั้นที่ ${tutorialStep} จาก ${TUTORIAL_STEPS}` }
+            : { label: "ด่าน", value: level, ariaLabel: `ด่าน ${level}` }
+        }
       >
+        {/* QA only (like G13's) — skip the practice */}
+        {process.env.NODE_ENV === "development" && tutorialStep !== 0 && (
+          <button
+            type="button"
+            onClick={() => endTutorial(true)}
+            className={HUD_DEV_BUTTON_CLASS}
+            aria-label="ข้ามการฝึกเล่นสำหรับทดสอบเกม"
+            data-dev-only="g20k-skip-tutorial"
+          >
+            ข้ามฝึก
+          </button>
+        )}
         {/* QA only (same idea as G19's) — end the run now to check the result screen */}
-        {process.env.NODE_ENV === "development" && (
+        {process.env.NODE_ENV === "development" && tutorialStep === 0 && (
           <button
             type="button"
             onClick={() => {
@@ -956,13 +1368,29 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
               className="block h-full w-full touch-none"
             />
             {/* veggies left, under the veggie's spot — aria-hidden: the header already says "โยนได้อีก n" */}
-            <p
-              aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[12px] text-[20px] font-semibold leading-[26px] text-[#4B4B4B]"
-              style={{ top: Math.min(stage.oy + LEFT_COUNT_Y * stage.s + 4, stage.h - 32) }}
-            >
-              เหลือ {throwsLeft} ต้น
-            </p>
+            {tutorialStep === 0 && (
+              <p
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[12px] text-[20px] font-semibold leading-[26px] text-[#4B4B4B]"
+                style={{ top: Math.min(stage.oy + LEFT_COUNT_Y * stage.s + 4, stage.h - 32) }}
+              >
+                เหลือ {throwsLeft} ต้น
+              </p>
+            )}
+            {/* Tutorial message box (mock's canvas box, left side of the stage) — aria-hidden: the status line says it */}
+            {tutorialBox && (
+              <p
+                aria-hidden="true"
+                className="pointer-events-none absolute z-10 rounded-[16px] border-2 border-solid border-[#CBD5E1] bg-white px-[12px] py-[6px] text-center text-[20px] font-bold leading-[26px] whitespace-pre text-[#1E293B] shadow-[0_4px_12px_rgba(0,0,0,0.12)]"
+                style={{
+                  left: stage.ox + TUTORIAL_BOX.x * stage.s,
+                  top: stage.oy + TUTORIAL_BOX.y * stage.s,
+                  minWidth: TUTORIAL_BOX.minW * stage.s,
+                }}
+              >
+                {tutorialBox}
+              </p>
+            )}
             {/* Finish text over the stage (as G19). aria-hidden: the screen-reader status already says the run is over. */}
             {finishPopup && (
               <div

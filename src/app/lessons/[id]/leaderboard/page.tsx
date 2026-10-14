@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Check, Pencil, RefreshCw, Trophy, UserRound, X } from "lucide-react";
+import { RefreshCw, Trophy } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import {
@@ -18,96 +18,47 @@ import { apiClient } from "@/services/apiClient";
 import { leaderboardPlayerService } from "@/services/leaderboardPlayerService";
 import { leaderboardScoreService } from "@/services/leaderboardScoreService";
 import { localLeaderboardService } from "@/services/localLeaderboardService";
-import BottomActionButton from "@/components/BottomActionButton";
+import Button3D from "@/components/Button3D";
+import { notoLoopedThai } from "@/lib/fonts";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
 import { loggingService } from "@/services/loggingService";
 import { progressService } from "@/services/progressService";
 
 type ViewState = "loading" | "name-entry" | "leaderboard";
 type BoardStatus = "loading" | "ready" | "error";
-type ConfirmAction = "save" | "skip";
+// Figma "Leaderboard" (Scammer Game Prototype, node 3157:15491): trophy + title + game name, a purple
+// column bar, white rows (rank badge · name · score pill), and the player's own row pinned in yellow under
+// the list. Ranks 1–3 show a medal instead of the number badge (🥇🥈🥉, as in the design's rows).
+const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+const BOARD_BAR = "#A855D4"; // Figma "Primary Purple"
+const OWN_ROW = { bg: "#F0AE03", border: "#C38D00" }; // Figma "Primary Yellow" / "Yellow Pressed"
+// white on yellow is below 4.5:1 on its own — same dark text shadow the old podium rows used
+const ON_YELLOW_SHADOW = "0px 2px 4px rgba(0, 0, 0, 0.5)";
 
-function ConfirmPopup({
-  title,
-  onConfirm,
-  onCancel,
-}: {
-  title: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <button
-        type="button"
-        aria-label="ปิดหน้าต่างยืนยัน"
-        onClick={onCancel}
-        className="absolute inset-0 bg-black/40"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="leaderboard-confirm-title"
-        className="relative w-full max-w-md rounded-[32px] border-2 border-[var(--primary)] bg-[var(--bg-card)] px-5 py-8 text-center shadow-[var(--shadow-md)]"
-      >
-        <h2
-          id="leaderboard-confirm-title"
-          className="mb-6 text-[28px] font-bold leading-tight text-[var(--text-primary)]"
-        >
-          {title}
-        </h2>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="btn min-h-[68px] px-3 text-[22px] bg-transparent text-[var(--primary)] border-2 border-[var(--primary)]"
-          >
-            ไม่ใช่
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="btn min-h-[68px] px-3 text-[22px] bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
-          >
-            ใช่
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// New personal best: the player's score counts up from their old best to the new one, and their row
+// (yellow while it climbs) moves up past each row it overtakes — rows only move while the number runs.
+// Skipped with prefers-reduced-motion (the final board shows straight away).
+const CLIMB_DELAY_MS = 700; // let the board settle before the count starts
+const CLIMB_MS_PER_POINT = 60;
+const CLIMB_MIN_MS = 1200;
+const CLIMB_MAX_MS = 3000;
+const ROW_MOVE_MS = 320; // a row sliding into its new place
 
-const PODIUM = {
-  1: { bg: "#FFCC5D", circle: "#FFAB2D", score: "#D88E1F" },
-  2: { bg: "#BEC2D8", circle: "#9B9FBD", score: "#8487A2" },
-  3: { bg: "#FFA967", circle: "#FD8E2D", score: "#CA7831" },
-} as const;
+type ClimbPlan = { rowId: string | null; from: number; to: number };
 
-const RANK_4_SCORE_BG = "#9F9F9F";
-const RANK_4_BORDER = "#C8C8C8";
-const RANK_4_MEDAL_BORDER = "#787878"; // ขอบเหรียญหัวของอันดับ >3 (เทาเข้ม ให้เห็นวงบนพื้นสว่าง)
-const ON_COLOR = "#FFFFFF";
-
-function getPodium(rank: number) {
-  if (rank === 1 || rank === 2 || rank === 3) return PODIUM[rank];
-  return null;
-}
-
+// 52px white circle with a grey ring (rank) — medals for 1–3
 function RankBadge({ rank }: { rank: number }) {
-  const podium = getPodium(rank);
-
-  if (!podium) {
+  const medal = MEDALS[rank];
+  if (medal) {
     return (
-      <span className="text-[26px] font-black text-[var(--text-primary)]" aria-label={`อันดับ ${rank}`}>
-        {rank}
+      <span className="flex size-[52px] shrink-0 items-center justify-center text-[40px] leading-none" aria-label={`อันดับ ${rank}`}>
+        {medal}
       </span>
     );
   }
-
   return (
     <span
-      className="flex h-12 w-12 items-center justify-center rounded-full border-2 text-[26px] font-black"
-      style={{ backgroundColor: podium.circle, borderColor: podium.bg, color: ON_COLOR }}
+      className="flex size-[52px] shrink-0 items-center justify-center rounded-full border-4 border-solid border-[#D9D9D9] bg-white text-[20px] font-semibold leading-[30px] text-black tabular-nums"
       aria-label={`อันดับ ${rank}`}
     >
       {rank}
@@ -115,20 +66,38 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-function HeaderRankBadge({ rank }: { rank: number }) {
-  const podium = getPodium(rank);
+// 52px tall white pill with a grey ring, at least 56px wide (grows with longer scores)
+function ScorePill({ score }: { score: number }) {
   return (
-    <div
-      className="mx-auto mb-3 flex h-[100px] w-[100px] items-center justify-center rounded-full border-2 text-[44px] font-black"
-      style={{
-        backgroundColor: podium ? podium.circle : RANK_4_SCORE_BG,
-        borderColor: podium ? podium.score : RANK_4_MEDAL_BORDER,
-        color: ON_COLOR,
-      }}
-      aria-label={`อันดับของคุณ ${rank}`}
+    <span className="flex h-[52px] min-w-[56px] shrink-0 items-center justify-center rounded-[24px] border-4 border-solid border-[#D9D9D9] bg-white px-[6px] text-[20px] font-semibold leading-[30px] text-black tabular-nums">
+      {score.toLocaleString("th-TH")}
+    </span>
+  );
+}
+
+// own = the pinned row under the list · climbing = the player's row in the list while their new best counts up
+// (yellow like the pinned row, but the list rows' size so the list doesn't jump)
+function BoardRow({ entry, own = false, climbing = false }: { entry: LeaderboardEntry; own?: boolean; climbing?: boolean }) {
+  const yellow = own || climbing;
+  return (
+    <article
+      data-row-id={entry.id}
+      className={`relative flex shrink-0 items-center gap-[24px] rounded-[24px] border-solid ${
+        own ? "h-[80px] border-4 pl-[8px] pr-[12px]" : `h-[84px] border-2 pl-[12px] pr-[16px] ${climbing ? "z-10" : "bg-white"}`
+      }`}
+      style={yellow ? { backgroundColor: OWN_ROW.bg, borderColor: OWN_ROW.border } : { borderColor: "#D9D9D9" }}
+      aria-label={own ? `อันดับของคุณ ${entry.rank} ${entry.name} ${entry.score} คะแนน` : undefined}
     >
-      {rank}
-    </div>
+      <RankBadge rank={entry.rank} />
+      <p
+        className={`min-w-0 flex-1 truncate text-[20px] font-normal leading-[30px] ${yellow ? "text-white" : "text-black"}`}
+        style={yellow ? { textShadow: ON_YELLOW_SHADOW } : undefined}
+        title={entry.name}
+      >
+        {entry.name}
+      </p>
+      <ScorePill score={entry.score} />
+    </article>
   );
 }
 
@@ -138,6 +107,10 @@ function LeaderboardPageInner() {
   const searchParams = useSearchParams();
   // US-CF-52: โหมดดูกระดานคะแนนจากเมนู — ไม่ผูกกับผู้เล่น (ไม่มีชื่อ/ไฮไลต์), เหรียญบนเป็น trophy
   const isBrowse = searchParams.get("view") === "browse";
+  // From a fun game's "เก็บคะแนนไหม?" popup (game page): step=save → name entry (Figma 3157:15657),
+  // then the board once saved · skipped=1 → straight to the board, score not kept
+  const isSaveStep = searchParams.get("step") === "save";
+  const skipped = searchParams.get("skipped") === "1";
   const lessonId = params.id;
   const game = getLeaderboardGame(lessonId);
   const gid = game?.gid;
@@ -145,27 +118,27 @@ function LeaderboardPageInner() {
   const localOnly = Boolean(game?.localOnly);
   const localName = game?.name ?? "";
   const [player, setPlayer] = useState<LeaderboardPlayer | null | undefined>(undefined);
-  const [browseOnly, setBrowseOnly] = useState(false);
   const [boardStatus, setBoardStatus] = useState<BoardStatus>("loading");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<LeaderboardEntry | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false); // US-CF-52: popup เลือกเกมบนหน้า browse
   const [gameName, setGameName] = useState(""); // ชื่อเกมมาจาก DB (response.game.name) เสมอ ไม่ hardcode
   const [reloadKey, setReloadKey] = useState(0);
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
-  const [pendingSave, setPendingSave] = useState<LeaderboardNameInput | null>(null);
-  const [nameHintVisible, setNameHintVisible] = useState(false);
+  // empty name on "กดเพื่อยืนยัน": the name field shakes (gp1-shake) instead of showing a message
+  const [nameShaking, setNameShaking] = useState(false);
   const [playerScore, setPlayerScore] = useState<number | null>(null);
-  // โหมดอิสระ: เกมสนุกเป็นหมวดเดี่ยว ปุ่มจบเกมจึงใช้ข้อความ "ต่อไป" แทน "เสร็จสิ้นบทเรียน" (เฉพาะปุ่ม ไม่กระทบปลายทาง)
-  const [learningMode, setLearningMode] = useState<"flow" | "manual">("flow");
-  const nameHintTimerRef = useRef<number | null>(null);
+  // new personal best: which row climbs, from/to (set by the loader) and the running number
+  const [climbPlan, setClimbPlan] = useState<ClimbPlan | null>(null);
+  const [climbValue, setClimbValue] = useState(0);
+  const listRef = useRef<HTMLElement | null>(null);
+  const rowTopsRef = useRef<Map<string, number>>(new Map());
   const viewState: ViewState = isBrowse
     ? "leaderboard"
     : player === undefined
       ? "loading"
-      : player || browseOnly
-        ? "leaderboard"
-        : "name-entry";
+      : isSaveStep
+        ? "name-entry"
+        : "leaderboard";
 
   const {
     register,
@@ -185,12 +158,13 @@ function LeaderboardPageInner() {
     // localStorage is unavailable during SSR, so initialize this external state after hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlayer(storedPlayer);
-    setLearningMode(progressService.getProgress()?.learningMode === "manual" ? "manual" : "flow");
+    // a returning player starts with their name filled in (they can still change it)
+    if (storedPlayer) reset({ name: storedPlayer.name });
     loggingService.logEvent("leaderboard_page_view", {
       has_player_profile: Boolean(storedPlayer),
       lesson_id: lessonId,
     });
-  }, [lessonId]);
+  }, [lessonId, reset]);
 
   useEffect(() => {
     const activeGid = gid;
@@ -204,6 +178,19 @@ function LeaderboardPageInner() {
           ? leaderboardScoreService.getPendingScore(targetGid)
           : null;
         let latestScore: number | null = null;
+
+        // the player's best before this round (for the personal-best animation); a failed read just skips it
+        let previousBest: number | null = null;
+        if (pendingScore && player) {
+          try {
+            const before = localOnly
+              ? localLeaderboardService.getLeaderboard(targetGid, localName, 10, player.player_uuid)
+              : await apiClient.getLeaderboard(targetGid, 10, player.player_uuid);
+            previousBest = before.currentPlayer?.score ?? null;
+          } catch {
+            previousBest = null;
+          }
+        }
 
         if (pendingScore && player && localOnly) {
           latestScore = pendingScore.score;
@@ -238,6 +225,24 @@ function LeaderboardPageInner() {
           ? localLeaderboardService.getLeaderboard(targetGid, localName, 10, viewerUuid)
           : await apiClient.getLeaderboard(targetGid, 10, viewerUuid);
         if (cancelled) return;
+
+        // beat their own best → count up from the old best; the climbing row is this round's entry (local boards
+        // keep one row per player; the server keeps every play, so pick the newest row with this score)
+        const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+        if (latestScore !== null && previousBest !== null && latestScore > previousBest && !reducedMotion) {
+          const newScore = latestScore;
+          const mine = response.entries
+            .filter((entry) => entry.is_current_player && entry.score === newScore)
+            .sort((a, b) => b.created_at.localeCompare(a.created_at));
+          setClimbValue(previousBest);
+          setClimbPlan({ rowId: mine[0]?.id ?? null, from: previousBest, to: newScore });
+          loggingService.logEvent("leaderboard_personal_best", {
+            game_id: targetGid,
+            lesson_id: lessonId,
+            previous_best: previousBest,
+            score: newScore,
+          });
+        }
         setEntries(response.entries);
         setCurrentPlayer(response.currentPlayer ?? null);
         setGameName(response.game.name);
@@ -260,67 +265,86 @@ function LeaderboardPageInner() {
     };
   }, [gid, lessonId, player, reloadKey, viewState, isBrowse, localOnly, localName]);
 
-  const closeConfirm = () => {
-    setConfirmAction(null);
-    setPendingSave(null);
-  };
+  // Count from the old best to the new score (ease-out), then hand back to the final board
+  useEffect(() => {
+    if (!climbPlan) return;
+    const { from, to } = climbPlan;
+    const duration = Math.min(CLIMB_MAX_MS, Math.max(CLIMB_MIN_MS, (to - from) * CLIMB_MS_PER_POINT));
+    let raf = 0;
+    let start = 0;
+    const tick = (now: number) => {
+      if (!start) start = now;
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - (1 - t) ** 3;
+      setClimbValue(Math.round(from + (to - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else window.setTimeout(() => setClimbPlan(null), ROW_MOVE_MS);
+    };
+    const delay = window.setTimeout(() => {
+      raf = requestAnimationFrame(tick);
+    }, CLIMB_DELAY_MS);
+    return () => {
+      window.clearTimeout(delay);
+      cancelAnimationFrame(raf);
+    };
+  }, [climbPlan]);
 
+  // While counting: the climbing row sits below every row with a score ≥ the running number (ties stay
+  // with whoever got there first, as on the real board), ranks follow the order. At the end this is the
+  // board as loaded, so nothing jumps when the animation hands over.
+  const climbingRow = climbPlan?.rowId ? entries.find((entry) => entry.id === climbPlan.rowId) ?? null : null;
+  const displayEntries = useMemo(() => {
+    if (!climbPlan || !climbingRow) return entries;
+    const others = entries.filter((entry) => entry.id !== climbingRow.id);
+    const above = others.filter((entry) => entry.score >= climbValue).length;
+    const ordered = [...others.slice(0, above), { ...climbingRow, score: climbValue }, ...others.slice(above)];
+    return ordered.map((entry, index) => ({ ...entry, rank: index + 1 }));
+  }, [entries, climbPlan, climbingRow, climbValue]);
+
+  // FLIP: when the order changes, slide each moved row from where it was to its new place, and keep the
+  // climbing row in view
+  const orderKey = displayEntries.map((entry) => entry.id).join("|");
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const tops = new Map<string, number>();
+    list.querySelectorAll<HTMLElement>("[data-row-id]").forEach((row) => {
+      const id = row.dataset.rowId ?? "";
+      const top = row.offsetTop;
+      tops.set(id, top);
+      const before = rowTopsRef.current.get(id);
+      if (!climbPlan || before === undefined || before === top) return;
+      row.style.transition = "none";
+      row.style.transform = `translateY(${before - top}px)`;
+      void row.offsetHeight; // apply the offset before animating it away
+      row.style.transition = `transform ${ROW_MOVE_MS}ms ease-out`;
+      row.style.transform = "";
+      if (id === climbPlan.rowId) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+    rowTopsRef.current = tops;
+  }, [orderKey, climbPlan]);
+
+  // "กดเพื่อยืนยัน": keep the profile if the name is unchanged (a new name = a new player), then show the board —
+  // its loader saves the pending score for this player, so the board appears once the score is saved
   const handleSaveName = (data: LeaderboardNameInput) => {
-    const savedPlayer = leaderboardPlayerService.createProfile(data.name);
+    const reused = Boolean(player && player.name === data.name);
+    const savedPlayer = reused && player ? player : leaderboardPlayerService.createProfile(data.name);
     setPlayer(savedPlayer);
-    setBrowseOnly(false);
-    loggingService.logEvent("leaderboard_name_saved", { lesson_id: lessonId });
-  };
-
-  const requestSave = (data: LeaderboardNameInput) => {
-    setPendingSave(data);
-    setConfirmAction("save");
-  };
-
-  const showMissingNameHint = () => {
-    setNameHintVisible(true);
-    if (nameHintTimerRef.current) window.clearTimeout(nameHintTimerRef.current);
-    nameHintTimerRef.current = window.setTimeout(() => setNameHintVisible(false), 3000);
+    loggingService.logEvent("leaderboard_name_saved", { lesson_id: lessonId, reused_profile: reused });
+    router.replace(`/lessons/${lessonId}/leaderboard`);
   };
 
   const handleSaveClick = () => {
     if (isSubmitting) return;
     const name = getValues("name")?.trim() ?? "";
     if (!name) {
+      // red border + "กรุณากรอกชื่อของคุณ" under the field + shake + focus
       setError("name", { type: "manual", message: "กรุณากรอกชื่อของคุณ" });
-      showMissingNameHint();
+      setNameShaking(true);
       document.getElementById("leaderboard-name")?.focus();
       return;
     }
-    setNameHintVisible(false);
-    void handleSubmit(requestSave)();
-  };
-
-  useEffect(() => {
-    return () => {
-      if (nameHintTimerRef.current) window.clearTimeout(nameHintTimerRef.current);
-    };
-  }, []);
-
-  const handleBrowseOnly = () => {
-    // Keep the pending score while this page is open so the player can change
-    // their mind and use "กรอกชื่อเพื่อเก็บคะแนน" without losing the result.
-    setBrowseOnly(true);
-    loggingService.logEvent("leaderboard_name_skipped", { lesson_id: lessonId });
-  };
-
-  const confirmChoice = () => {
-    if (confirmAction === "save" && pendingSave) {
-      handleSaveName(pendingSave);
-    } else if (confirmAction === "skip") {
-      handleBrowseOnly();
-    }
-    closeConfirm();
-  };
-
-  const handleOpenNameEntry = () => {
-    setBrowseOnly(false);
-    reset({ name: player?.name ?? "" });
+    void handleSubmit(handleSaveName)();
   };
 
   const handleRetry = () => {
@@ -330,10 +354,8 @@ function LeaderboardPageInner() {
 
   // ปุ่มจบของเกมสนุกที่มาหน้านี้ตรงจากเกม (G13 + G18–G20)
   const handleFinishFunGame = () => {
-    // "ไม่เก็บคะแนน" becomes final only when the player leaves this flow.
-    if (browseOnly && gid) {
-      leaderboardScoreService.clearPendingScore(gid);
-    }
+    // nothing should be left pending once the player leaves (the popup's "ไม่" already dropped it)
+    if (gid) leaderboardScoreService.clearPendingScore(gid);
     const progress = progressService.getProgress();
     // โหมดอิสระ: เกมสนุกเป็นหมวดเดี่ยว ไม่ใช่ปลายทาง Flow จึงกลับหน้าหมวดหมู่แทนหน้าจบคอร์ส
     if (progress?.learningMode === "manual") {
@@ -353,8 +375,20 @@ function LeaderboardPageInner() {
     router.push("/lessons/complete");
   };
 
-  const currentRank =
-    entries.find((entry) => entry.is_current_player)?.rank ?? currentPlayer?.rank ?? null;
+  // the player's own row, pinned under the list: the entry for this round's score if it's on the board,
+  // else their best row on the board, else their rank from outside the top 10 — not in browse mode or
+  // after "ไม่" (skipped)
+  const ownEntries = entries.filter((entry) => entry.is_current_player);
+  const finalOwnEntry =
+    !isBrowse && player && !skipped
+      ? ownEntries.find((entry) => entry.score === playerScore) ?? ownEntries[0] ?? currentPlayer
+      : null;
+  // while the new best counts up, the pinned row shows the running number (and the climbing row's rank)
+  const climbingDisplay = climbPlan?.rowId ? displayEntries.find((entry) => entry.id === climbPlan.rowId) : undefined;
+  const ownEntry =
+    finalOwnEntry && climbPlan
+      ? { ...finalOwnEntry, score: climbValue, rank: climbingDisplay?.rank ?? finalOwnEntry.rank }
+      : finalOwnEntry;
 
   if (viewState === "loading") {
     return (
@@ -381,68 +415,54 @@ function LeaderboardPageInner() {
 
   if (viewState === "leaderboard") {
     return (
-      <main className="flex h-full min-h-0 flex-col bg-[var(--bg-app)]">
-        <div className="scroll-region mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-4 py-6">
-          <header className="text-center">
-            {isBrowse ? (
-              <div className="mx-auto mb-3 flex h-[100px] w-[100px] items-center justify-center rounded-full bg-[var(--primary-light)] text-[var(--primary-dark)]">
-                <Trophy size={52} aria-hidden="true" />
-              </div>
-            ) : player && !browseOnly && currentRank ? (
-              <HeaderRankBadge rank={currentRank} />
-            ) : null}
-            <h1 className="mb-1 text-[32px] font-bold text-[var(--primary-dark)]">กระดานคะแนน</h1>
-            <p className="text-[22px] font-bold text-[var(--text-primary)]">{gameName}</p>
-            {!isBrowse &&
-              (player && !browseOnly ? (
-                <div
-                  className="mx-auto mt-3 flex w-fit max-w-full items-center rounded-full border-2 border-[var(--primary)] bg-[var(--bg-card)] px-4 py-2 text-[22px] font-bold text-[var(--primary-dark)]"
-                  role="status"
-                  aria-label={`${player.name} ได้รับ ${playerScore?.toLocaleString("th-TH") ?? "ยังไม่มี"} คะแนน`}
-                >
-                  <span className="min-w-0 truncate">{player.name}</span>
-                  <span className="shrink-0 whitespace-nowrap">
-                    {" "}ได้รับ {playerScore?.toLocaleString("th-TH") ?? "–"} คะแนน
-                  </span>
-                </div>
-              ) : (
-                <p className="mt-1 text-[20px] text-[var(--text-secondary)]">
-                  ดูอันดับโดยไม่เก็บคะแนน
-                </p>
-              ))}
+      <main className={`${notoLoopedThai.className} gp-compact flex h-full min-h-0 flex-col bg-white`}>
+        <div className="mx-auto flex min-h-0 w-full max-w-[400px] flex-1 flex-col gp-px-24 pt-[24px]">
+          <header className="flex shrink-0 flex-col items-center text-center">
+            {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
+            <img src="/assets/icons/leaderboard-trophy.svg" alt="" aria-hidden="true" width={60} height={64} className="block shrink-0" />
+            <h1 className="text-[24px] font-semibold leading-[32px] text-black">กระดานคะแนน</h1>
+            <p className="mt-[4px] text-[20px] font-normal leading-[30px] text-black">{gameName || localName}</p>
+            {!isBrowse && (skipped || !player) && (
+              <p className="text-[20px] font-normal leading-[30px] text-[#4B4B4B]">ดูอันดับโดยไม่เก็บคะแนน</p>
+            )}
           </header>
 
-          <div className="grid grid-cols-[72px_minmax(0,1fr)_minmax(100px,auto)] items-center gap-2 rounded-[20px] bg-[var(--primary)] px-3 py-3 text-white">
-            <span className="text-center text-[20px] font-bold">อันดับ</span>
-            <span className="text-left text-[20px] font-bold">ชื่อ</span>
-            <span className="text-right text-[20px] font-bold">คะแนน</span>
+          <div
+            className="mt-[6px] flex h-[60px] shrink-0 items-center rounded-[12px] px-[16px] text-[20px] font-normal leading-[30px] text-white"
+            style={{ backgroundColor: BOARD_BAR }}
+          >
+            <span className="w-[72px]">อันดับ</span>
+            <span className="flex-1">ชื่อ</span>
+            <span>คะแนน</span>
           </div>
 
-          <section aria-live="polite" aria-busy={boardStatus === "loading"} className="flex flex-col gap-2.5">
+          {/* the list scrolls between the bar and the pinned row, so the page itself doesn't */}
+          <section
+            ref={listRef}
+            aria-live="polite"
+            aria-busy={boardStatus === "loading" || climbPlan !== null}
+            className="mt-[4px] flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto"
+          >
             {boardStatus === "loading" &&
-              Array.from({ length: 5 }, (_, index) => (
+              Array.from({ length: 4 }, (_, index) => (
                 <div
                   key={index}
-                  className="grid min-h-[60px] animate-pulse grid-cols-[72px_minmax(0,1fr)_minmax(100px,auto)] items-center gap-2 rounded-[22px] border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2"
+                  className="flex h-[84px] shrink-0 animate-pulse items-center gap-[24px] rounded-[24px] border-2 border-solid border-[#D9D9D9] pl-[12px] pr-[16px]"
                 >
-                  <div className="mx-auto h-10 w-10 rounded-full bg-[var(--border)]" />
-                  <div className="h-6 rounded-full bg-[var(--border)]" />
-                  <div className="h-12 rounded-full bg-[var(--primary-light)]" />
+                  <div className="size-[52px] rounded-full bg-[#D9D9D9]" />
+                  <div className="h-6 flex-1 rounded-full bg-[#D9D9D9]" />
+                  <div className="h-[52px] w-[56px] rounded-[24px] bg-[#D9D9D9]" />
                 </div>
               ))}
 
             {boardStatus === "error" && (
-              <div className="rounded-[24px] border-2 border-[var(--border)] bg-[var(--bg-card)] px-5 py-8 text-center">
-                <p className="text-[22px] font-bold text-[var(--text-primary)]">
-                  โหลดกระดานคะแนนไม่สำเร็จ
-                </p>
-                <p className="mt-2 text-[20px] text-[var(--text-secondary)]">
-                  กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง
-                </p>
+              <div className="rounded-[24px] border-2 border-solid border-[#D9D9D9] px-5 py-8 text-center">
+                <p className="text-[22px] font-bold text-[#4B4B4B]">โหลดกระดานคะแนนไม่สำเร็จ</p>
+                <p className="mt-2 text-[20px] text-[#4B4B4B]">กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง</p>
                 <button
                   type="button"
                   onClick={handleRetry}
-                  className="btn mt-5 min-h-[60px] w-full text-[22px] bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
+                  className="mt-5 inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[20px] border-2 border-solid border-[#00A3E0] bg-white px-6 text-[20px] font-semibold text-[#0078A8]"
                 >
                   <RefreshCw size={24} aria-hidden="true" />
                   ลองใหม่
@@ -451,121 +471,43 @@ function LeaderboardPageInner() {
             )}
 
             {boardStatus === "ready" && entries.length === 0 && (
-              <div className="rounded-[24px] border-2 border-dashed border-[var(--border)] bg-[var(--bg-card)] px-5 py-8 text-center">
-                <p className="text-[22px] font-bold text-[var(--text-primary)]">ยังไม่มีคะแนนในเกมนี้</p>
-                <p className="mt-2 text-[20px] text-[var(--text-secondary)]">
-                  มาเป็นผู้เล่นคนแรกบนกระดานคะแนนกันเลย
-                </p>
+              <div className="rounded-[24px] border-2 border-dashed border-[#D9D9D9] px-5 py-8 text-center">
+                <p className="text-[22px] font-bold text-[#4B4B4B]">ยังไม่มีคะแนนในเกมนี้</p>
+                <p className="mt-2 text-[20px] text-[#4B4B4B]">มาเป็นผู้เล่นคนแรกบนกระดานคะแนนกันเลย</p>
               </div>
             )}
 
             {boardStatus === "ready" &&
-              entries.map((entry) => {
-                const podium = getPodium(entry.rank);
-                // กรอบไฮไลต์แถวของผู้เล่นปัจจุบัน: อันดับ 1-3 ใช้สีสว่างของอันดับ (bg), ต่ำกว่า 3 ใช้สีหลักของแอป
-                const borderColor = entry.is_current_player
-                  ? podium?.bg ?? "var(--primary)"
-                  : podium?.score ?? RANK_4_BORDER;
-                return (
-                <article
-                  key={entry.id}
-                  className="grid min-h-[60px] grid-cols-[72px_minmax(0,1fr)_minmax(100px,auto)] items-center gap-2 rounded-[22px] border-2 pl-[5px] pr-[10px] py-[10px]"
-                  style={{
-                    background: podium
-                      ? `linear-gradient(to right, ${podium.score}, ${podium.bg})`
-                      : "var(--bg-card)",
-                    borderColor,
-                  }}
-                >
-                  <div className="flex justify-center">
-                    <RankBadge rank={entry.rank} />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p
-                      className="truncate text-[26px] font-bold"
-                      style={{
-                        color: podium ? ON_COLOR : "var(--text-primary)",
-                        textShadow: podium ? "0px 2px 4px rgba(0, 0, 0, 0.5)" : undefined,
-                      }}
-                      title={entry.name}
-                    >
-                      {entry.name}
-                    </p>
-                    {entry.is_current_player && (
-                      <span
-                        className="mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[20px] font-bold"
-                        style={{
-                          backgroundColor: podium ? podium.score : "var(--primary-light)",
-                          color: podium ? ON_COLOR : "var(--primary-dark)",
-                        }}
-                      >
-                        คุณ
-                      </span>
-                    )}
-                  </div>
-                  <p
-                    className="rounded-full px-3 py-2 text-center text-[22px] font-black tabular-nums"
-                    style={{
-                      backgroundColor: podium ? podium.score : RANK_4_SCORE_BG,
-                      color: ON_COLOR,
-                    }}
-                  >
-                    {entry.score.toLocaleString("th-TH")}
-                  </p>
-                </article>
-                );
-              })}
+              displayEntries.map((entry) => (
+                <BoardRow key={entry.id} entry={entry} climbing={climbPlan !== null && entry.id === climbPlan.rowId} />
+              ))}
           </section>
+
+          {boardStatus === "ready" && ownEntry && (
+            <div className="shrink-0">
+              <BoardRow entry={ownEntry} own />
+            </div>
+          )}
         </div>
 
-        {isBrowse ? (
-          <div className="shrink-0">
-            <BottomActionButton type="button" onClick={() => setPickerOpen(true)}>
-              <Trophy size={28} aria-hidden="true" />
-              เลือกเกม
-            </BottomActionButton>
-          </div>
-        ) : gid === "G13" || localOnly ? (
-          <div className="shrink-0">
-            {browseOnly ? (
-              <div className="flex overflow-hidden rounded-t-[25px] rounded-b-none border-2 border-b-0 border-[var(--border)] divide-x-2 divide-[var(--border)] bg-[var(--bg-card)] shadow-[0_-8px_25px_rgba(0,0,0,0.5)]">
-                <button
-                  type="button"
-                  onClick={handleOpenNameEntry}
-                  className="flex min-h-[100px] flex-1 flex-col items-center justify-center gap-1.5 bg-[var(--bg-card)] px-1 py-3 text-[var(--text-secondary)] transition-colors active:bg-[var(--primary-light)]"
-                >
-                  <Pencil size={34} strokeWidth={2.25} aria-hidden="true" />
-                  <span className="text-center text-[clamp(15px,4.78vw,22px)] font-bold leading-tight">
-                    กรอกชื่อเพื่อเก็บคะแนน
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFinishFunGame}
-                  className="flex min-h-[100px] flex-1 flex-col items-center justify-center gap-1.5 bg-[var(--bg-card)] px-1 py-3 text-[var(--primary-dark)] transition-colors active:bg-[var(--primary-light)]"
-                >
-                  <ArrowRight size={34} strokeWidth={2.25} aria-hidden="true" />
-                  <span className="text-center text-[clamp(15px,4.78vw,22px)] font-bold leading-tight">
-                    {learningMode === "manual" ? "ต่อไป" : "เสร็จสิ้นบทเรียน"}
-                  </span>
-                </button>
-              </div>
-            ) : (
-              <BottomActionButton type="button" onClick={handleFinishFunGame}>
-                {learningMode === "manual" ? "ต่อไป" : "เสร็จสิ้นบทเรียน"}
-                <ArrowRight size={28} aria-hidden="true" />
-              </BottomActionButton>
-            )}
-          </div>
-        ) : null}
+        <div className="mx-auto w-full max-w-[400px] shrink-0 gp-px-24 gp-pb-action-bar pt-[17px]">
+          {isBrowse ? (
+            <Button3D onClick={() => setPickerOpen(true)}>เลือกเกม</Button3D>
+          ) : gid === "G13" || localOnly ? (
+            <Button3D onClick={handleFinishFunGame}>กดเพื่อเสร็จสิ้น</Button3D>
+          ) : null}
+        </div>
 
         <LeaderboardGamePicker open={pickerOpen} onClose={() => setPickerOpen(false)} />
       </main>
     );
   }
 
+  // Figma "Insert Name" (Scammer Game Prototype, node 3157:15657): card with the avatar, title, caption and
+  // name field, and the blue "กดเพื่อยืนยัน" button (Button3D = Figma Component 24) at the bottom.
+  // Caption is 20px (Figma 18px) — AGENT.md: no reading text under 20px.
   return (
-    <main className="flex h-full min-h-0 flex-col bg-[var(--bg-app)]">
+    <main className={`${notoLoopedThai.className} gp-compact flex h-full min-h-0 flex-col bg-white`}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -575,102 +517,59 @@ function LeaderboardPageInner() {
         noValidate
       >
         <div className="scroll-region flex-1">
-          <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-4 py-8">
-            <section className="rounded-[32px] border-2 border-[var(--primary)] bg-[var(--bg-card)] px-5 py-8 text-center shadow-[var(--shadow-md)]">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--primary-light)] text-[var(--primary-dark)]">
-                <UserRound size={36} aria-hidden="true" />
-              </div>
+          <div className="mx-auto flex min-h-full w-full max-w-[400px] flex-col justify-center gp-px-24 gp-py-24">
+            <section className="flex flex-col items-center gap-[16px] rounded-[24px] border border-solid border-[#7F7F7F] bg-white px-[24px] pt-[19px] pb-[21px] text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
+              <img src="/assets/icons/leaderboard-avatar.svg" alt="" aria-hidden="true" width={100} height={100} className="block shrink-0" />
 
-              <h1 className="mb-3 text-[32px] font-bold leading-tight text-[var(--text-primary)]">
-                กรอกชื่อเพื่อเก็บคะแนน
-              </h1>
-              <p id="leaderboard-name-help" className="mb-5 text-[20px] leading-relaxed text-[var(--text-secondary)]">
-                ชื่อนี้จะแสดงพร้อมคะแนนของคุณบนกระดานคะแนนของเกมนี้
+              <h1 className="text-[28px] font-bold leading-[36px] text-[#4B4B4B]">กรอกชื่อเพื่อเก็บคะแนน</h1>
+              <p id="leaderboard-name-help" className="text-[20px] font-normal leading-[28px] text-[#4B4B4B]">
+                ชื่อนี้จะแสดงพร้อมคะแนนของคุณ
+                <br />
+                บนกระดานคะแนนของเกมนี้
               </p>
 
-              <label htmlFor="leaderboard-name" className="mb-2 block text-left text-[20px] font-bold">
-                ชื่อที่ต้องการแสดง
-              </label>
-              <input
-                id="leaderboard-name"
-                type="text"
-                autoComplete="nickname"
-                maxLength={30}
-                placeholder="กรอกชื่อของคุณ"
-                aria-describedby={errors.name || nameHintVisible ? "leaderboard-name-error" : "leaderboard-name-help"}
-                aria-invalid={Boolean(errors.name)}
-                {...register("name", {
-                  onChange: () => setNameHintVisible(false),
-                })}
-                className={`min-h-[64px] w-full rounded-2xl border-2 bg-[var(--bg-card)] px-4 py-3 text-center text-[22px] font-bold text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)]/60 ${
-                  errors.name
-                    ? "border-[var(--accent-error)] focus:border-[var(--accent-error)] focus:ring-4 focus:ring-[rgba(220,38,38,0.18)]"
-                    : "border-[var(--border)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(var(--primary-rgb),0.18)]"
-                }`}
-              />
-              {errors.name && (
-                <p
-                  id="leaderboard-name-error"
-                  role="alert"
-                  className="mt-3 text-left text-[20px] font-semibold text-[var(--accent-error)]"
-                >
-                  {errors.name.message}
-                </p>
-              )}
+              <div className="w-full">
+                <label htmlFor="leaderboard-name" className="sr-only">
+                  ชื่อที่ต้องการแสดง
+                </label>
+                <input
+                  id="leaderboard-name"
+                  type="text"
+                  autoComplete="nickname"
+                  maxLength={30}
+                  placeholder="กรอกชื่อของคุณ"
+                  aria-describedby={errors.name ? "leaderboard-name-error" : "leaderboard-name-help"}
+                  aria-invalid={Boolean(errors.name)}
+                  {...register("name")}
+                  onAnimationEnd={() => setNameShaking(false)}
+                  className={`${nameShaking ? "gp1-shake" : ""} h-[64px] w-full rounded-[24px] border-2 border-solid bg-white px-4 text-center text-[20px] font-semibold leading-[30px] text-[#4B4B4B] shadow-[0px_2px_0px_0px_#D9D9D9] outline-none placeholder:text-[#A5A5A5] ${
+                    errors.name
+                      ? "border-[var(--accent-error)] focus:ring-4 focus:ring-[rgba(220,38,38,0.18)]"
+                      : "border-[#D9D9D9] focus:border-[#00A3E0] focus:ring-4 focus:ring-[rgba(0,163,224,0.18)]"
+                  }`}
+                />
+                {errors.name && (
+                  <p
+                    id="leaderboard-name-error"
+                    role="alert"
+                    className="mt-3 text-[20px] font-semibold text-[var(--accent-error)]"
+                  >
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
             </section>
           </div>
         </div>
 
-        <div className="flex shrink-0 overflow-hidden rounded-t-[25px] rounded-b-none border-2 border-b-0 border-[var(--border)] divide-x-2 divide-[var(--border)] bg-[var(--bg-card)] shadow-[0_-8px_25px_rgba(0,0,0,0.5)]">
-          <button
-            type="button"
-            onClick={() => setConfirmAction("skip")}
-            className="flex min-h-[100px] flex-1 flex-col items-center justify-center gap-1.5 bg-[var(--bg-card)] px-1 py-3 text-[var(--text-secondary)] transition-colors active:bg-[var(--primary-light)]"
-          >
-            <X size={34} strokeWidth={2.25} aria-hidden="true" />
-            <span className="text-center text-[clamp(15px,4.78vw,22px)] font-bold leading-tight">
-              ไม่เก็บคะแนน
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveClick}
-            aria-disabled={!isValid || isSubmitting}
-            className={`flex min-h-[100px] flex-1 flex-col items-center justify-center gap-1.5 px-1 py-3 transition-colors ${
-              isValid && !isSubmitting
-                ? "bg-[var(--btn-bg)] text-white active:bg-[var(--btn-bg-hover)]"
-                : "bg-[var(--border)] text-[var(--text-secondary)]"
-            }`}
-          >
-            <Check size={34} strokeWidth={2.25} aria-hidden="true" />
-            <span className="text-center text-[clamp(15px,4.78vw,22px)] font-bold leading-tight">
-              เก็บคะแนน
-            </span>
-          </button>
+        <div className="shrink-0 gp-px-24 gp-pb-action-bar gp-pt-22">
+          {/* grey (inactive) until a valid name is typed — still pressable, so an empty name shakes the field */}
+          <Button3D type="submit" inactive={!isValid || isSubmitting}>
+            กดเพื่อยืนยัน
+          </Button3D>
         </div>
       </form>
-      {nameHintVisible && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none fixed inset-x-4 bottom-[156px] z-50 flex justify-center"
-        >
-          <p className="toast-float-up max-w-md min-h-[58px] rounded-full bg-slate-800/95 px-6 py-[15px] text-center text-[24px] font-bold leading-snug text-white shadow-[var(--shadow-lg)]">
-            ยังไม่ได้กรอกชื่อ
-          </p>
-        </div>
-      )}
-      {confirmAction && (
-        <ConfirmPopup
-          title={
-            confirmAction === "save"
-              ? "ต้องการเก็บคะแนนหรือไม่?"
-              : "ไม่ต้องการเก็บคะแนนทั้งหมด?"
-          }
-          onConfirm={confirmChoice}
-          onCancel={closeConfirm}
-        />
-      )}
     </main>
   );
 }

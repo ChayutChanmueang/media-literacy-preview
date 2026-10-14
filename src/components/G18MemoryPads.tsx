@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { Brain, Eye, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
@@ -22,9 +22,21 @@ import DATA from "@/data/g18-simon-pads.json";
  * - play screen follows the Figma design (Scammer Game Prototype, node 3028:13081):
  *   dark board, raised colour pads, centre circle, and a status pill under the board
  *   ("จำปุ่มสีให้ดี" while the lights play, "กดปุ่มสีตามที่เห็น" on the player's turn)
+ * - the centre circle lights up (Figma's soft white face) only while the sequence plays;
+ *   the rest of the time it is a plain black circle
+ * - pads press/release like the learning games' answer buttons (GameAnswerButton): the face slides
+ *   down onto its darker base in 90ms while the finger is held (or the pad is lit), and springs back on release
  * - a "ดูอีกครั้ง" button can replay the sequence on the player's turn — hidden for now
  *   (SHOW_REPLAY_BUTTON) because the Figma design has none
  * - no input timeout
+ * Tutorial — once each time the game is opened, before the first run: 3 practice levels (TUTORIAL_LEVELS),
+ * header shows "โหมด ฝึกเล่น" (like G13) and nothing is scored — the real run then starts fresh at level 1.
+ * Extra wording in the status pill; a wrong tap there replays the same lights instead of ending the run:
+ *   1. as in the mock: once the light has played, the screen dims except for a hole around the pad
+ *      to press, and a bouncing 👆 points at it
+ *   2. how the pattern works: the old light comes first, then one new one — the hole and 👆 walk
+ *      the player through both pads in order
+ *   3. on their own (no hole/hand), to get used to the game before the real play
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
 
@@ -45,8 +57,9 @@ type Props = {
 };
 
 // watch = sequence playing · input = player's turn · correct = short feedback between levels
-// oops = wrong tap, short pause before the score screen
-type Phase = "intro" | "watch" | "input" | "correct" | "oops" | "result";
+// oops = wrong tap, short pause before the score screen · retry = wrong tap in the tutorial, replays the lights
+// stepok = guided tutorial, short pause after each right tap before pointing at the next pad
+type Phase = "intro" | "watch" | "input" | "correct" | "oops" | "retry" | "stepok" | "result";
 
 const PADS = DATA.pads as Pad[];
 
@@ -57,7 +70,20 @@ const CORRECT_PAUSE_MS = 1300;
 const RESULT_PAUSE_MS = 1600; // let the "wrong" message register before the score screen
 // "ดูอีกครั้ง" (replay the sequence) — off to match the Figma design; flip back on if the final design has it
 const SHOW_REPLAY_BUTTON = false;
-const PAD_LIFT_PX = 8; // pad face sits this far above its darker base; a lit/pressed pad drops onto it
+// pad face sits this far above its darker base; a lit/pressed pad drops onto it (× --gp-s, like GameAnswerButton)
+const PAD_LIFT = "calc(8px * var(--gp-s, 1))";
+const PAD_PRESS_MS = 90; // face slide time — same as GameAnswerButton/Button3D
+// Level-1 tutorial, as in the mock: hole padding/radius around the pad, and the 👆 sits this far below its centre
+const TUTORIAL_HOLE_PAD_PX = 8;
+const TUTORIAL_HOLE_RADIUS_PX = 25;
+const TUTORIAL_HAND_OFFSET_PX = 20;
+const TUTORIAL_LEVELS = 3; // levels played as the tutorial (see the comment at the top)
+const TUTORIAL_GUIDED_LEVELS = 2; // … of which these get the dimmed screen + 👆
+const TUTORIAL_CORRECT_PAUSE_MS = 2400; // longer, so the "what's next" message can be read
+const TUTORIAL_RETRY_PAUSE_MS = 1800;
+const TUTORIAL_STEP_PAUSE_MS = 1200; // "✓" between taps in the guided levels, before the hand moves on
+
+type TutorialRect = { pad: number; x: number; y: number; w: number; h: number };
 
 // score = levels cleared in the best run
 function starsFor(score: number) {
@@ -82,9 +108,12 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const [level, setLevel] = useState(1);
   const [step, setStep] = useState(0); // pads tapped correctly in this attempt
   const [lit, setLit] = useState<number | null>(null);
+  const [held, setHeld] = useState<number | null>(null); // pad under the player's finger, pressed until release
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0); // best run since the game was opened
   const [runs, setRuns] = useState(0);
+  const [tutorialDone, setTutorialDone] = useState(false);
+  const [nextIsSamePad, setNextIsSamePad] = useState(false); // guided tutorial: next pad = the one just pressed
 
   // Refs drive the game logic so two quick taps in one frame can't both read a stale phase/step.
   const phaseRef = useRef<Phase>("intro");
@@ -93,8 +122,34 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const sequenceRef = useRef<number[]>([]);
   const runRef = useRef(0);
   const bestRef = useRef(0);
+  const tutorialDoneRef = useRef(false);
   const timersRef = useRef<number[]>([]);
   const audioRef = useRef<AudioContext | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const padRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [tutorialRect, setTutorialRect] = useState<TutorialRect | null>(null);
+
+  const inTutorial = !tutorialDone && level <= TUTORIAL_LEVELS;
+  // Dimmed screen + 👆 on the pad to press next, on the player's turn in the guided levels.
+  const showTutorial = phase === "input" && inTutorial && level <= TUTORIAL_GUIDED_LEVELS;
+
+  // Measure the pad to point at, relative to the stage the overlay covers. ResizeObserver fires once
+  // on observe (before paint), then again if the layout changes while the tutorial is up.
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!showTutorial || !stage) return;
+    const measure = () => {
+      const pad = sequenceRef.current[step];
+      const btn = padRefs.current[pad];
+      if (!btn) return;
+      const s = stage.getBoundingClientRect();
+      const b = btn.getBoundingClientRect();
+      setTutorialRect({ pad, x: b.left - s.left, y: b.top - s.top, w: b.width, h: b.height });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(stage);
+    return () => ro.disconnect();
+  }, [showTutorial, step]);
 
   const goPhase = (next: Phase) => {
     phaseRef.current = next;
@@ -167,21 +222,37 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     after(t, () => goPhase("input"));
   };
 
+  const isTutorialLevel = () => !tutorialDoneRef.current && levelRef.current <= TUTORIAL_LEVELS;
+
   const startLevel = (n: number) => {
+    // tutorial finished: the real game starts fresh at level 1 (new lights), so practice levels never score
+    if (n > TUTORIAL_LEVELS && !tutorialDoneRef.current) {
+      tutorialDoneRef.current = true;
+      setTutorialDone(true);
+      logEvent("tutorial_complete", { game_id: "G18" });
+      startRun();
+      return;
+    }
     levelRef.current = n;
     setLevel(n);
     sequenceRef.current.push(nextPad(sequenceRef.current));
-    logEvent("enter_level", { game_id: "G18", run: runRef.current, level: n });
+    logEvent("enter_level", { game_id: "G18", run: runRef.current, level: n, tutorial: isTutorialLevel() });
     playSequence();
   };
 
+  // The first call each time the game is opened plays the tutorial (not a run: run stays 0, nothing scored);
+  // startLevel calls this again once it is done to begin run 1.
   const startRun = () => {
     ensureAudio();
     clearTimers();
     sequenceRef.current = [];
-    runRef.current += 1;
-    setRuns(runRef.current);
-    logEvent("run_start", { game_id: "G18", run: runRef.current });
+    if (!tutorialDoneRef.current) {
+      logEvent("tutorial_start", { game_id: "G18" });
+    } else {
+      runRef.current += 1;
+      setRuns(runRef.current);
+      logEvent("run_start", { game_id: "G18", run: runRef.current });
+    }
     startLevel(1);
   };
 
@@ -190,8 +261,8 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     setLit(null);
     goPhase("correct");
     const n = levelRef.current;
-    logEvent("level_complete", { game_id: "G18", run: runRef.current, level: n });
-    after(CORRECT_PAUSE_MS, () => startLevel(n + 1));
+    logEvent("level_complete", { game_id: "G18", run: runRef.current, level: n, tutorial: isTutorialLevel() });
+    after(isTutorialLevel() ? TUTORIAL_CORRECT_PAUSE_MS : CORRECT_PAUSE_MS, () => startLevel(n + 1));
   };
 
   const endRun = () => {
@@ -216,7 +287,15 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       const next = stepRef.current + 1;
       stepRef.current = next;
       setStep(next);
-      if (next === sequenceRef.current.length) completeLevel();
+      if (next === sequenceRef.current.length) {
+        completeLevel();
+      } else if (isTutorialLevel() && levelRef.current <= TUTORIAL_GUIDED_LEVELS) {
+        // guided tutorial: a short "✓" pause (hand + dimming hidden) so the player sees the tap counted,
+        // then the hand comes back on the next pad with its own instruction
+        setNextIsSamePad(sequenceRef.current[next] === padIdx);
+        goPhase("stepok");
+        after(TUTORIAL_STEP_PAUSE_MS, () => goPhase("input"));
+      }
       return;
     }
 
@@ -227,7 +306,14 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       step: stepRef.current + 1,
       expected: PADS[expected].id,
       pressed: PADS[padIdx].id,
+      tutorial: isTutorialLevel(),
     });
+    // tutorial: no game over — say so gently and show the same lights again
+    if (isTutorialLevel()) {
+      goPhase("retry");
+      after(TUTORIAL_RETRY_PAUSE_MS, playSequence);
+      return;
+    }
     goPhase("oops");
     after(RESULT_PAUSE_MS, endRun);
   };
@@ -306,7 +392,35 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const length = level;
   const isInput = phase === "input";
 
-  const status = (() => {
+  // Tutorial wording (null = the normal status below)
+  const tutorialStatus = (() => {
+    if (!inTutorial) return null;
+    switch (phase) {
+      case "watch":
+        if (level === 2) return "ไฟดวงเดิมจะมาก่อน\nแล้วตามด้วยดวงใหม่อีก 1 ดวง";
+        if (level === 3) return "ลองเองเลย! จำไฟให้ครบ 3 ดวง";
+        return null;
+      case "input":
+        if (level === 2) {
+          if (step === 0) return "กดดวงเดิมก่อน";
+          return nextIsSamePad ? "ดวงใหม่เป็นปุ่มเดิม\nกดปุ่มเดิมอีกครั้ง" : "แล้วกดดวงใหม่ต่อ";
+        }
+        if (level === 3) return "กดตามลำดับให้ครบ 3 ดวง";
+        return null;
+      case "correct":
+        if (level === 1) return "✓ ถูกต้อง!\nด่านต่อไปไฟจะเพิ่มอีก 1 ดวง";
+        if (level === 2) return "✓ เก่งมาก!\nด่านต่อไปลองเองนะ";
+        return "✓ เก่งมาก! ต่อไปเล่นจริงเริ่มด่าน 1\nกดผิดจะจบรอบนะ";
+      case "retry":
+        return "ยังไม่ใช่ปุ่มนี้\nมาดูไฟอีกครั้งนะ";
+      case "stepok":
+        return "✓ ถูกต้อง!";
+      default:
+        return null;
+    }
+  })();
+
+  const status = tutorialStatus ?? (() => {
     switch (phase) {
       case "watch":
         return "จำปุ่มสีให้ดี";
@@ -327,13 +441,19 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       style={{ backgroundImage: "linear-gradient(155.36deg, #E6F6FC 0%, #C4CFE1 100%)" }}
     >
       {/* Header card: same as G17 (GameStageHeader) — Figma leaves the left slot empty */}
-      <GameStageHeader right={{ label: "ด่าน", value: level, ariaLabel: `ด่าน ${level}` }}>
+      <GameStageHeader
+        right={
+          inTutorial
+            ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" }
+            : { label: "ด่าน", value: level, ariaLabel: `ด่าน ${level}` }
+        }
+      >
         {/* QA only (same idea as G17) — clear the current level without playing it */}
         {process.env.NODE_ENV === "development" && (
           <button
             type="button"
             onClick={() => {
-              if (phaseRef.current === "correct" || phaseRef.current === "oops") return;
+              if (phaseRef.current === "correct" || phaseRef.current === "oops" || phaseRef.current === "retry") return;
               logEvent("g18_dev_skip_level", { game_id: "G18", run: runRef.current, level: levelRef.current });
               completeLevel();
             }}
@@ -346,7 +466,10 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       </GameStageHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex min-h-full flex-col items-center justify-center gp-gap-56 gp-px-24 gp-py-24">
+        <div
+          ref={stageRef}
+          className="relative flex min-h-full flex-col items-center justify-center gp-gap-56 gp-px-24 gp-py-24"
+        >
           {/* Board + pads: Figma — 352px dark board, 2×2 raised pads, centre circle */}
           <div
             className={`relative aspect-square w-full rounded-[20px] gp-p-16 transition-[background-color,box-shadow] duration-150 ${
@@ -358,60 +481,119 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
             <div className="grid h-full w-full grid-cols-2 grid-rows-2 gp-gap-16">
               {PADS.map((pad, i) => {
                 const isLit = lit === i;
+                const isDown = isLit || held === i;
+                const release = () => setHeld((cur) => (cur === i ? null : cur));
                 return (
                   <button
                     key={pad.id}
+                    ref={(el) => {
+                      padRefs.current[i] = el;
+                    }}
                     type="button"
                     aria-label={`ปุ่มสี${pad.colorName}`}
                     aria-disabled={!isInput}
                     onPointerDown={(e) => {
                       if (e.pointerType === "mouse" && e.button !== 0) return;
                       e.preventDefault();
+                      if (phaseRef.current === "input") setHeld(i);
                       press(i);
                     }}
+                    // touch pointers are captured by the pad, so leave only fires for a mouse dragged off it
+                    onPointerUp={release}
+                    onPointerCancel={release}
+                    onPointerLeave={release}
                     // keyboard Enter/Space fires click with detail 0; pointer taps are already handled above
                     onClick={(e) => {
                       if (e.detail === 0) press(i);
                     }}
-                    className={`relative touch-manipulation overflow-hidden rounded-[20px] border-0 p-0 transition-[box-shadow] duration-100 ${
+                    className={`relative touch-manipulation rounded-[20px] border-0 bg-transparent p-0 ${
                       isInput ? "cursor-pointer" : "cursor-default"
-                    } ${isLit ? "z-10" : ""}`}
-                    style={{
-                      backgroundColor: pad.shadow,
-                      boxShadow: isLit ? `0 0 40px 10px ${pad.glow}` : undefined,
-                    }}
+                    } ${isDown ? "z-10" : ""}`}
                   >
-                    {/* face: raised PAD_LIFT_PX above the darker base, drops onto it while lit */}
+                    {/* Built like GameAnswerButton: the darker base is its own layer at the bottom and the face
+                        sits PAD_LIFT above it. Pressed, the face slides down over the base and the base hides
+                        only once fully covered (no dark sliver at the rounded corners); on release it comes back at once. */}
                     <span
                       aria-hidden="true"
-                      className="absolute inset-0 rounded-[20px] transition-[transform,filter] duration-100"
+                      className="absolute inset-x-0 bottom-0 rounded-[20px] transition-opacity duration-0"
                       style={{
+                        height: `calc(100% - ${PAD_LIFT})`,
+                        backgroundColor: pad.shadow,
+                        opacity: isDown ? 0 : 1,
+                        transitionDelay: isDown ? `${PAD_PRESS_MS}ms` : "0ms",
+                      }}
+                    />
+                    <span
+                      aria-hidden="true"
+                      // the glow is on the face, not the button, so it moves with it — on the button it framed
+                      // the empty strip the face leaves at the top when pressed, showing a dark shape behind
+                      className="absolute inset-x-0 top-0 rounded-[20px] transition-[transform,filter,box-shadow] ease-out"
+                      style={{
+                        height: `calc(100% - ${PAD_LIFT})`,
                         backgroundColor: pad.color,
-                        transform: isLit ? "translateY(0)" : `translateY(-${PAD_LIFT_PX}px)`,
-                        filter: isLit ? "brightness(1.3)" : undefined,
+                        transitionDuration: `${PAD_PRESS_MS}ms`,
+                        transform: isDown ? `translateY(${PAD_LIFT})` : "translateY(0)",
+                        filter: isDown ? "brightness(1.3)" : undefined,
+                        boxShadow: isDown ? `0 0 40px 10px ${pad.glow}` : undefined,
                       }}
                     />
                   </button>
                 );
               })}
             </div>
-            {/* centre circle: dark ring (Ellipse 21, 100px) + soft white face (Ellipse 20, 84px + 6px blur margin = 96px) */}
+            {/* centre circle: dark ring (Ellipse 21, 100px) + soft white face (Ellipse 20, 84px + 6px blur margin = 96px).
+                The face only shows while the sequence plays; otherwise the ring's inside (r 42 of 50) is plain black. */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute top-1/2 left-1/2 z-20 aspect-square w-[28.41%] -translate-x-1/2 -translate-y-1/2"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
               <img src="/assets/g18/center-ring.svg" alt="" className="absolute inset-0 block h-full w-full" />
+              <span className="absolute inset-[8%] rounded-full bg-black" />
               {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
-              <img src="/assets/g18/center-face.svg" alt="" className="absolute top-[2%] left-[2%] block h-[96%] w-[96%]" />
+              <img
+                src="/assets/g18/center-face.svg"
+                alt=""
+                className={`absolute top-[2%] left-[2%] block h-[96%] w-[96%] transition-opacity duration-300 ${
+                  phase === "watch" ? "opacity-100" : "opacity-0"
+                }`}
+              />
             </div>
           </div>
 
-          {/* status pill — which stage the player is in (watch the lights / press them back) */}
+          {/* Level-1 tutorial (mock): dark layer with a rounded hole over the pad to press, and a bouncing 👆.
+              Doesn't block taps, like the mock. Drawn with one huge box-shadow instead of the mock's canvas. */}
+          {showTutorial && tutorialRect && (
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 overflow-hidden">
+              <div
+                className="absolute"
+                style={{
+                  left: tutorialRect.x - TUTORIAL_HOLE_PAD_PX,
+                  top: tutorialRect.y - TUTORIAL_HOLE_PAD_PX,
+                  width: tutorialRect.w + TUTORIAL_HOLE_PAD_PX * 2,
+                  height: tutorialRect.h + TUTORIAL_HOLE_PAD_PX * 2,
+                  borderRadius: TUTORIAL_HOLE_RADIUS_PX,
+                  boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75)",
+                }}
+              />
+              <span
+                className="g18-tutorial-hand absolute text-[60px] leading-none"
+                style={{
+                  left: tutorialRect.x + tutorialRect.w / 2,
+                  top: tutorialRect.y + tutorialRect.h / 2 + TUTORIAL_HAND_OFFSET_PX,
+                }}
+              >
+                👆
+              </span>
+            </div>
+          )}
+
+          {/* status pill — which stage the player is in (watch the lights / press them back);
+              stays above the tutorial layer, like the mock's status pill */}
           <p
             role="status"
             aria-live="polite"
-            className="rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white gp-px-12 gp-py-4 text-center gp-text-20 font-normal gp-leading-30 text-black"
+            className="relative z-40 whitespace-pre-line rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white gp-px-12 gp-py-4 text-center gp-text-20 font-normal gp-leading-30 text-black"
           >
             {status}
           </p>
