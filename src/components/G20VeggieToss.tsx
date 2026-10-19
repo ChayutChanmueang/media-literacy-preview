@@ -160,6 +160,12 @@ const TUTORIAL_FLICK: Record<TutorialStep, Point> = {
 // how far (stage units of drag) the aim can be off before the hint says which way to fix it
 const TUTORIAL_AIM_TOLERANCE: Record<TutorialStep, Point> = { 1: { x: 12, y: 50 }, 2: { x: 17, y: 19 }, 3: { x: 25, y: 15 } };
 
+// Tutorial message box, styled like G13/G18's: info = what to do, praise = ✓ done, retry = gentle try-again.
+// Texts starting with "✓ " are praise; the box draws the ✓ itself.
+type TutorialTip = { text: string; tone: "info" | "praise" | "retry" };
+const toTip = (text: string, tone: TutorialTip["tone"] = "info"): TutorialTip =>
+  text.startsWith("✓ ") ? { text: text.slice(2), tone: "praise" } : { text, tone };
+
 type AimHint = "short" | "ok" | "weak" | "strong" | "left" | "right";
 const AIM_HINT_TEXT: Record<AimHint, string> = {
   short: "ลากนิ้วขึ้น\nให้ลูกศรทับลูกศรจาง ๆ",
@@ -523,7 +529,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
   const [bestServed, setBestServed] = useState(0); // best run since the game was opened
   const [runs, setRuns] = useState(0);
   const [tutorialStep, setTutorialStep] = useState<0 | TutorialStep>(0); // 0 = not in the tutorial
-  const [tutorialBox, setTutorialBox] = useState<string | null>(null); // the tutorial's message box (DOM)
+  const [tutorialBox, setTutorialBox] = useState<TutorialTip | null>(null); // the tutorial's message box (DOM)
 
   // Refs drive the game (read every animation frame); state above is only what the DOM shows.
   const worldRef = useRef<World>({ veggie: homeVeggie("idle"), plate: plateFor(1), drag: null });
@@ -565,9 +571,9 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
   const say = (text: string) => setMessage(text); // screen readers only (role="status")
 
   // tutorial guide: message box + (on the canvas) glow and 👆; the game waits until the next touch
-  const showGuide = (text: string) => {
+  const showGuide = (text: string, tone: TutorialTip["tone"] = "info") => {
     guideRef.current = true;
-    setTutorialBox(text);
+    setTutorialBox(toTip(text, tone));
     say(text.replace("\n", " "));
   };
 
@@ -679,7 +685,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
 
     const tStep = tutorialStepRef.current;
     if (tStep) {
-      setTutorialBox(TUTORIAL_SERVED_TEXT[tStep]);
+      setTutorialBox(toTip(TUTORIAL_SERVED_TEXT[tStep]));
       say(TUTORIAL_SERVED_TEXT[tStep].replace("\n", " "));
       logEvent("tutorial_serve", { game_id: "G20", step: tStep });
       await delay(TUTORIAL_SERVED_PAUSE_MS);
@@ -713,7 +719,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
       logEvent("tutorial_miss", { game_id: "G20", step: tStep });
       trailRef.current = [];
       world.veggie = homeVeggie("idle");
-      showGuide(TUTORIAL_MISS_TEXT[tStep]);
+      showGuide(TUTORIAL_MISS_TEXT[tStep], "retry");
       return;
     }
     logEvent("miss", { game_id: "G20", run: runRef.current, level: levelRef.current, throws_left: throwsRef.current });
@@ -903,7 +909,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     const hint = aimHint(step, dx, dy);
     if (hint === aimHintRef.current) return;
     aimHintRef.current = hint;
-    setTutorialBox(AIM_HINT_TEXT[hint]);
+    setTutorialBox(toTip(AIM_HINT_TEXT[hint]));
     say(AIM_HINT_TEXT[hint].replace("\n", " "));
   };
 
@@ -1123,10 +1129,17 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
             {tutorialBox && (
               <p
                 aria-hidden="true"
-                className="pointer-events-none absolute z-10 rounded-[16px] border-2 border-solid border-[#CBD5E1] bg-white px-[12px] py-[6px] text-center text-[20px] font-bold leading-[26px] whitespace-pre text-[#1E293B] shadow-[0_4px_12px_rgba(0,0,0,0.12)]"
+                className={`pointer-events-none absolute z-10 whitespace-pre rounded-[16px] border-2 border-solid bg-white gp-px-16 gp-py-8 text-center gp-text-22 font-bold gp-leading-30 shadow-md ${
+                  tutorialBox.tone === "praise"
+                    ? "border-emerald-500 text-emerald-800"
+                    : tutorialBox.tone === "retry"
+                      ? "border-slate-300 text-slate-700"
+                      : "border-amber-400 text-amber-950"
+                }`}
                 style={{ left: TUTORIAL_BOX_LEFT, top: TUTORIAL_BOX_TOP, minWidth: TUTORIAL_BOX_MIN_W }}
               >
-                {tutorialBox}
+                {tutorialBox.tone === "praise" && "✓ "}
+                {tutorialBox.text}
               </p>
             )}
             {/* Finish text over the stage (as G19). aria-hidden: the screen-reader status already says the run is over. */}

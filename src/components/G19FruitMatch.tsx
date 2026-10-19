@@ -1114,8 +1114,8 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
           >
             <p
               role="status"
-              className="max-w-[340px] rounded-[20px] border-[3px] border-solid border-[#38BDF8] bg-white gp-px-20 gp-py-10 text-center gp-text-22 font-bold gp-leading-32 text-[#1E293B]"
-              style={{ boxShadow: "0 10px 25px rgba(0,0,0,0.25)" }}
+              // same look as the other games' tutorial boxes (G13/G18/G20): amber border = an instruction
+              className="max-w-[340px] rounded-[16px] border-2 border-solid border-amber-400 bg-white gp-px-16 gp-py-8 text-center gp-text-22 font-bold gp-leading-30 text-amber-950 shadow-md"
             >
               {/* two unbreakable halves: wraps between them, never mid-phrase */}
               {TUTORIAL_TIP.map((part, i) => (
