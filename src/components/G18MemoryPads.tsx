@@ -6,7 +6,9 @@ import { Brain, Eye, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
+import StagePopup, { type StagePopupStage } from "@/components/StagePopup";
 import DATA from "@/data/g18-simon-pads.json";
+import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 
 /**
  * G18 — จำให้ขึ้นใจ (Simon memory game)
@@ -68,8 +70,13 @@ const PADS = DATA.pads as Pad[];
 const LEAD_IN_MS = 900; // pause before the first light, so the player can look at the board
 const TIMING = { on: 650, off: 300 };
 const PRESS_FLASH_MS = 250;
-const CORRECT_PAUSE_MS = 1300;
-const RESULT_PAUSE_MS = 1600; // let the "wrong" message register before the score screen
+// pauses after a turn, long enough to read the popup over the board (was 1300 / 1600 before the popup)
+const CORRECT_PAUSE_MS = 1600;
+const RESULT_PAUSE_MS = 2000; // let the "wrong" message register before the score screen
+// Popup over the board after each turn (StagePopup, same look as G19/G20's finish text). It zooms in,
+// holds and fades out within the pause after the turn, so in/out are quicker than G19/G20's 500/450.
+const TURN_POPUP_IN_MS = 350;
+const TURN_POPUP_OUT_MS = 300;
 // "ดูอีกครั้ง" (replay the sequence) — off to match the Figma design; flip back on if the final design has it
 const SHOW_REPLAY_BUTTON = false;
 // pad face sits this far above its darker base; a lit/pressed pad drops onto it (× --gp-s, like GameAnswerButton)
@@ -99,10 +106,11 @@ function starsFor(score: number) {
 
 // Like the original Simon, each level adds one light to the end of the same sequence.
 // Never three of the same pad in a row — hard to count for anyone.
-function nextPad(seq: number[]) {
+// `rng` is seeded by the day (see startRun), so the lights are the same for every player that day.
+function nextPad(seq: number[], rng: Rng) {
   const n = seq.length;
   for (;;) {
-    const pick = Math.floor(Math.random() * PADS.length);
+    const pick = Math.floor(rng() * PADS.length);
     if (n >= 2 && seq[n - 1] === pick && seq[n - 2] === pick) continue;
     return pick;
   }
@@ -119,12 +127,15 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const [runs, setRuns] = useState(0);
   const [tutorialDone, setTutorialDone] = useState(false);
   const [nextIsSamePad, setNextIsSamePad] = useState(false); // guided tutorial: next pad = the one just pressed
+  // popup over the board after a turn: right = whole pattern pressed back, wrong = a wrong pad
+  const [turnPopup, setTurnPopup] = useState<{ right: boolean; stage: StagePopupStage } | null>(null);
 
   // Refs drive the game logic so two quick taps in one frame can't both read a stale phase/step.
   const phaseRef = useRef<Phase>("intro");
   const levelRef = useRef(1);
   const stepRef = useRef(0);
   const sequenceRef = useRef<number[]>([]);
+  const rngRef = useRef<Rng>(seededStream("G18", "", "sequence")); // replaced at each start (startRun)
   const runRef = useRef(0);
   const bestRef = useRef(0);
   const tutorialDoneRef = useRef(false);
@@ -208,6 +219,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
 
   const playSequence = () => {
     clearTimers();
+    setTurnPopup(null);
     setLit(null);
     setStep(0);
     stepRef.current = 0;
@@ -227,6 +239,15 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     after(t, () => goPhase("input"));
   };
 
+  // Popup for the pause of `totalMs` after a turn: zoom in, hold, fade out just before the pause ends.
+  // Not in the tutorial — its own box above the board already says right / try again.
+  const showTurnPopup = (right: boolean, totalMs: number) => {
+    if (isTutorialLevel()) return;
+    setTurnPopup({ right, stage: "enter" }); // mounted hidden first so the next change transitions in
+    after(30, () => setTurnPopup({ right, stage: "show" }));
+    after(totalMs - TURN_POPUP_OUT_MS, () => setTurnPopup({ right, stage: "leave" }));
+  };
+
   const isTutorialLevel = () => !tutorialDoneRef.current && levelRef.current <= TUTORIAL_LEVELS;
 
   const startLevel = (n: number) => {
@@ -240,7 +261,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     }
     levelRef.current = n;
     setLevel(n);
-    sequenceRef.current.push(nextPad(sequenceRef.current));
+    sequenceRef.current.push(nextPad(sequenceRef.current, rngRef.current));
     logEvent("enter_level", { game_id: "G18", run: runRef.current, level: n, tutorial: isTutorialLevel() });
     playSequence();
   };
@@ -251,12 +272,18 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     ensureAudio();
     clearTimers();
     sequenceRef.current = [];
-    if (!tutorialDoneRef.current) {
-      logEvent("tutorial_start", { game_id: "G18" });
+    // Lights seeded by today's date (Bangkok time), like G13/G19: every player gets the same lights that day,
+    // and "เล่นอีกครั้ง" replays the same lights (fixed at start, even if played past midnight). The tutorial
+    // has its own stream, so practising never shifts the real game's lights.
+    const seed = todaySeed();
+    const tutorial = !tutorialDoneRef.current;
+    rngRef.current = seededStream("G18", seed, tutorial ? "tutorial" : "sequence");
+    if (tutorial) {
+      logEvent("tutorial_start", { game_id: "G18", seed });
     } else {
       runRef.current += 1;
       setRuns(runRef.current);
-      logEvent("run_start", { game_id: "G18", run: runRef.current });
+      logEvent("run_start", { game_id: "G18", run: runRef.current, seed });
     }
     startLevel(1);
   };
@@ -267,7 +294,9 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     goPhase("correct");
     const n = levelRef.current;
     logEvent("level_complete", { game_id: "G18", run: runRef.current, level: n, tutorial: isTutorialLevel() });
-    after(isTutorialLevel() ? TUTORIAL_CORRECT_PAUSE_MS : CORRECT_PAUSE_MS, () => startLevel(n + 1));
+    const pause = isTutorialLevel() ? TUTORIAL_CORRECT_PAUSE_MS : CORRECT_PAUSE_MS;
+    showTurnPopup(true, pause);
+    after(pause, () => startLevel(n + 1));
   };
 
   const endRun = () => {
@@ -320,6 +349,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       return;
     }
     goPhase("oops");
+    showTurnPopup(false, RESULT_PAUSE_MS);
     after(RESULT_PAUSE_MS, endRun);
   };
 
@@ -593,6 +623,18 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
                   }`}
                 />
               </div>
+              {/* After each turn of the real game (not the tutorial): "เก่งมาก!" for the whole pattern, "กดผิดปุ่ม" for a wrong pad —
+                  short lines, so each fits on one line over a 352px board */}
+              {turnPopup && (
+                <StagePopup
+                  stage={turnPopup.stage}
+                  title={turnPopup.right ? "เก่งมาก! 🎉" : "กดผิดปุ่ม"}
+                  subtitle={turnPopup.right ? `จำได้ครบ ${level} ดวง` : "มาดูคะแนนกันนะ"}
+                  inMs={TURN_POPUP_IN_MS}
+                  outMs={TURN_POPUP_OUT_MS}
+                  className="z-30"
+                />
+              )}
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 /**
  * Deterministic random helpers shared by games that seed their levels by the playing day
- * (G19, G13) — every player gets the same random sequence on the same date.
+ * (G19, G13, G18) — every player gets the same random sequence on the same date.
  */
 
 export type Rng = () => number; // 0 ≤ n < 1, like Math.random

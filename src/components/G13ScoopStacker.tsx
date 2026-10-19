@@ -5,6 +5,7 @@ import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "./Button3D";
+import StagePopup, { STAGE_POPUP_MS, type StagePopupStage } from "./StagePopup";
 import {
   clampToRange,
   getBombDropCount,
@@ -468,6 +469,9 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   const tutorialPendingRef = useRef(true);
   const [tutorialBanner, setTutorialBanner] = useState<TutorialBanner | null>(null);
   const [inTutorial, setInTutorial] = useState(false);
+  // "เก่งมาก!" over the play area when the clock runs out (as G19/G20), before the summary
+  const [finishPopup, setFinishPopup] = useState<StagePopupStage | null>(null);
+  const popupTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
     logRef.current = logEvent;
@@ -488,11 +492,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     }
   }, [timeLeft]);
 
-  const finishGame = useCallback(() => {
-    const world = worldRef.current;
-    if (world.ended) return;
-    world.ended = true;
-    const finalHeight = world.stack.length;
+  const showSummary = useCallback(() => {
+    const finalHeight = worldRef.current.stack.length;
     setHeight(finalHeight);
     setBestHeight((previous) => Math.max(previous, finalHeight));
     setTimeLeft(0);
@@ -504,6 +505,39 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       renderer: "canvas",
     });
   }, []);
+
+  // straight to the summary (dev "ข้ามเวลา")
+  const finishGame = useCallback(() => {
+    const world = worldRef.current;
+    if (world.ended) return;
+    world.ended = true;
+    showSummary();
+  }, [showSummary]);
+
+  // Clock ran out: the round freezes (the loop stops on world.ended), "เก่งมาก!" pops up over the
+  // play area like G19/G20's finish text, then the summary
+  const timeUp = useCallback(() => {
+    const world = worldRef.current;
+    if (world.ended) return;
+    world.ended = true;
+    setTimeLeft(0);
+    const later = (ms: number, fn: () => void) => popupTimersRef.current.push(window.setTimeout(fn, ms));
+    setFinishPopup("enter"); // mounted hidden first so the next change transitions in
+    later(30, () => setFinishPopup("show"));
+    later(30 + STAGE_POPUP_MS.in + STAGE_POPUP_MS.hold, () => setFinishPopup("leave"));
+    later(30 + STAGE_POPUP_MS.in + STAGE_POPUP_MS.hold + STAGE_POPUP_MS.out, () => {
+      setFinishPopup(null);
+      showSummary();
+    });
+  }, [showSummary]);
+
+  useEffect(
+    () => () => {
+      popupTimersRef.current.forEach((t) => window.clearTimeout(t));
+      popupTimersRef.current = [];
+    },
+    []
+  );
 
   const spawnObject = useCallback((spawnerIndex: 1 | 2) => {
     const world = worldRef.current;
@@ -1139,7 +1173,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           setTimeLeft(secondsRemaining);
         }
         if (roundElapsed >= SESSION_TIME_SECONDS) {
-          finishGame();
+          timeUp();
           return;
         }
       }
@@ -1207,7 +1241,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         }
       });
     },
-    [finishGame, resolveFallingObject, resolveTutorialObject, spawnObject, updateTutorial]
+    [timeUp, resolveFallingObject, resolveTutorialObject, spawnObject, updateTutorial]
   );
 
   useEffect(() => {
@@ -1309,6 +1343,9 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   }, [drawScene, phase, updateWorld]);
 
   const startGame = () => {
+    popupTimersRef.current.forEach((t) => window.clearTimeout(t));
+    popupTimersRef.current = [];
+    setFinishPopup(null);
     setRuns((n) => n + 1);
     worldRef.current = createWorld();
     setHeight(0);
@@ -1440,6 +1477,17 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
             />
+            {finishPopup && (
+              <StagePopup
+                stage={finishPopup}
+                title="เก่งมาก! 🎉"
+                subtitle={`เล่นครบ ${SESSION_TIME_SECONDS / 60} นาทีแล้ว`}
+                className="z-30"
+              />
+            )}
+            <p role="status" className="sr-only">
+              {finishPopup ? `เก่งมาก เล่นครบ ${SESSION_TIME_SECONDS / 60} นาทีแล้ว` : ""}
+            </p>
             {/* Tutorial instruction — the 👆 hand itself is drawn on the canvas */}
             <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-4">
               {tutorialBanner && (
