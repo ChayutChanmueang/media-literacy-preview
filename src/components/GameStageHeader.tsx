@@ -34,7 +34,8 @@ function StageSlot({ label, value, ariaLabel }: StageValue) {
     // 85px like Figma; grows for a longer value (G13's "ฝึกเล่น" / "12 ชั้น")
     <div className="flex min-w-[85px] flex-col items-center whitespace-nowrap" aria-label={ariaLabel}>
       <span className="gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]">{label}</span>
-      <span className="gp-text-32 font-bold gp-leading-40 text-[#00A3E0] tabular-nums">{value}</span>
+      {/* gp-mt-5: keeps Thai marks of the value (ฝึ / ชั้) clear of the label above */}
+      <span className="gp-mt-5 gp-text-32 font-bold gp-leading-40 text-[#00A3E0] tabular-nums">{value}</span>
     </div>
   );
 }

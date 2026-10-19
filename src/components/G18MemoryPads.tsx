@@ -31,9 +31,11 @@ import DATA from "@/data/g18-simon-pads.json";
  * - no input timeout
  * Tutorial — once each time the game is opened, before the first run: 3 practice levels (TUTORIAL_LEVELS),
  * header shows "โหมด ฝึกเล่น" (like G13) and nothing is scored — the real run then starts fresh at level 1.
- * Extra wording in the status pill; a wrong tap there replays the same lights instead of ending the run:
+ * The grey status pill keeps showing the game state only; the instructions go in their own tutorial box
+ * above the board (styled like G13's: amber = what to do, green ✓ = done, grey = try again). A wrong tap
+ * there replays the same lights instead of ending the run:
  *   1. as in the mock: once the light has played, the screen dims except for a hole around the pad
- *      to press, and a bouncing 👆 points at it
+ *      to press, and a 👆 taps it (same press-and-lift hand + amber ring as G19/G13)
  *   2. how the pattern works: the old light comes first, then one new one — the hole and 👆 walk
  *      the player through both pads in order
  *   3. on their own (no hole/hand), to get used to the game before the real play
@@ -73,10 +75,11 @@ const SHOW_REPLAY_BUTTON = false;
 // pad face sits this far above its darker base; a lit/pressed pad drops onto it (× --gp-s, like GameAnswerButton)
 const PAD_LIFT = "calc(8px * var(--gp-s, 1))";
 const PAD_PRESS_MS = 90; // face slide time — same as GameAnswerButton/Button3D
-// Level-1 tutorial, as in the mock: hole padding/radius around the pad, and the 👆 sits this far below its centre
+// Guided tutorial, as in the mock: hole padding/radius around the pad to press
 const TUTORIAL_HOLE_PAD_PX = 8;
 const TUTORIAL_HOLE_RADIUS_PX = 25;
-const TUTORIAL_HAND_OFFSET_PX = 20;
+// one press-and-lift loop of the 👆 (same keyframes as G19's guide; G19 also slides, so it loops slower)
+const TUTORIAL_HAND_MS = 1800;
 const TUTORIAL_LEVELS = 3; // levels played as the tutorial (see the comment at the top)
 const TUTORIAL_GUIDED_LEVELS = 2; // … of which these get the dimmed screen + 👆
 const TUTORIAL_CORRECT_PAUSE_MS = 2400; // longer, so the "what's next" message can be read
@@ -84,6 +87,8 @@ const TUTORIAL_RETRY_PAUSE_MS = 1800;
 const TUTORIAL_STEP_PAUSE_MS = 1200; // "✓" between taps in the guided levels, before the hand moves on
 
 type TutorialRect = { pad: number; x: number; y: number; w: number; h: number };
+// Tutorial instruction box, styled like G13's: info = what to do, praise = ✓ done, retry = gentle try-again
+type TutorialTip = { text: string; tone: "info" | "praise" | "retry" };
 
 // score = levels cleared in the best run
 function starsFor(score: number) {
@@ -392,42 +397,48 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const length = level;
   const isInput = phase === "input";
 
-  // Tutorial wording (null = the normal status below)
-  const tutorialStatus = (() => {
+  // Tutorial instruction (own box above the board, null = nothing to add this phase). Praise gets its ✓ from the box.
+  const tutorialTip = ((): TutorialTip | null => {
     if (!inTutorial) return null;
+    const info = (text: string): TutorialTip => ({ text, tone: "info" });
+    const praise = (text: string): TutorialTip => ({ text, tone: "praise" });
     switch (phase) {
       case "watch":
-        if (level === 2) return "ไฟดวงเดิมจะมาก่อน\nแล้วตามด้วยดวงใหม่อีก 1 ดวง";
-        if (level === 3) return "ลองเองเลย! จำไฟให้ครบ 3 ดวง";
-        return null;
+        if (level === 1) return info("ดูให้ดีว่าปุ่มไหนกะพริบ");
+        if (level === 2) return info("ไฟดวงเดิมจะมาก่อน\nแล้วตามด้วยดวงใหม่อีก 1 ดวง");
+        return info("ลองเองเลย! จำไฟให้ครบ 3 ดวง");
       case "input":
+        if (level === 1) return info("กดปุ่มที่มือชี้");
         if (level === 2) {
-          if (step === 0) return "กดดวงเดิมก่อน";
-          return nextIsSamePad ? "ดวงใหม่เป็นปุ่มเดิม\nกดปุ่มเดิมอีกครั้ง" : "แล้วกดดวงใหม่ต่อ";
+          if (step === 0) return info("กดดวงเดิมก่อน");
+          return info(nextIsSamePad ? "ดวงใหม่เป็นปุ่มเดิม\nกดปุ่มเดิมอีกครั้ง" : "แล้วกดดวงใหม่ต่อ");
         }
-        if (level === 3) return "กดตามลำดับให้ครบ 3 ดวง";
-        return null;
+        return info("กดตามลำดับให้ครบ 3 ดวง");
       case "correct":
-        if (level === 1) return "✓ ถูกต้อง!\nด่านต่อไปไฟจะเพิ่มอีก 1 ดวง";
-        if (level === 2) return "✓ เก่งมาก!\nด่านต่อไปลองเองนะ";
-        return "✓ เก่งมาก! ต่อไปเล่นจริงเริ่มด่าน 1\nกดผิดจะจบรอบนะ";
+        if (level === 1) return praise("ถูกต้อง!\nด่านต่อไปไฟจะเพิ่มอีก 1 ดวง");
+        if (level === 2) return praise("เก่งมาก!\nด่านต่อไปลองเองนะ");
+        return praise("เก่งมาก! ต่อไปเล่นจริงเริ่มด่าน 1\nกดผิดจะจบรอบนะ");
       case "retry":
-        return "ยังไม่ใช่ปุ่มนี้\nมาดูไฟอีกครั้งนะ";
+        return { text: "ยังไม่ใช่ปุ่มนี้\nมาดูไฟอีกครั้งนะ", tone: "retry" };
       case "stepok":
-        return "✓ ถูกต้อง!";
+        return praise("ถูกต้อง!");
       default:
         return null;
     }
   })();
 
-  const status = tutorialStatus ?? (() => {
+  // Grey status pill: the game state only (tutorial or not) — instructions go in the tutorial box
+  const status = (() => {
     switch (phase) {
       case "watch":
         return "จำปุ่มสีให้ดี";
       case "input":
+      case "stepok":
         return "กดปุ่มสีตามที่เห็น";
       case "correct":
         return "✓ ถูกต้อง! เก่งมาก";
+      case "retry":
+        return "กดผิดปุ่ม — ดูไฟอีกครั้ง";
       case "oops":
         return "กดผิดปุ่ม — มาดูคะแนนกัน";
       default:
@@ -470,98 +481,123 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
           ref={stageRef}
           className="relative flex min-h-full flex-col items-center justify-center gp-gap-56 gp-px-24 gp-py-24"
         >
-          {/* Board + pads: Figma — 352px dark board, 2×2 raised pads, centre circle */}
-          <div
-            className={`relative aspect-square w-full rounded-[20px] gp-p-16 transition-[background-color,box-shadow] duration-150 ${
-              phase === "correct" ? "bg-white shadow-[0_0_40px_rgba(255,255,255,1)]" : "bg-[#23233A]"
-            }`}
-            // keep the whole board on screen on most phones; very short screens scroll instead
-            style={{ maxWidth: "min(352px, 58dvh)" }}
-          >
-            <div className="grid h-full w-full grid-cols-2 grid-rows-2 gp-gap-16">
-              {PADS.map((pad, i) => {
-                const isLit = lit === i;
-                const isDown = isLit || held === i;
-                const release = () => setHeld((cur) => (cur === i ? null : cur));
-                return (
-                  <button
-                    key={pad.id}
-                    ref={(el) => {
-                      padRefs.current[i] = el;
-                    }}
-                    type="button"
-                    aria-label={`ปุ่มสี${pad.colorName}`}
-                    aria-disabled={!isInput}
-                    onPointerDown={(e) => {
-                      if (e.pointerType === "mouse" && e.button !== 0) return;
-                      e.preventDefault();
-                      if (phaseRef.current === "input") setHeld(i);
-                      press(i);
-                    }}
-                    // touch pointers are captured by the pad, so leave only fires for a mouse dragged off it
-                    onPointerUp={release}
-                    onPointerCancel={release}
-                    onPointerLeave={release}
-                    // keyboard Enter/Space fires click with detail 0; pointer taps are already handled above
-                    onClick={(e) => {
-                      if (e.detail === 0) press(i);
-                    }}
-                    className={`relative touch-manipulation rounded-[20px] border-0 bg-transparent p-0 ${
-                      isInput ? "cursor-pointer" : "cursor-default"
-                    } ${isDown ? "z-10" : ""}`}
+          {/* tutorial box + board: the box sits just above the board, closer than the status pill below */}
+          <div className="flex w-full flex-col items-center gp-gap-16">
+            {/* Tutorial instruction box (like G13's), above the dimmed layer. Its slot keeps two lines of room for
+                the whole tutorial, so the board doesn't jump between steps; it goes once the real game starts. */}
+            {inTutorial && (
+              <div aria-live="polite" className="relative z-40 flex w-full gp-min-h-84 items-center justify-center">
+                {tutorialTip && (
+                  <p
+                    className={`max-w-[352px] whitespace-pre-line rounded-[16px] border-2 border-solid bg-white gp-px-16 gp-py-8 text-center gp-text-22 font-bold gp-leading-30 shadow-md ${
+                      tutorialTip.tone === "praise"
+                        ? "border-emerald-500 text-emerald-800"
+                        : tutorialTip.tone === "retry"
+                          ? "border-slate-300 text-slate-700"
+                          : "border-amber-400 text-amber-950"
+                    }`}
                   >
-                    {/* Built like GameAnswerButton: the darker base is its own layer at the bottom and the face
-                        sits PAD_LIFT above it. Pressed, the face slides down over the base and the base hides
-                        only once fully covered (no dark sliver at the rounded corners); on release it comes back at once. */}
-                    <span
-                      aria-hidden="true"
-                      className="absolute inset-x-0 bottom-0 rounded-[20px] transition-opacity duration-0"
-                      style={{
-                        height: `calc(100% - ${PAD_LIFT})`,
-                        backgroundColor: pad.shadow,
-                        opacity: isDown ? 0 : 1,
-                        transitionDelay: isDown ? `${PAD_PRESS_MS}ms` : "0ms",
-                      }}
-                    />
-                    <span
-                      aria-hidden="true"
-                      // the glow is on the face, not the button, so it moves with it — on the button it framed
-                      // the empty strip the face leaves at the top when pressed, showing a dark shape behind
-                      className="absolute inset-x-0 top-0 rounded-[20px] transition-[transform,filter,box-shadow] ease-out"
-                      style={{
-                        height: `calc(100% - ${PAD_LIFT})`,
-                        backgroundColor: pad.color,
-                        transitionDuration: `${PAD_PRESS_MS}ms`,
-                        transform: isDown ? `translateY(${PAD_LIFT})` : "translateY(0)",
-                        filter: isDown ? "brightness(1.3)" : undefined,
-                        boxShadow: isDown ? `0 0 40px 10px ${pad.glow}` : undefined,
-                      }}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-            {/* centre circle: dark ring (Ellipse 21, 100px) + soft white face (Ellipse 20, 84px + 6px blur margin = 96px).
-                The face only shows while the sequence plays; otherwise the ring's inside (r 42 of 50) is plain black. */}
+                    {tutorialTip.tone === "praise" && <span aria-hidden="true">✓ </span>}
+                    {tutorialTip.text}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Board + pads: Figma — 352px dark board, 2×2 raised pads, centre circle */}
             <div
-              aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-1/2 z-20 aspect-square w-[28.41%] -translate-x-1/2 -translate-y-1/2"
+              className={`relative aspect-square w-full rounded-[20px] gp-p-16 transition-[background-color,box-shadow] duration-150 ${
+                phase === "correct" ? "bg-white shadow-[0_0_40px_rgba(255,255,255,1)]" : "bg-[#23233A]"
+              }`}
+              // keep the whole board on screen on most phones; very short screens scroll instead
+              style={{ maxWidth: "min(352px, 58dvh)" }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
-              <img src="/assets/g18/center-ring.svg" alt="" className="absolute inset-0 block h-full w-full" />
-              <span className="absolute inset-[8%] rounded-full bg-black" />
-              {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
-              <img
-                src="/assets/g18/center-face.svg"
-                alt=""
-                className={`absolute top-[2%] left-[2%] block h-[96%] w-[96%] transition-opacity duration-300 ${
-                  phase === "watch" ? "opacity-100" : "opacity-0"
-                }`}
-              />
+              <div className="grid h-full w-full grid-cols-2 grid-rows-2 gp-gap-16">
+                {PADS.map((pad, i) => {
+                  const isLit = lit === i;
+                  const isDown = isLit || held === i;
+                  const release = () => setHeld((cur) => (cur === i ? null : cur));
+                  return (
+                    <button
+                      key={pad.id}
+                      ref={(el) => {
+                        padRefs.current[i] = el;
+                      }}
+                      type="button"
+                      aria-label={`ปุ่มสี${pad.colorName}`}
+                      aria-disabled={!isInput}
+                      onPointerDown={(e) => {
+                        if (e.pointerType === "mouse" && e.button !== 0) return;
+                        e.preventDefault();
+                        if (phaseRef.current === "input") setHeld(i);
+                        press(i);
+                      }}
+                      // touch pointers are captured by the pad, so leave only fires for a mouse dragged off it
+                      onPointerUp={release}
+                      onPointerCancel={release}
+                      onPointerLeave={release}
+                      // keyboard Enter/Space fires click with detail 0; pointer taps are already handled above
+                      onClick={(e) => {
+                        if (e.detail === 0) press(i);
+                      }}
+                      className={`relative touch-manipulation rounded-[20px] border-0 bg-transparent p-0 ${
+                        isInput ? "cursor-pointer" : "cursor-default"
+                      } ${isDown ? "z-10" : ""}`}
+                    >
+                      {/* Built like GameAnswerButton: the darker base is its own layer at the bottom and the face
+                          sits PAD_LIFT above it. Pressed, the face slides down over the base and the base hides
+                          only once fully covered (no dark sliver at the rounded corners); on release it comes back at once. */}
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-x-0 bottom-0 rounded-[20px] transition-opacity duration-0"
+                        style={{
+                          height: `calc(100% - ${PAD_LIFT})`,
+                          backgroundColor: pad.shadow,
+                          opacity: isDown ? 0 : 1,
+                          transitionDelay: isDown ? `${PAD_PRESS_MS}ms` : "0ms",
+                        }}
+                      />
+                      <span
+                        aria-hidden="true"
+                        // the glow is on the face, not the button, so it moves with it — on the button it framed
+                        // the empty strip the face leaves at the top when pressed, showing a dark shape behind
+                        className="absolute inset-x-0 top-0 rounded-[20px] transition-[transform,filter,box-shadow] ease-out"
+                        style={{
+                          height: `calc(100% - ${PAD_LIFT})`,
+                          backgroundColor: pad.color,
+                          transitionDuration: `${PAD_PRESS_MS}ms`,
+                          transform: isDown ? `translateY(${PAD_LIFT})` : "translateY(0)",
+                          filter: isDown ? "brightness(1.3)" : undefined,
+                          boxShadow: isDown ? `0 0 40px 10px ${pad.glow}` : undefined,
+                        }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              {/* centre circle: dark ring (Ellipse 21, 100px) + soft white face (Ellipse 20, 84px + 6px blur margin = 96px).
+                  The face only shows while the sequence plays; otherwise the ring's inside (r 42 of 50) is plain black. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-1/2 z-20 aspect-square w-[28.41%] -translate-x-1/2 -translate-y-1/2"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
+                <img src="/assets/g18/center-ring.svg" alt="" className="absolute inset-0 block h-full w-full" />
+                <span className="absolute inset-[8%] rounded-full bg-black" />
+                {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
+                <img
+                  src="/assets/g18/center-face.svg"
+                  alt=""
+                  className={`absolute top-[2%] left-[2%] block h-[96%] w-[96%] transition-opacity duration-300 ${
+                    phase === "watch" ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Level-1 tutorial (mock): dark layer with a rounded hole over the pad to press, and a bouncing 👆.
+          {/* Guided tutorial (mock): dark layer with a rounded hole over the pad to press, and the 👆 tapping it —
+              same hand as G19/G13: fingertip on the pad, presses down (smaller, amber ring) and lifts, on a loop.
               Doesn't block taps, like the mock. Drawn with one huge box-shadow instead of the mock's canvas. */}
           {showTutorial && tutorialRect && (
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 overflow-hidden">
@@ -576,20 +612,27 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
                   boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75)",
                 }}
               />
-              <span
-                className="g18-tutorial-hand absolute text-[60px] leading-none"
-                style={{
-                  left: tutorialRect.x + tutorialRect.w / 2,
-                  top: tutorialRect.y + tutorialRect.h / 2 + TUTORIAL_HAND_OFFSET_PX,
-                }}
+              {/* zero-size anchor at the pad's centre = where the fingertip presses */}
+              <div
+                className="absolute"
+                style={{ left: tutorialRect.x + tutorialRect.w / 2, top: tutorialRect.y + tutorialRect.h / 2 }}
               >
-                👆
-              </span>
+                <span
+                  className="g19-guide-ring absolute left-0 top-0 block h-[44px] w-[44px] rounded-full border-4 border-solid border-[#F59E0B] bg-[#FDE68A]/55"
+                  style={{ animationDuration: `${TUTORIAL_HAND_MS}ms` }}
+                />
+                <span
+                  className="g19-guide-finger absolute left-0 top-[-4px] block text-[60px] leading-none"
+                  style={{ filter: "drop-shadow(0 3px 4px rgba(0,0,0,0.35))", animationDuration: `${TUTORIAL_HAND_MS}ms` }}
+                >
+                  👆
+                </span>
+              </div>
             </div>
           )}
 
-          {/* status pill — which stage the player is in (watch the lights / press them back);
-              stays above the tutorial layer, like the mock's status pill */}
+          {/* status pill — game state only (watch the lights / press them back / right / wrong), also in the
+              tutorial, whose instructions have their own box above the board; stays above the dimmed layer */}
           <p
             role="status"
             aria-live="polite"

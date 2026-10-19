@@ -1300,11 +1300,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
       <div ref={headerRef} className="relative z-10 shrink-0">
       {/* during the tutorial: "โหมด ฝึกเล่น" + step, like G13's practice */}
       <GameStageHeader
-        left={
-          tutorialStep
-            ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" }
-            : { label: "โยนได้อีก", value: throwsLeft, ariaLabel: `โยนได้อีก ${throwsLeft} ครั้ง` }
-        }
+        left={tutorialStep ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" } : undefined}
         right={
           tutorialStep
             ? { label: "ขั้นที่", value: `${tutorialStep}/${TUTORIAL_STEPS}`, ariaLabel: `ฝึกขั้นที่ ${tutorialStep} จาก ${TUTORIAL_STEPS}` }
@@ -1367,10 +1363,9 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
               onPointerCancel={onPointerCancel}
               className="block h-full w-full touch-none"
             />
-            {/* veggies left, under the veggie's spot — aria-hidden: the header already says "โยนได้อีก n" */}
+            {/* veggies left, under the veggie's spot — the only place the count is shown (not in the header) */}
             {tutorialStep === 0 && (
               <p
-                aria-hidden="true"
                 className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[12px] text-[20px] font-semibold leading-[26px] text-[#4B4B4B]"
                 style={{ top: Math.min(stage.oy + LEFT_COUNT_Y * stage.s + 4, stage.h - 32) }}
               >

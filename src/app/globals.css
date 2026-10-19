@@ -766,6 +766,8 @@ h2 {
    0-12 fades in, released (lifted, bigger) / 12-22 presses down onto the fruit + ring /
    28-62 slides onto the neighbour (--dx/--dy = one cell) still pressed / 70 releases (lifts, ring fades) /
    86-100 faded, short pause. Kept running under prefers-reduced-motion on purpose: it is the instruction. */
+/* .g19-guide-ring / .g19-guide-finger are also G18's tutorial tap (no .g19-guide-hand around them, so it
+   only presses and lifts in place) — one hand style across G13 (canvas copy), G18 and G19 */
 .g19-guide-hand,
 .g19-guide-ring,
 .g19-guide-finger {
@@ -795,15 +797,24 @@ h2 {
   74%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
 }
 
-/* G18 level-1 tutorial hand (G18MemoryPads.tsx) — same bounce as the simon13.html mock.
-   Kept running under prefers-reduced-motion on purpose, like G19's: it is the instruction. */
-.g18-tutorial-hand {
-  filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.4));
-  animation: g18-tutorial-hand 0.8s infinite alternate;
+/* G19 first-run tutorial (candy crush10 mock): dashed trail drawn out behind the hand while it slides
+   (same timing as g19-guide-hand; --trail-hidden = clipped away on the side the hand moves to),
+   and the dimmed spotlight fading in. Kept under reduced motion like the hand. The 💡 tooltip stays
+   still, like the other games' tutorial boxes (the mock bobbed it). */
+.g19-guide-trail {
+  animation: g19-guide-trail ease-in-out infinite;
 }
-@keyframes g18-tutorial-hand {
-  0% { transform: translate(-50%, -50%) scale(1) rotate(-15deg); }
-  100% { transform: translate(-50%, -30%) scale(1.1) rotate(-15deg); }
+@keyframes g19-guide-trail {
+  0%, 28% { opacity: 1; clip-path: var(--trail-hidden); }
+  62%, 72% { opacity: 1; clip-path: inset(0); }
+  86%, 100% { opacity: 0; clip-path: inset(0); }
+}
+.g19-tutorial-in {
+  animation: g19-tutorial-in 300ms ease-out both;
+}
+@keyframes g19-tutorial-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes gp1-glow {

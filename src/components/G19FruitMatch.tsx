@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { Cherry, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
@@ -23,8 +23,12 @@ import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
  * - besides swiping, tapping two neighbouring fruits swaps them (easier than a drag)
  * - a guide (blinking outlines + a 👆 hand pressing the right fruit and sliding onto its
  *   neighbour, on a loop) shown at the start and after a few idle seconds
- * - when no swap can make a match any more (the mock just got stuck) the run ends on a
- *   positive note; an automatic reshuffle is kept behind RULES.onNoMoves to switch back to
+ * - first-run tutorial, from the "candy crush10" mock: the screen dims except for holes around the
+ *   pair to swap and the fruit they line up with, a dashed trail follows the hand, and a 💡 tooltip
+ *   sits above the board (move in the top half) or below it (bottom half)
+ * - when no swap can make a match any more (the mock just got stuck) the board is reshuffled
+ *   from today's seed ("ไม่มีคู่ให้สลับ / สับผลไม้ใหม่ให้นะ", no move used); ending the run there
+ *   instead is kept behind RULES.onNoMoves
  * - play screen follows the Figma design (Scammer Game Prototype, node 3028:13037): green
  *   gradient, shared header card (moves left / score), 5×5 tinted fruit tiles with SVG fruit
  * - the board is seeded by today's date (Bangkok time), so every player gets the same level
@@ -82,17 +86,24 @@ const SPAWN_DELAY_MS = 50; // let new fruit paint above the board before it fall
 const HINT_IDLE_MS = 7000;
 const HINT_START_MS = 500; // the guide also shows right when gameplay starts, once the board has drawn
 const HINT_HAND_MS = 2400; // one loop of the hint hand: press, drag onto the neighbour, release, fade
-const SHUFFLE_PAUSE_MS = 1200;
+const SHUFFLE_PAUSE_MS = 2000; // "สับผลไม้ใหม่ให้นะ" over the stuck board, long enough to read
+// First-run tutorial spotlight (candy crush10 mock): dim level, hole padding/radius around each tile,
+// tooltip gap from the board, and the tooltip text
+const TUTORIAL_DIM = "rgba(0, 0, 0, 0.75)"; // mock 0.8; 0.75 like G18's tutorial
+const TUTORIAL_HOLE_PAD_PX = 3;
+const TUTORIAL_HOLE_RADIUS_PX = 14;
+const TUTORIAL_TIP_GAP_PX = 14;
+const TUTORIAL_TIP = ["💡 ลากผลไม้มาเรียง", "ให้ได้ 3 ช่องติดกัน!"];
 // "you finished" text over the board after the last move: fade/zoom in, hold, fade out
 const FINISH_IN_MS = 500;
 const FINISH_HOLD_MS = 1800;
 const FINISH_OUT_MS = 450;
 
 // What happens when, after a match, no swap on the board can make a match any more:
-// "end" = the run ends there (current design); "reshuffle" = deal a new board and keep
-// playing (earlier design — kept so it can be switched back on). A typed object, so TS
-// doesn't narrow the value and flag the unused branch.
-const RULES: { onNoMoves: "end" | "reshuffle" } = { onNoMoves: "end" };
+// "reshuffle" = deal a new board from the shuffle stream and keep playing (current design);
+// "end" = the run ends there (earlier design — kept so it can be switched back on). A typed
+// object, so TS doesn't narrow the value and flag the unused branch.
+const RULES: { onNoMoves: "end" | "reshuffle" } = { onNoMoves: "reshuffle" };
 
 type EndReason = "moves_used" | "no_moves";
 
@@ -148,14 +159,23 @@ function findMatches(types: TypeGrid): Cell[] {
   });
 }
 
-// A random swap that would make a match, or null when the board is stuck.
-// Math.random is fine here: it only picks which hint to show, it never changes the board.
+// The swap that clears the most fruit right away (a 5 over a 4 over a 3, an L/T or double
+// match counts every fruit), or null when the board is stuck. Ties are picked at random so the
+// hint doesn't always point at the same spot — Math.random is fine here: it only picks which
+// hint to show, it never changes the board.
 function findMove(types: TypeGrid): [Cell, Cell] | null {
-  const moves: [Cell, Cell][] = [];
+  let moves: [Cell, Cell][] = [];
+  let best = 0;
   const trySwap = (a: Cell, b: Cell) => {
     const copy = types.map((row) => row.slice());
     [copy[a.r][a.c], copy[b.r][b.c]] = [copy[b.r][b.c], copy[a.r][a.c]];
-    if (findMatches(copy).length > 0) moves.push([a, b]);
+    const cleared = findMatches(copy).length;
+    if (cleared === 0 || cleared < best) return;
+    if (cleared > best) {
+      best = cleared;
+      moves = [];
+    }
+    moves.push([a, b]);
   };
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
@@ -171,6 +191,32 @@ function orientMove(types: TypeGrid, [a, b]: [Cell, Cell]): [Cell, Cell] {
   const copy = types.map((row) => row.slice());
   [copy[a.r][a.c], copy[b.r][b.c]] = [copy[b.r][b.c], copy[a.r][a.c]];
   return findMatches(copy).some((m) => sameCell(m, b)) ? [a, b] : [b, a];
+}
+
+// Tutorial spotlight cells: the hint pair plus every fruit that lines up with either of them once
+// swapped (runs of 3+ through the two swapped cells). Those other fruit don't move, so their cells
+// are the same before and after the swap.
+function tutorialFocus(types: TypeGrid, [from, to]: [Cell, Cell]): Cell[] {
+  const copy = types.map((row) => row.slice());
+  [copy[from.r][from.c], copy[to.r][to.c]] = [copy[to.r][to.c], copy[from.r][from.c]];
+  const focus: Cell[] = [from, to];
+  const at = (r: number, c: number) => (r >= 0 && r < SIZE && c >= 0 && c < SIZE ? copy[r][c] : null);
+  for (const cell of [from, to]) {
+    const type = copy[cell.r][cell.c];
+    for (const [dr, dc] of [
+      [0, 1],
+      [1, 0],
+    ]) {
+      const run: Cell[] = [cell];
+      for (const dir of [1, -1]) {
+        for (let k = 1; at(cell.r + dr * k * dir, cell.c + dc * k * dir) === type; k++) {
+          run.push({ r: cell.r + dr * k * dir, c: cell.c + dc * k * dir });
+        }
+      }
+      if (run.length >= 3) run.forEach((m) => !focus.some((f) => sameCell(f, m)) && focus.push(m));
+    }
+  }
+  return focus;
 }
 
 // Like the mock's initBoard (no ready-made matches), and also at least one possible swap.
@@ -200,10 +246,16 @@ function freshTypes(rng: Rng): number[][] {
  * at the fingertip; release = hand lifts. Timings in globals.css (.g19-guide-*). It plays even with
  * the OS "reduce motion" setting: it's the instruction itself, and it's small and slow.
  */
-function HintGuide({ from, to }: { from: Cell; to: Cell }) {
+function HintGuide({ from, to, tutorial }: { from: Cell; to: Cell; tutorial: boolean }) {
   const loop = { animationDuration: `${HINT_HAND_MS}ms` };
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20" style={{ containerType: "inline-size" }}>
+    // tutorial: above the dimmed spotlight layer (z-30), so the whole hand stays bright
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-0 ${tutorial ? "z-40" : "z-20"}`}
+      style={{ containerType: "inline-size" }}
+    >
+      {tutorial && <HintTrail from={from} to={to} style={loop} />}
       <div
         className="g19-guide-hand absolute"
         style={
@@ -231,6 +283,37 @@ function HintGuide({ from, to }: { from: Cell; to: Cell }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Tutorial only (candy crush10 mock): dashed line from the centre of the fruit to drag to the centre
+ * of its neighbour, drawn out behind the hand as it slides (clip-path in sync with .g19-guide-hand).
+ */
+function HintTrail({ from, to, style }: { from: Cell; to: Cell; style: React.CSSProperties }) {
+  const centreX = (c: number) => c * STEP_X_PCT + TILE_W_PCT / 2;
+  const centreY = (r: number) => r * STEP_Y_PCT + TILE_H_PCT / 2;
+  const dash = "#0EA5E9 0 1.8cqw, transparent 1.8cqw 3.6cqw";
+  const box: Record<string, string> =
+    from.r === to.r
+      ? {
+          left: `${centreX(Math.min(from.c, to.c))}%`,
+          top: `${centreY(from.r)}%`,
+          width: `${STEP_X_PCT}%`,
+          height: "1.4cqw",
+          transform: "translateY(-50%)",
+          backgroundImage: `repeating-linear-gradient(90deg, ${dash})`,
+          "--trail-hidden": to.c > from.c ? "inset(0 100% 0 0)" : "inset(0 0 0 100%)",
+        }
+      : {
+          left: `${centreX(from.c)}%`,
+          top: `${centreY(Math.min(from.r, to.r))}%`,
+          width: "1.4cqw",
+          height: `${STEP_Y_PCT}%`,
+          transform: "translateX(-50%)",
+          backgroundImage: `repeating-linear-gradient(180deg, ${dash})`,
+          "--trail-hidden": to.r > from.r ? "inset(0 0 100% 0)" : "inset(100% 0 0 0)",
+        };
+  return <div className="g19-guide-trail absolute rounded-full" style={{ ...box, ...style } as React.CSSProperties} />;
 }
 
 // Header score: points just earned show as "+ 30" next to the score, then count over into it
@@ -348,7 +431,14 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   // neighbour the current drag would swap with (highlighted while dragging, match or not)
   const [dragTarget, setDragTarget] = useState<Cell | null>(null);
   const [hint, setHint] = useState<[Cell, Cell] | null>(null);
+  // tutorial hint only: cells left bright in the dimmed screen (null = no spotlight)
+  const [spotlight, setSpotlight] = useState<Cell[] | null>(null);
+  // board box + tooltip height in px, relative to the play screen — where the spotlight holes go
+  const [stage, setStage] = useState<{ x: number; y: number; w: number; h: number; rootH: number; tipH: number } | null>(
+    null
+  );
   const [finishPopup, setFinishPopup] = useState<FinishPopup>(null);
+  const [shuffleNotice, setShuffleNotice] = useState(false); // "สับผลไม้ใหม่ให้นะ" over the board
   const [endReason, setEndReason] = useState<EndReason>("moves_used");
   const [bestScore, setBestScore] = useState(0); // best run since the game was opened
   const [runs, setRuns] = useState(0);
@@ -368,6 +458,8 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const selectedRef = useRef<Cell | null>(null);
   const dragRef = useRef<{ x: number; y: number; cell: Cell } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<number[]>([]);
   const hintTimerRef = useRef<number | null>(null);
   // first run since the game was opened: the start guide is a tutorial — it stays up (taps, wrong
@@ -388,6 +480,36 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     },
     []
   );
+
+  // Measure the board (and tooltip) while the tutorial spotlight is up: the ResizeObserver fires on
+  // observe (before paint), then again on resize; scrolling a short screen moves the board too.
+  const showSpotlight = phase === "play" && !!hint && !!spotlight;
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const board = boardRef.current;
+    if (!showSpotlight || !root || !board) return;
+    const measure = () => {
+      const s = root.getBoundingClientRect();
+      const b = board.getBoundingClientRect();
+      setStage({
+        x: b.left - s.left,
+        y: b.top - s.top,
+        w: b.width,
+        h: b.height,
+        rootH: s.height,
+        tipH: tipRef.current?.offsetHeight ?? 0,
+      });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    ro.observe(board);
+    if (tipRef.current) ro.observe(tipRef.current);
+    root.addEventListener("scroll", measure, true);
+    return () => {
+      ro.disconnect();
+      root.removeEventListener("scroll", measure, true);
+    };
+  }, [showSpotlight]);
 
   const delay = (ms: number) =>
     new Promise<void>((resolve) => {
@@ -414,6 +536,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     if (hintTimerRef.current !== null) window.clearTimeout(hintTimerRef.current);
     hintTimerRef.current = null;
     setHint(null);
+    setSpotlight(null);
   };
 
   // atStart: the guide shown as gameplay begins (also lets it through while the tutorial is up)
@@ -426,7 +549,9 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
       const types = typesOf(gridRef.current);
       const move = findMove(types);
       if (!move) return;
-      setHint(orientMove(types, move));
+      const oriented = orientMove(types, move);
+      setHint(oriented);
+      setSpotlight(tutorialRef.current ? tutorialFocus(types, oriented) : null);
       logEvent("hint_shown", {
         game_id: "G19",
         run: runRef.current,
@@ -507,10 +632,13 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
 
   const reshuffle = async (gen: number) => {
     logEvent("reshuffle", { game_id: "G19", run: runRef.current, moves_left: movesRef.current });
+    setShuffleNotice(true);
     await delay(SHUFFLE_PAUSE_MS);
     if (gen !== genRef.current) return;
+    // the n-th reshuffle of the day is the same board for everyone (seeded "shuffle" stream)
     gridRef.current = buildGrid(freshTypes(rngsRef.current.shuffle));
     sync();
+    setShuffleNotice(false);
   };
 
   const endRun = (reason: EndReason | "dev_skip") => {
@@ -706,9 +834,11 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     setMovesLeft(MOVES_PER_RUN);
     select(null);
     setHint(null);
+    setSpotlight(null);
     setPressedId(null);
     setDragTarget(null);
     setFinishPopup(null);
+    setShuffleNotice(false);
     sync();
     setPhase("play");
     logEvent("run_start", { game_id: "G19", run: runRef.current, seed });
@@ -770,9 +900,25 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
 
   const isHint = (cell: Cell) => !!hint && (sameCell(hint[0], cell) || sameCell(hint[1], cell));
 
+  // Tooltip above the board when the tutorial move is in the top half, below it otherwise (as in the
+  // mock). On a short phone with no room on that side it goes to the other side instead (above = over
+  // the dimmed header), so it never covers the fruit the hand points at; kept inside the play screen.
+  let tipTop = 0;
+  if (showSpotlight && hint && stage) {
+    const need = stage.tipH + TUTORIAL_TIP_GAP_PX + 8;
+    const roomAbove = stage.y;
+    const roomBelow = stage.rootH - (stage.y + stage.h);
+    const prefersAbove = (hint[0].r + hint[1].r) / 2 < SIZE / 2;
+    const fits = (above: boolean) => (above ? roomAbove : roomBelow) >= need;
+    const above = fits(prefersAbove) ? prefersAbove : fits(!prefersAbove) ? !prefersAbove : roomAbove > roomBelow;
+    const want = above ? stage.y - TUTORIAL_TIP_GAP_PX - stage.tipH : stage.y + stage.h + TUTORIAL_TIP_GAP_PX;
+    tipTop = Math.max(8, Math.min(want, stage.rootH - stage.tipH - 8));
+  }
+
   return (
     <div
-      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
+      ref={rootRef}
+      className={`${notoLoopedThai.className} gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
       style={{ backgroundImage: "linear-gradient(155.36deg, #EEFEE9 0%, #DCF4D4 100%)" }}
     >
       {/* Header card: same as G17 / G18 (GameStageHeader) — moves left on the left, score right */}
@@ -875,9 +1021,29 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
 
               {/* Hint guide over the tiles (outside the board, which clips, so the hand isn't cut off) */}
               {hint && (
-                <HintGuide key={`${hint[0].r}${hint[0].c}${hint[1].r}${hint[1].c}`} from={hint[0]} to={hint[1]} />
+                <HintGuide
+                  key={`${hint[0].r}${hint[0].c}${hint[1].r}${hint[1].c}`}
+                  from={hint[0]}
+                  to={hint[1]}
+                  tutorial={showSpotlight}
+                />
               )}
             </div>
+
+            {/* Reshuffle notice: same outlined text as the finish text; role="status" so screen readers hear it */}
+            <div role="status" aria-live="polite" className="sr-only">
+              {shuffleNotice ? "ไม่มีคู่ให้สลับ สับผลไม้ใหม่ให้นะ" : ""}
+            </div>
+            {shuffleNotice && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gp-gap-8 text-center text-white"
+                style={{ WebkitTextStroke: "8px #7C2D12", paintOrder: "stroke fill", textShadow: "0 4px 12px rgba(0,0,0,0.35)" }}
+              >
+                <p className="gp-text-32 font-bold gp-leading-44">ไม่มีคู่ให้สลับ</p>
+                <p className="gp-text-40 font-bold gp-leading-56">สับผลไม้ใหม่ให้นะ 🔀</p>
+              </div>
+            )}
 
             {/* Finish text: just text over the board, no panel — the dark outline keeps it readable on the fruit.
                 aria-hidden because the status line already says the run is over. */}
@@ -913,6 +1079,55 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
           )}
         </div>
       </div>
+
+      {/* First-run tutorial spotlight (candy crush10 mock): the whole screen, header included, dims except
+          for holes around the pair to swap and the fruit they line up with. Touches go straight through
+          to the board. The hand + trail (HintGuide, z-40) sit above it. */}
+      {showSpotlight && spotlight && (
+        <div className="g19-tutorial-in pointer-events-none absolute inset-0 z-30 overflow-hidden">
+          {stage && (
+            <svg aria-hidden="true" className="absolute inset-0 h-full w-full">
+              <defs>
+                <mask id="g19-tutorial-mask">
+                  <rect width="100%" height="100%" fill="white" />
+                  {spotlight.map((cell) => (
+                    <rect
+                      key={`${cell.r},${cell.c}`}
+                      x={stage.x + (cell.c * STEP_X_PCT * stage.w) / 100 - TUTORIAL_HOLE_PAD_PX}
+                      y={stage.y + (cell.r * STEP_Y_PCT * stage.h) / 100 - TUTORIAL_HOLE_PAD_PX}
+                      width={(TILE_W_PCT * stage.w) / 100 + TUTORIAL_HOLE_PAD_PX * 2}
+                      height={(TILE_H_PCT * stage.h) / 100 + TUTORIAL_HOLE_PAD_PX * 2}
+                      rx={TUTORIAL_HOLE_RADIUS_PX}
+                      fill="black"
+                    />
+                  ))}
+                </mask>
+              </defs>
+              <rect width="100%" height="100%" fill={TUTORIAL_DIM} mask="url(#g19-tutorial-mask)" />
+            </svg>
+          )}
+          {/* drawn hidden until measured, so its height is known before it's placed */}
+          <div
+            ref={tipRef}
+            className="absolute inset-x-0 z-10 flex justify-center gp-px-24"
+            style={{ top: tipTop, visibility: stage ? "visible" : "hidden" }}
+          >
+            <p
+              role="status"
+              className="max-w-[340px] rounded-[20px] border-[3px] border-solid border-[#38BDF8] bg-white gp-px-20 gp-py-10 text-center gp-text-22 font-bold gp-leading-32 text-[#1E293B]"
+              style={{ boxShadow: "0 10px 25px rgba(0,0,0,0.25)" }}
+            >
+              {/* two unbreakable halves: wraps between them, never mid-phrase */}
+              {TUTORIAL_TIP.map((part, i) => (
+                <React.Fragment key={part}>
+                  {i > 0 && " "}
+                  <span className="inline-block">{part}</span>
+                </React.Fragment>
+              ))}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
