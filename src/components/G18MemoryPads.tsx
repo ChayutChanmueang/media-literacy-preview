@@ -480,11 +480,13 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
       style={{ backgroundImage: "linear-gradient(155.36deg, #E6F6FC 0%, #C4CFE1 100%)" }}
     >
-      {/* Header card: same as G17 (GameStageHeader) — Figma leaves the left slot empty */}
+      {/* Header card: same as G17 (GameStageHeader) — Figma leaves the left slot empty in the real game.
+          During the tutorial: "โหมด ฝึกเล่น" on the left + the practice step on the right, like G20 */}
       <GameStageHeader
+        left={inTutorial ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" } : undefined}
         right={
           inTutorial
-            ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" }
+            ? { label: "ขั้นที่", value: `${level}/${TUTORIAL_LEVELS}`, ariaLabel: `ฝึกขั้นที่ ${level} จาก ${TUTORIAL_LEVELS}` }
             : { label: "ด่าน", value: level, ariaLabel: `ด่าน ${level}` }
         }
       >
