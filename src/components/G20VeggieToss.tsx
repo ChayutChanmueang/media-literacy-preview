@@ -12,8 +12,8 @@ import GameIntro from "@/components/GameIntro";
  *
  * Ported from the team's "shootball7.html" mock: touch the pan and flick upwards to toss the
  * morning glory (🥬) into the bowl (canvas-drawn, side view) at the top; it can bounce off the left/right walls.
- * Every serve is a new level — level 1 the plate is centred, levels 2–7 it sits still at a random spot,
- * level 8+ it slides left and right, slowly at first and a little faster every 2 levels.
+ * Every serve is a new level — level 1 the plate is centred, levels 2–5 it sits still at a random spot,
+ * level 6+ it slides left and right, slowly at first (1) and 1 faster every 2 levels.
  * A pure fun game — no lesson content.
  * Same canvas scene as the mock (540×960 stage, pan, physics, catch zone, level ramp, colours).
  * Differences from the HTML mock, to follow AGENT.md (elderly-first):
@@ -22,12 +22,14 @@ import GameIntro from "@/components/GameIntro";
  *   the mock's start overlay is replaced by the shared GameIntro
  * - the mock's floating pills are replaced by the shared header card (throws left / level);
  *   no on-screen guide text, but a screen-reader-only status line (what to do, served / missed)
- * - look follows the Figma design (Scammer Game Prototype, node 3028:13071): green gradient, broccoli
- *   icon as the veggie — but the bowl is kept (Figma has a plate) and the pan is hidden (SHOW_PAN)
+ * - look: the kitchen scene first built for G20K — the bowl stands on a table under a shop wall (awning,
+ *   shelf of jars), the veggie (Figma's broccoli icon, node 3028:13071) waits in a frying pan on a stove,
+ *   with a tiled wall between. The veggie sits higher than in the mock (on the stove, y 760), so the
+ *   throw is slightly shorter; the scene fills the whole play area (fitStage), up behind the header card
  * - the aim arrow stops AIM_TIP_GAP short of the finger, so the finger doesn't cover its tip
  * - a short pause in the bowl after a serve so the player sees it land (the mock jumped straight
  *   to the next level)
- * - gentler plate ramp: still until level 8 (mock: moves from level 3), starts slower and speeds up every
+ * - gentler plate ramp: still until level 6 (mock: moves from level 3), starts slower and speeds up every
  *   2 levels instead of every level, capped lower (MAX_PLATE_SPEED 6, mock: 8)
  * - physics runs on elapsed time, not per frame, so 90/120 Hz phones don't play at double speed
  * Tutorial — 3 practice steps on entering the game (before the first run; not on "เล่นอีกครั้ง", and not
@@ -73,17 +75,18 @@ const MAX_UP_SPEED = 38;
 const MIN_DRAG_UP = 20; // a shorter upward drag doesn't throw
 const WALL_BOUNCE = 0.8;
 const VEGGIE_RADIUS = 40;
-const VEGGIE_HOME = { x: GAME_W / 2, y: GAME_H - 110 };
-const PAN = { x: GAME_W / 2, y: GAME_H - 80 };
+const VEGGIE_HOME = { x: GAME_W / 2, y: 760 }; // in the pan on the stove
+const STOVE_TOP = 850; // kitchen scene: stove surface the pan sits on
 const PLATE_Y = 200;
 const PLATE_W = 140;
 const PLATE_CATCH = 30; // catch window above/below the plate's centre line
 const PLATE_MARGIN = 40;
 const MAX_PLATE_SPEED = 6;
-// plate ramp (see plateSpeedFor): still for levels 1–7, slides from level 8 at 1.5, +0.75 every 2 levels
-const FIRST_MOVING_LEVEL = 8;
-const PLATE_START_SPEED = 1.5;
-const PLATE_SPEED_STEP = 0.75;
+// plate ramp (see plateSpeedFor): still for levels 1–5, slides from level 6 at 1, +1 every 2 levels
+// (6–7: 1 · 8–9: 2 · 10–11: 3 · 12–13: 4 · 14–15: 5 · 16: 6 — level 16 is the most a 15-throw run reaches)
+const FIRST_MOVING_LEVEL = 6;
+const PLATE_START_SPEED = 1;
+const PLATE_SPEED_STEP = 1;
 const PLATE_SPEED_UP_EVERY = 2;
 const FRAME_MS = 1000 / 60;
 
@@ -95,21 +98,18 @@ const FINISH_HOLD_MS = 1800;
 const FINISH_OUT_MS = 450;
 
 const EMOJI_FONT = `"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial, sans-serif`;
-const BACKGROUND = "linear-gradient(155.36deg, #EEFEE9 0%, #DCF4D4 100%)"; // Figma
+const BACKGROUND = "#EFE6D8"; // warm, close to the kitchen wall — only seen for a frame before the canvas sizes
 
-// The pan under the veggie — hidden for now to match the Figma design (drawPan is kept); set true to bring it back
-const SHOW_PAN = false;
-const TOUCH_HINT = SHOW_PAN ? "แตะที่กระทะ" : "แตะที่ผัก";
+// the veggie waits in the frying pan
+const TOUCH_HINT = "แตะที่กระทะ";
 
 // Veggie: Figma's broccoli icon, an 80px box on the 400px-wide design = 108 stage units. The drawing
 // sits inset in that box like in Figma (left 12.51%, top 6.25%, right 10.57%, bottom 5.96%).
 const VEGGIE_SRC = "/assets/g20/broccoli.svg";
 const VEGGIE_SIZE = 108;
 const VEGGIE_INSET = { left: 0.1251, top: 0.0625, right: 0.1057, bottom: 0.0596 };
-// "เหลือ n ต้น" just under the veggie drawing (4px gap); on a short stage it moves up only as far as
-// needed to stay fully inside (30px = the pill's height + 2px)
-const VEGGIE_BOTTOM_PCT = ((VEGGIE_HOME.y + VEGGIE_SIZE / 2 - VEGGIE_SIZE * VEGGIE_INSET.bottom) / GAME_H) * 100;
-const LEFT_COUNT_TOP = `min(calc(${VEGGIE_BOTTOM_PCT}% + 4px), calc(100% - 32px))`;
+// "เหลือ n ต้น" on the stove front, under the pan (the veggie's spot) — between the two knobs
+const LEFT_COUNT_Y = STOVE_TOP + 18;
 
 const DEFAULT_MESSAGE = `${TOUCH_HINT} แล้วลากนิ้วขึ้น ปล่อยนิ้วเพื่อโยน`;
 
@@ -118,14 +118,12 @@ type TutorialStep = 1 | 2 | 3;
 const TUTORIAL_STEPS = 3;
 const TUTORIAL_LOOP_MS = 1800; // hand slides from the veggie along the flick, then starts over
 // step 1 hand, as in the mock: straight up from just under the veggie to just above the middle
-const TUTORIAL_HAND_START_Y = GAME_H - 100;
+const TUTORIAL_HAND_START_Y = VEGGIE_HOME.y + 10;
 const TUTORIAL_HAND_END_Y = GAME_H / 2 - 30;
 const TUTORIAL_HAND_DX = 40; // hand sits this far right of the veggie, next to the dashed line
 const TUTORIAL_GLOW_R = 120;
-// message box: mock's 210×75 box at (25, GAME_H/2 − 130), as % of the stage
-const TUTORIAL_BOX_LEFT = `${(25 / GAME_W) * 100}%`;
-const TUTORIAL_BOX_TOP = `${((GAME_H / 2 - 130) / GAME_H) * 100}%`;
-const TUTORIAL_BOX_MIN_W = `${(210 / GAME_W) * 100}%`;
+// message box: mock's 210×75 box at (25, GAME_H/2 − 130) — placed through the stage layout when drawn
+const TUTORIAL_BOX = { x: 25, y: GAME_H / 2 - 130, minW: 210 };
 // bowl per step: middle (mock) · right, so the curve shows · left, for the throw off the right wall
 const TUTORIAL_PLATE_X: Record<TutorialStep, number> = { 1: GAME_W / 2, 2: 400, 3: 130 };
 const TUTORIAL_TEXT: Record<TutorialStep, string> = {
@@ -148,17 +146,21 @@ const TRAIL_GAP = 18; // stage units between the dots of the flight trail (steps
 
 type Point = { x: number; y: number };
 
-// The flick (drag dx, dy in stage units) that lands in each step's bowl, picked so it still lands at
-// 60 and 120 Hz with the most room for error: step 1 = the mock's hand path, straight up at full power;
-// step 2 = a little right (sideways ±17 still lands, any power above −266);
-// step 3 = hard right, off the right wall (sideways ±25, power ±15 — the tightest one)
+// The flick (drag dx, dy in stage units) that lands in each step's bowl from the veggie's spot in the pan (y 760),
+// picked so it still lands at 60 and 120 Hz with the most room for error: step 1 = the mock's hand path,
+// straight up; step 2 = a little right (sideways ±16 still lands, any power above −247);
+// step 3 = hard right, off the right wall (sideways ±25, power ±16 — the tightest one)
 const TUTORIAL_FLICK: Record<TutorialStep, Point> = {
   1: { x: 0, y: TUTORIAL_HAND_END_Y - TUTORIAL_HAND_START_Y },
-  2: { x: 30, y: -285 },
-  3: { x: 152, y: -288 },
+  2: { x: 30, y: -270 },
+  3: { x: 153, y: -273 },
 };
+// Step 3 (bounce off the wall): the drag can't lean left of straight up, so a throw can't reach the bowl
+// (on the left) directly — without a bounce it lands at the middle or further right, so only the throw
+// off the right wall serves. Dragging further left just holds the aim straight up (hint: tilt right).
+const STEP3_MIN_DX = 0;
 // how far (stage units of drag) the aim can be off before the hint says which way to fix it
-const TUTORIAL_AIM_TOLERANCE: Record<TutorialStep, Point> = { 1: { x: 12, y: 50 }, 2: { x: 17, y: 19 }, 3: { x: 25, y: 15 } };
+const TUTORIAL_AIM_TOLERANCE: Record<TutorialStep, Point> = { 1: { x: 11, y: 60 }, 2: { x: 16, y: 20 }, 3: { x: 25, y: 16 } };
 
 // Tutorial message box, styled like G13/G18's: info = what to do, praise = ✓ done, retry = gentle try-again.
 // Texts starting with "✓ " are praise; the box draws the ✓ itself.
@@ -265,26 +267,201 @@ function homeVeggie(state: VeggieState): World["veggie"] {
   return { ...VEGGIE_HOME, vx: 0, vy: 0, state, plateOffset: 0 };
 }
 
-// Mock's drawPan
-function drawPan(ctx: CanvasRenderingContext2D) {
+// ---- Kitchen scene (first built for G20K) — all in stage units, drawn on the canvas, no image files ----
+// Top: shop wall with a striped awning and a shelf of jars; the bowl stands on a full-width wooden table.
+// Middle: tiled back wall — the empty height between stove and table is what the theme wants felt.
+// Bottom: stove with a side-view frying pan; the veggie waits in the pan.
+const TABLE_TOP = 266; // the bowl's foot (PLATE_Y + BOWL_DEPTH) rests on this surface
+const TABLE_FRONT_TOP = 280;
+const TABLE_BOTTOM = 352;
+const PAN_RIM_Y = 800;
+const PAN_RX = 120; // half the rim width
+const TILE = 54;
+// How much of the scene is on screen, in stage units — set every frame from the layout. Any space
+// above the stage or at its sides (see fitStage) shows more of the same scene.
+const view = { left: 0, right: GAME_W, top: 0 };
+// The play area starts this far above the header card's bottom edge — just enough to fill behind
+// its rounded bottom corners (rounded-b-[24px]), no more
+const UNDER_HEADER_PX = 24;
+
+/**
+ * Stage layout for a play area of w×h css px: the whole 540×960 stage fits (as large as it can,
+ * not stretched), bottom on the bottom edge, centred; spare space above or at the sides shows more scene.
+ */
+function fitStage(w: number, h: number) {
+  const s = Math.max(0.01, Math.min(w / GAME_W, h / GAME_H));
+  return { s, ox: (w - GAME_W * s) / 2, oy: h - GAME_H * s };
+}
+
+function drawShopBackground(ctx: CanvasRenderingContext2D) {
   ctx.save();
-  ctx.strokeStyle = "#4a4a4a";
-  ctx.lineWidth = 14;
-  ctx.lineCap = "round";
+  const { left, right, top } = view;
+  const span = right - left;
+  // shop wall (above the table)
+  ctx.fillStyle = "#FDF2E0";
+  ctx.fillRect(left, top, span, TABLE_TOP - top);
+  // storefront above the awning (only shows when the screen is taller than the stage), with the beam it hangs from
+  if (top < 0) {
+    ctx.fillStyle = "#F6E3C6";
+    ctx.fillRect(left, top, span, -top);
+    ctx.fillStyle = "#8A5A2B";
+    ctx.fillRect(left, -8, span, 8);
+  }
+
+  // striped awning with a scalloped edge — the stripes keep going past the stage sides
+  const stripe = GAME_W / 10;
+  for (let i = Math.floor(left / stripe); i < Math.ceil(right / stripe); i += 1) {
+    ctx.fillStyle = ((i % 2) + 2) % 2 === 0 ? "#E4572E" : "#FFFFFF";
+    ctx.fillRect(i * stripe, 0, stripe, 50);
+    ctx.beginPath();
+    ctx.arc(i * stripe + stripe / 2, 50, stripe / 2, 0, Math.PI, false);
+    ctx.fill();
+  }
+  ctx.strokeStyle = "rgba(0,0,0,0.12)";
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(PAN.x - 60, PAN.y);
-  ctx.lineTo(PAN.x - 130, PAN.y - 40);
+  ctx.moveTo(left, 50);
+  ctx.lineTo(right, 50);
   ctx.stroke();
 
-  ctx.fillStyle = "#2c3e50";
-  ctx.beginPath();
-  ctx.arc(PAN.x, PAN.y, 75, 0, Math.PI, false);
-  ctx.fill();
+  // shelf of jars, above the bowl's path
+  const shelfY = 140;
+  const jars: [number, number, string][] = [
+    [70, 46, "#F4A261"],
+    [140, 60, "#2A9D8F"],
+    [205, 40, "#E9C46A"],
+    [335, 56, "#E76F51"],
+    [400, 44, "#8AB17D"],
+    [465, 52, "#F4A261"],
+  ];
+  jars.forEach(([x, h, color]) => {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x - 20, shelfY - h, 40, h, 8);
+    ctx.fill();
+    ctx.fillStyle = "#7C5A3A"; // lid
+    ctx.beginPath();
+    ctx.roundRect(x - 16, shelfY - h - 8, 32, 10, 3);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.35)"; // shine
+    ctx.fillRect(x - 13, shelfY - h + 8, 6, h - 16);
+  });
+  ctx.fillStyle = "#A0693A";
+  ctx.fillRect(30, shelfY, GAME_W - 60, 10);
+  ctx.fillStyle = "rgba(0,0,0,0.12)";
+  ctx.fillRect(30, shelfY + 10, GAME_W - 60, 4);
 
-  ctx.fillStyle = "#1a252f";
+  // tiled back wall (between the table and the stove)
+  ctx.fillStyle = "#F3EBDD";
+  ctx.fillRect(left, TABLE_BOTTOM, span, STOVE_TOP - TABLE_BOTTOM);
+  ctx.strokeStyle = "#E3D6C3";
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.ellipse(PAN.x, PAN.y, 75, 18, 0, 0, Math.PI * 2);
+  for (let x = TILE / 2 + Math.floor((left - TILE / 2) / TILE) * TILE; x < right; x += TILE) {
+    ctx.moveTo(x, TABLE_BOTTOM);
+    ctx.lineTo(x, STOVE_TOP);
+  }
+  for (let y = TABLE_BOTTOM + TILE; y < STOVE_TOP; y += TILE) {
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+  }
+  ctx.stroke();
+  // the table's shadow on the wall under it
+  const shade = ctx.createLinearGradient(0, TABLE_BOTTOM, 0, TABLE_BOTTOM + 40);
+  shade.addColorStop(0, "rgba(0,0,0,0.18)");
+  shade.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(left, TABLE_BOTTOM, span, 40);
+  ctx.restore();
+}
+
+// Wooden table the bowl stands on (full width, so a sliding bowl stays on it), with the bowl's shadow
+function drawTable(ctx: CanvasRenderingContext2D, bowlX: number) {
+  ctx.save();
+  ctx.fillStyle = "#B5793F"; // front
+  ctx.fillRect(view.left, TABLE_FRONT_TOP, view.right - view.left, TABLE_BOTTOM - TABLE_FRONT_TOP);
+  ctx.strokeStyle = "rgba(0,0,0,0.12)"; // plank lines
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(view.left, TABLE_FRONT_TOP + 24);
+  ctx.lineTo(view.right, TABLE_FRONT_TOP + 24);
+  ctx.moveTo(view.left, TABLE_FRONT_TOP + 48);
+  ctx.lineTo(view.right, TABLE_FRONT_TOP + 48);
+  ctx.stroke();
+  ctx.fillStyle = "#8A5A2B"; // bottom edge
+  ctx.fillRect(view.left, TABLE_BOTTOM - 6, view.right - view.left, 6);
+  ctx.fillStyle = "#D9A066"; // top surface
+  ctx.fillRect(view.left, TABLE_TOP, view.right - view.left, TABLE_FRONT_TOP - TABLE_TOP);
+  ctx.fillStyle = "rgba(0,0,0,0.16)"; // bowl shadow
+  ctx.beginPath();
+  ctx.ellipse(bowlX, TABLE_TOP + 4, 46, 5, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawStove(ctx: CanvasRenderingContext2D) {
+  ctx.save();
+  ctx.fillStyle = "#4B5563"; // body
+  ctx.fillRect(view.left, STOVE_TOP, view.right - view.left, GAME_H - STOVE_TOP);
+  ctx.fillStyle = "#9AA3AD"; // top surface
+  ctx.fillRect(view.left, STOVE_TOP, view.right - view.left, 12);
+  ctx.fillStyle = "#374151"; // burner grate under the pan
+  ctx.fillRect(GAME_W / 2 - 100, STOVE_TOP - 6, 200, 6);
+  // knobs at the sides (the middle stays clear for the "เหลือ n ต้น" label)
+  [90, GAME_W - 90].forEach((x) => {
+    ctx.fillStyle = "#D1D5DB";
+    ctx.beginPath();
+    ctx.arc(x, 905, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#4B5563";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x, 893);
+    ctx.lineTo(x, 905);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+// Side-view frying pan, handle to the right. Drawn in two layers so the waiting veggie sits in it:
+// the back = the dark inside of the rim, the front = the pan's body + handle.
+function drawPanBack(ctx: CanvasRenderingContext2D) {
+  ctx.save();
+  ctx.fillStyle = "#1F2933";
+  ctx.beginPath();
+  ctx.ellipse(GAME_W / 2, PAN_RIM_Y, PAN_RX, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPanFront(ctx: CanvasRenderingContext2D) {
+  const cx = GAME_W / 2;
+  const bottom = STOVE_TOP - 6;
+  ctx.save();
+  // handle
+  ctx.strokeStyle = "#3B2A1A";
+  ctx.lineWidth = 16;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx + PAN_RX - 6, PAN_RIM_Y + 14);
+  ctx.lineTo(cx + PAN_RX + 110, PAN_RIM_Y);
+  ctx.stroke();
+  // body: wider at the rim, rounded towards the base
+  ctx.fillStyle = "#2C3E50";
+  ctx.beginPath();
+  ctx.moveTo(cx - PAN_RX, PAN_RIM_Y);
+  ctx.lineTo(cx + PAN_RX, PAN_RIM_Y);
+  ctx.quadraticCurveTo(cx + PAN_RX - 6, bottom, cx + PAN_RX - 30, bottom);
+  ctx.lineTo(cx - PAN_RX + 30, bottom);
+  ctx.quadraticCurveTo(cx - PAN_RX + 6, bottom, cx - PAN_RX, PAN_RIM_Y);
+  ctx.closePath();
+  ctx.fill();
+  // front lip of the rim
+  ctx.strokeStyle = "#4A6378";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(cx, PAN_RIM_Y, PAN_RX - 2, 12, 0, 0, Math.PI, false);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -367,6 +544,61 @@ const AIM_MAX_LENGTH = MAX_UP_SPEED / (POWER * 1.5);
 // so its tip sits just short of — below, on an upward flick — the finger instead of under it.
 // Only the drawing changes; the throw still uses the full drag.
 const AIM_TIP_GAP = 48;
+// How far the arrow can reach: its tip stays within this radius of the veggie — the distance from the
+// veggie (in the pan) up to the bottom edge of the table (760 − 352 = 408). The drag itself is capped to
+// match (radius + AIM_TIP_GAP), so the throw never has more power than the arrow shows.
+const AIM_RADIUS = VEGGIE_HOME.y - TABLE_BOTTOM;
+const MAX_DRAG = AIM_RADIUS + AIM_TIP_GAP;
+
+// Trajectory preview: where a throw from this drag would go — the same physics as update() (one step per
+// 60 fps frame, gravity, wall bounce), sampled as dots. The dots start where the path has gone as far as
+// the arrow is long (so they carry on from its tip) and end once it falls back below the table top.
+// On/off switch for the trajectory dots — off in G20 (aim with the arrow only); G20K turns them on
+const SHOW_TRAJECTORY = false;
+const TRAJECTORY_EVERY = 3; // frames between dots
+const TRAJECTORY_MAX_FRAMES = 240;
+const TRAJECTORY_DOT_R = 6;
+
+function drawTrajectory(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
+  if (dy >= -MIN_DRAG_UP) return; // too short to throw — onPointerUp wouldn't throw either
+  const arrowLength = Math.hypot(dx, dy) - AIM_TIP_GAP;
+  // same launch as onPointerUp
+  let vx = dx * POWER;
+  let vy = Math.max(dy * POWER * 1.5, -MAX_UP_SPEED);
+  let px = x;
+  let py = y;
+  let travelled = 0;
+  const dots: [number, number][] = [];
+  for (let frame = 1; frame <= TRAJECTORY_MAX_FRAMES; frame += 1) {
+    vy += GRAVITY;
+    const nx = px + vx;
+    const ny = py + vy;
+    travelled += Math.hypot(nx - px, ny - py);
+    px = nx;
+    py = ny;
+    if (px - VEGGIE_RADIUS < 0) {
+      px = VEGGIE_RADIUS;
+      vx *= -WALL_BOUNCE;
+    } else if (px + VEGGIE_RADIUS > GAME_W) {
+      px = GAME_W - VEGGIE_RADIUS;
+      vx *= -WALL_BOUNCE;
+    }
+    if (vy > 0 && py > TABLE_TOP) break; // fell back below the table top
+    if (travelled >= arrowLength && frame % TRAJECTORY_EVERY === 0) dots.push([px, py]);
+  }
+  ctx.save();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#4B4B4B";
+  ctx.fillStyle = "#FFFFFF";
+  dots.forEach(([dotX, dotY], i) => {
+    ctx.globalAlpha = 1 - (i / Math.max(1, dots.length)) * 0.6; // fades a little towards the end
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, TRAJECTORY_DOT_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  });
+  ctx.restore();
+}
 
 // Outline of the aim arrow for a drag (dx, dy) as the current path; null when too short to draw
 function traceAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
@@ -404,30 +636,6 @@ function drawTargetArrow(ctx: CanvasRenderingContext2D, x: number, y: number, fl
   return arrow?.tip ?? null;
 }
 
-function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
-  ctx.save();
-  const arrow = traceAimArrow(ctx, x, y, dx, dy);
-  if (!arrow) {
-    ctx.restore();
-    return;
-  }
-  const { ux, uy } = arrow;
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = "#4B4B4B"; // dark edge keeps the green/yellow arrow visible on the light green background
-  ctx.lineWidth = 4;
-  ctx.stroke();
-  // power colour: green at the veggie → yellow → red at max power, so a short drag stays green
-  // (ends AIM_TIP_GAP early too, so the tip is fully red exactly at max power)
-  const redAt = AIM_MAX_LENGTH - AIM_TIP_GAP;
-  const power = ctx.createLinearGradient(x, y, x + ux * redAt, y + uy * redAt);
-  power.addColorStop(0, "#22C55E");
-  power.addColorStop(0.5, "#FACC15");
-  power.addColorStop(1, "#EF4444");
-  ctx.fillStyle = power;
-  ctx.fill();
-  ctx.restore();
-}
-
 // Mock's drawTutorial, minus the text box (DOM): glow behind the veggie, then (over it) the dashed
 // line and the 👆 moving up together
 function drawTutorialGlow(ctx: CanvasRenderingContext2D, x: number, y: number) {
@@ -454,20 +662,16 @@ function drawTutorialHand(
   const handX = from.x + (to.x - from.x) * progress;
   const handY = from.y + (to.y - from.y) * progress;
   ctx.save();
-  if (!line) {
-    ctx.font = `55px ${EMOJI_FONT}`;
-    ctx.fillText("👆", handX + TUTORIAL_HAND_DX, handY);
-    ctx.restore();
-    return;
+  if (line) {
+    ctx.beginPath();
+    ctx.setLineDash([8, 8]);
+    ctx.moveTo(x, y);
+    ctx.lineTo(handX, handY);
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
-  ctx.beginPath();
-  ctx.setLineDash([8, 8]);
-  ctx.moveTo(x, y);
-  ctx.lineTo(handX, handY);
-  ctx.strokeStyle = "#2563eb";
-  ctx.lineWidth = 4;
-  ctx.stroke();
-  ctx.setLineDash([]);
   ctx.font = `55px ${EMOJI_FONT}`;
   ctx.fillText("👆", handX + TUTORIAL_HAND_DX, handY);
   ctx.restore();
@@ -508,6 +712,30 @@ function drawTrail(ctx: CanvasRenderingContext2D, trail: Point[]) {
   ctx.restore();
 }
 
+function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
+  ctx.save();
+  const arrow = traceAimArrow(ctx, x, y, dx, dy);
+  if (!arrow) {
+    ctx.restore();
+    return;
+  }
+  const { ux, uy } = arrow;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#4B4B4B"; // dark edge keeps the green/yellow arrow visible on the light green background
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  // power colour: green at the veggie → yellow → red at max power, so a short drag stays green
+  // (ends AIM_TIP_GAP early too, so the tip is fully red exactly at max power)
+  const redAt = AIM_MAX_LENGTH - AIM_TIP_GAP;
+  const power = ctx.createLinearGradient(x, y, x + ux * redAt, y + uy * redAt);
+  power.addColorStop(0, "#22C55E");
+  power.addColorStop(0.5, "#FACC15");
+  power.addColorStop(1, "#EF4444");
+  ctx.fillStyle = power;
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawVeggie(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number) {
   if (img && img.complete && img.naturalWidth > 0) {
     const { left, top, right, bottom } = VEGGIE_INSET;
@@ -523,7 +751,12 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [level, setLevel] = useState(1);
   const [throwsLeft, setThrowsLeft] = useState(THROWS_PER_RUN);
-  const [stage, setStage] = useState<{ w: number; h: number; dpr: number } | null>(null);
+  // play area (from just under the header's rounded corners to the bottom): canvas size + where the
+  // 540×960 stage sits in it; headerH places the area's top
+  const [stage, setStage] = useState<{ w: number; h: number; dpr: number; s: number; ox: number; oy: number } | null>(null);
+  const [headerH, setHeaderH] = useState(0);
+  const stageRef = useRef(stage);
+  const headerRef = useRef<HTMLDivElement>(null);
   const [finishPopup, setFinishPopup] = useState<FinishPopup>(null);
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const [bestServed, setBestServed] = useState(0); // best run since the game was opened
@@ -570,7 +803,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
 
   const say = (text: string) => setMessage(text); // screen readers only (role="status")
 
-  // tutorial guide: message box + (on the canvas) glow and 👆; the game waits until the next touch
+  // tutorial guide: message box + (on the canvas) glow and 👆; the game waits until the next drag
   const showGuide = (text: string, tone: TutorialTip["tone"] = "info") => {
     guideRef.current = true;
     setTutorialBox(toTip(text, tone));
@@ -633,8 +866,8 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     setLevel(1);
     setThrowsLeft(THROWS_PER_RUN);
     setFinishPopup(null);
-    setPhase("play");
     say(DEFAULT_MESSAGE);
+    setPhase("play");
     logEvent("run_start", { game_id: "G20", run: runRef.current });
   };
 
@@ -792,25 +1025,32 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
+    const layout = stageRef.current;
+    if (!layout) return;
     const { plate, veggie, drag } = worldRef.current;
-    const scale = canvas.width / GAME_W;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.clearRect(0, 0, GAME_W, GAME_H);
+    const { s, ox, oy, dpr } = layout;
+    ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * ox, dpr * oy);
+    view.left = -ox / s;
+    view.right = (layout.w - ox) / s;
+    view.top = -oy / s;
+    ctx.clearRect(view.left, view.top, view.right - view.left, GAME_H - view.top);
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const veggieImg = veggieImgRef.current;
+    drawShopBackground(ctx);
+    drawTable(ctx, plate.x);
     drawBowlBack(ctx, plate.x);
     if (veggie.state === "served") drawVeggie(ctx, veggieImg, veggie.x, veggie.y); // tucked between the bowl layers
     drawBowlFront(ctx, plate.x);
 
-    if (SHOW_PAN) drawPan(ctx);
+    drawStove(ctx);
+    drawPanBack(ctx);
 
     const tStep = tutorialStepRef.current;
     if (tStep === 3 && veggie.state !== "served") drawGuidePath(ctx, STEP3_GUIDE);
     if (tStep >= 2) drawTrail(ctx, trailRef.current);
     const showGuide = tStep !== 0 && guideRef.current && veggie.state === "idle";
-    // the target arrow and hand also stay while the player drags, so the aim arrow can be laid over the target
     const aiming = tStep !== 0 && veggie.state === "dragging";
     if (showGuide) drawTutorialGlow(ctx, veggie.x, veggie.y);
     // target arrow only once the player is dragging (the guide before that is the mock's hand + dashed line)
@@ -821,9 +1061,14 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     // over the bowl (a long aim reaches it), under the veggie so the veggie covers the arrow's tail
     if (veggie.state === "dragging" && drag) {
       drawAimArrow(ctx, veggie.x, veggie.y, drag.x - drag.startX, drag.y - drag.startY);
+      if (SHOW_TRAJECTORY) drawTrajectory(ctx, veggie.x, veggie.y, drag.x - drag.startX, drag.y - drag.startY);
     }
 
     if (veggie.state !== "served") drawVeggie(ctx, veggieImg, veggie.x, veggie.y);
+    // the pan's front covers the veggie's stem, so it sits in the pan (and rises out of it when thrown)
+    drawPanFront(ctx);
+
+    // tutorial hand on top of everything
     if (showGuide) {
       // the finger's path for the flick (step 1 starts just under the veggie, as in the mock)
       const flick = TUTORIAL_FLICK[tStep as TutorialStep];
@@ -857,26 +1102,32 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [phase]);
 
-  // Fit the 9:16 stage into whatever space is left under the status line
+  // The canvas fills the play area (its top tucked UNDER_HEADER_PX under the header card); fitStage places the stage in it
   useEffect(() => {
     if (phase !== "play") return;
     const el = wrapRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      const w = Math.floor(Math.min(width, (height * GAME_W) / GAME_H));
-      setStage({ w, h: Math.floor((w * GAME_H) / GAME_W), dpr: Math.min(window.devicePixelRatio || 1, 2) });
-    });
+    const header = headerRef.current;
+    if (!el || !header) return;
+    const measure = () => {
+      setHeaderH(header.offsetHeight);
+      const w = Math.max(1, Math.floor(el.clientWidth));
+      const h = Math.max(1, Math.floor(el.clientHeight));
+      const next = { w, h, dpr: Math.min(window.devicePixelRatio || 1, 2), ...fitStage(w, h) };
+      stageRef.current = next;
+      setStage(next);
+    };
+    const observer = new ResizeObserver(measure);
     observer.observe(el);
+    observer.observe(header);
+    measure();
     return () => observer.disconnect();
   }, [phase]);
 
+  // screen → stage units, through the same scale/offset as the drawing
   const toGame = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) * GAME_W) / rect.width,
-      y: ((e.clientY - rect.top) * GAME_H) / rect.height,
-    };
+    const { s, ox, oy } = stageRef.current ?? { s: 1, ox: 0, oy: 0 };
+    return { x: (e.clientX - rect.left - ox) / s, y: (e.clientY - rect.top - oy) / s };
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -925,9 +1176,14 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     const world = worldRef.current;
     if (world.veggie.state !== "dragging" || !world.drag) return;
     const pos = toGame(e);
-    world.drag.x = pos.x;
-    world.drag.y = pos.y;
-    updateAimHint(pos.x - world.drag.startX, pos.y - world.drag.startY);
+    // keep the drag inside MAX_DRAG of where it started (same direction, shorter), so the arrow stops at AIM_RADIUS
+    let dx = pos.x - world.drag.startX;
+    if (tutorialStepRef.current === 3) dx = Math.max(dx, STEP3_MIN_DX); // step 3: bounce only, no direct throw
+    const dy = pos.y - world.drag.startY;
+    const k = Math.min(1, MAX_DRAG / (Math.hypot(dx, dy) || 1));
+    world.drag.x = world.drag.startX + dx * k;
+    world.drag.y = world.drag.startY + dy * k;
+    updateAimHint(dx * k, dy * k);
   };
 
   const onPointerUp = () => {
@@ -995,8 +1251,8 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="ผักบุ้งลอยฟ้า"
-        objective={`${TOUCH_HINT}แล้วลากนิ้วขึ้น โยนผักบุ้งให้ลอยขึ้นไปลงจานด้านบน โยนชิ่งกำแพงซ้าย-ขวาก็ได้ ลงจานแล้วจะขึ้นเลเวลใหม่`}
-        choices={`โยนได้ ${THROWS_PER_RUN} ครั้ง ไม่จับเวลา ค่อย ๆ เล็งได้เลย`}
+        objective="โยนผักบุ้งให้ลอยไปบนจาน สามารถโยนชิ่งกำแพงได้"
+        choices={`โยนได้ ${THROWS_PER_RUN} ครั้ง ไม่จับเวลา`}
         icon={Salad}
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G20" });
@@ -1020,8 +1276,6 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
             {served > 0 ? (
               <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
                 เสิร์ฟลงจานได้ <span className="font-bold text-[#B45309]">{served}</span> จาน
-                <br />
-                ไปถึงเลเวล {level}
               </p>
             ) : (
               <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
@@ -1050,10 +1304,11 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
 
   return (
     <div
-      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
+      className={`${notoLoopedThai.className} gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
       style={{ background: BACKGROUND }}
     >
-      {/* Header card: same as G17 / G18 / G19 (GameStageHeader) — level on the right; throws left show under the veggie */}
+      {/* Header card on top of the scene, whose top runs up behind the card's rounded corners */}
+      <div ref={headerRef} className="relative z-10 shrink-0">
       {/* during the tutorial: "โหมด ฝึกเล่น" + step, like G13's practice */}
       <GameStageHeader
         left={tutorialStep ? { label: "โหมด", value: "ฝึกเล่น", ariaLabel: "กำลังฝึกเล่น" } : undefined}
@@ -1092,23 +1347,26 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
           </button>
         )}
       </GameStageHeader>
+      </div>
 
       {/* No on-screen guide; the status text is kept for screen readers only */}
       <p role="status" aria-live="polite" className="sr-only">
         {message}
       </p>
 
-      <div ref={wrapRef} className="flex min-h-0 w-full flex-1 items-center justify-center gp-px-8 gp-py-12">
+      {/* play area: from just behind the header card's rounded corners to the bottom edge */}
+      <div
+        ref={wrapRef}
+        className="absolute inset-x-0 bottom-0 overflow-hidden"
+        style={{ top: Math.max(0, headerH - UNDER_HEADER_PX), containerType: "inline-size" }}
+      >
         {stage && stage.w > 0 && (
-          <div
-            className="relative shrink-0 overflow-hidden"
-            style={{ width: stage.w, height: stage.h, containerType: "inline-size" }}
-          >
+          <>
             <canvas
               ref={canvasRef}
               width={Math.round(stage.w * stage.dpr)}
               height={Math.round(stage.h * stage.dpr)}
-              aria-label={SHOW_PAN ? "สนามโยนผักบุ้ง: กระทะอยู่ด้านล่าง จานอยู่ด้านบน" : "สนามโยนผัก: ผักอยู่ด้านล่าง ชามอยู่ด้านบน"}
+              aria-label="สนามโยนผักบุ้งในครัว: กระทะบนเตาอยู่ด้านล่าง ชามบนโต๊ะอยู่ด้านบน"
               role="img"
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
@@ -1120,12 +1378,12 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
             {tutorialStep === 0 && (
               <p
                 className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[12px] text-[20px] font-semibold leading-[26px] text-[#4B4B4B]"
-                style={{ top: LEFT_COUNT_TOP }}
+                style={{ top: Math.min(stage.oy + LEFT_COUNT_Y * stage.s + 4, stage.h - 32) }}
               >
                 เหลือ {throwsLeft} ต้น
               </p>
             )}
-            {/* Tutorial message box (mock's canvas box, left side) — aria-hidden: the status line says it */}
+            {/* Tutorial message box (mock's canvas box, left side of the stage) — aria-hidden: the status line says it */}
             {tutorialBox && (
               <p
                 aria-hidden="true"
@@ -1136,7 +1394,11 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
                       ? "border-slate-300 text-slate-700"
                       : "border-amber-400 text-amber-950"
                 }`}
-                style={{ left: TUTORIAL_BOX_LEFT, top: TUTORIAL_BOX_TOP, minWidth: TUTORIAL_BOX_MIN_W }}
+                style={{
+                  left: stage.ox + TUTORIAL_BOX.x * stage.s,
+                  top: stage.oy + TUTORIAL_BOX.y * stage.s,
+                  minWidth: TUTORIAL_BOX.minW * stage.s,
+                }}
               >
                 {tutorialBox.tone === "praise" && "✓ "}
                 {tutorialBox.text}
@@ -1160,7 +1422,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
                   textShadow: "0 4px 12px rgba(0,0,0,0.35)",
                 }}
               >
-                {/* sized to the stage (cqw) so it still fits when the stage is small */}
+                {/* sized to the play area width (cqw) so it still fits on a small screen */}
                 <p className="font-bold leading-[1.3]" style={{ fontSize: "clamp(24px, 16cqw, 56px)" }}>
                   เก่งมาก! 🎉
                 </p>
@@ -1169,7 +1431,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
                 </p>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>

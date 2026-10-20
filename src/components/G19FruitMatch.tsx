@@ -33,6 +33,9 @@ import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
  *   gradient, shared header card (moves left / score), 5×5 tinted fruit tiles with SVG fruit
  * - the board is seeded by today's date (Bangkok time), so every player gets the same level
  *   that day: same starting board, same refill fruit per column, same reshuffles
+ * - special pieces from the "candy crush10" mock: 4 in a row → 🥤 (clears its row + column), 5+ → 🌟
+ *   (clears the colour it's swapped onto), combos 🌟+🌟 / 🌟+🥤, 20 points per piece blasted. Unlike the mock,
+ *   a 🌟 swapped onto a fruit clears that colour only (the mock also cleared a second, random colour)
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
 
@@ -44,7 +47,8 @@ type Props = {
 
 type Phase = "intro" | "play" | "result";
 type Cell = { r: number; c: number };
-type Tile = { id: number; type: number; r: number; c: number; popping?: boolean };
+// grow = a special that just appeared (swells for SPECIAL_GROW_MS)
+type Tile = { id: number; type: number; r: number; c: number; popping?: boolean; grow?: boolean };
 type Grid = (Tile | null)[][];
 type TypeGrid = (number | null)[][];
 type FinishPopup = "enter" | "show" | "leave" | null;
@@ -57,6 +61,22 @@ const FRUITS = [
   { icon: "/assets/g19/banana.svg", name: "กล้วย", bg: "#FEF9C3", edge: "#FACC15" },
   { icon: "/assets/g19/orange.svg", name: "ส้ม", bg: "#FFEDD5", edge: "#FB923C" },
 ];
+
+// Special pieces (candy crush10 mock), made by matching 4 / 5+ — type numbers after the fruit:
+// 🥤 น้ำปั่น (4 in a row) clears its row and column · 🌟 มะเฟือง (5+ in a row/L/T) clears one fruit colour.
+// They never count in a normal match; swapping one with any neighbour always works and uses a move.
+const SMOOTHIE = FRUITS.length;
+const STAR = FRUITS.length + 1;
+const SPECIALS = {
+  [SMOOTHIE]: { emoji: "🥤", name: "น้ำปั่น", bg: "#E0F2FE", edge: "#38BDF8" },
+  [STAR]: { emoji: "🌟", name: "มะเฟือง", bg: "#FEF08A", edge: "#FBBF24" },
+} as Record<number, { emoji: string; name: string; bg: string; edge: string }>;
+const isSpecial = (t: number | null | undefined): t is number => t != null && t >= FRUITS.length;
+const isFruit = (t: number | null | undefined): t is number => t != null && t < FRUITS.length;
+const POINTS_PER_BLAST = 20; // per piece cleared by a special (mock: 20, a normal match is 10)
+const SPECIAL_GROW_MS = 250; // a new special swells a little when it appears
+const COMBO_PAUSE_MS = 600; // 🌟 + 🥤: the chosen colour turns into 🥤 first, then everything goes off
+const EMOJI_FONT = `"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
 
 const SIZE = 5; // rows = cols, same as the mock
 // Board geometry from the Figma design (352px wide): 64px tiles, 8px between columns, 12px between rows.
@@ -121,55 +141,136 @@ function starsFor(score: number) {
 // Separate streams so one part of the game can't shift another's numbers: the start board,
 // the reshuffles, and one refill stream per column (the n-th fruit dropped into a column is
 // the same for every player, whatever order they cleared things in).
-type Rngs = { board: Rng; shuffle: Rng; columns: Rng[] };
+// special: which colour a 🌟 clears when a blast sets it off (or for 🌟 + 🥤) — seeded, so it's the
+// same for every player that day
+type Rngs = { board: Rng; shuffle: Rng; special: Rng; columns: Rng[] };
 function makeRngs(seed: string): Rngs {
   const stream = (name: string) => seededStream("G19", seed, name);
   return {
     board: stream("board"),
     shuffle: stream("shuffle"),
+    special: stream("special"),
     columns: Array.from({ length: SIZE }, (_, c) => stream(`column-${c}`)),
   };
 }
 
 const randomFruit = (rng: Rng) => Math.floor(rng() * FRUITS.length);
 
-function findMatches(types: TypeGrid): Cell[] {
-  const matched = new Set<string>();
+const cellKey = (c: Cell) => `${c.r},${c.c}`;
+
+// Runs of 3+ of the same fruit (specials never match), with runs that share a cell merged into one
+// group (an L or T), like the mock's getMatchGroups. A group of 4 makes a 🥤, 5+ makes a 🌟.
+function findMatchGroups(types: TypeGrid): Cell[][] {
+  const runs: Cell[][] = [];
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE - 2; c++) {
       const t = types[r][c];
-      if (t === null) continue;
-      if (types[r][c + 1] === t && types[r][c + 2] === t) {
-        for (let k = c; k < SIZE && types[r][k] === t; k++) matched.add(`${r},${k}`);
+      if (!isFruit(t)) continue;
+      let len = 1;
+      while (c + len < SIZE && types[r][c + len] === t) len++;
+      if (len >= 3) {
+        runs.push(Array.from({ length: len }, (_, k) => ({ r, c: c + k })));
+        c += len - 1;
       }
     }
   }
   for (let c = 0; c < SIZE; c++) {
     for (let r = 0; r < SIZE - 2; r++) {
       const t = types[r][c];
-      if (t === null) continue;
-      if (types[r + 1][c] === t && types[r + 2][c] === t) {
-        for (let k = r; k < SIZE && types[k][c] === t; k++) matched.add(`${k},${c}`);
+      if (!isFruit(t)) continue;
+      let len = 1;
+      while (r + len < SIZE && types[r + len][c] === t) len++;
+      if (len >= 3) {
+        runs.push(Array.from({ length: len }, (_, k) => ({ r: r + k, c })));
+        r += len - 1;
       }
     }
   }
-  return Array.from(matched, (key) => {
-    const [r, c] = key.split(",").map(Number);
-    return { r, c };
-  });
+  const groups: Cell[][] = [];
+  for (const run of runs) {
+    const into = groups.find((g) => g.some((m) => run.some((x) => sameCell(m, x))));
+    if (into) run.forEach((x) => !into.some((m) => sameCell(m, x)) && into.push(x));
+    else groups.push([...run]);
+  }
+  return groups;
+}
+
+function findMatches(types: TypeGrid): Cell[] {
+  return findMatchGroups(types).flat();
+}
+
+// Every cell a blast clears, starting from `start`: a 🥤 in it adds its row and column, a 🌟 adds
+// every fruit of the colour `pickFruit` gives (pieces the blast reaches go off too). `spent` cells
+// are cleared without going off — the 🌟 already used on the fruit it was swapped with.
+function blastCells(types: TypeGrid, start: Cell[], pickFruit: () => number | null, spent: Cell[] = []): Cell[] {
+  const seen = new Set<string>();
+  const out: Cell[] = [];
+  const queue = [...start];
+  while (queue.length) {
+    const cell = queue.shift()!;
+    const key = cellKey(cell);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const t = types[cell.r][cell.c];
+    if (t === null) continue;
+    out.push(cell);
+    if (spent.some((s) => sameCell(s, cell))) continue;
+    if (t === SMOOTHIE) {
+      for (let k = 0; k < SIZE; k++) queue.push({ r: k, c: cell.c }, { r: cell.r, c: k });
+    } else if (t === STAR) {
+      const fruit = pickFruit();
+      if (fruit !== null) cellsOf(types, fruit).forEach((m) => queue.push(m));
+    }
+  }
+  return out;
+}
+
+const cellsOf = (types: TypeGrid, type: number): Cell[] =>
+  types.flatMap((row, r) => row.flatMap((t, c) => (t === type ? [{ r, c }] : [])));
+
+// What a swap with a special clears: which cells set off, and (for 🌟 + 🥤) the colour that turns into 🥤.
+// a = where the first piece ended up, b = the second; both already swapped in `types`.
+function specialSwapPlan(types: TypeGrid, a: Cell, b: Cell, pickFruit: () => number | null) {
+  const ta = types[a.r][a.c];
+  const tb = types[b.r][b.c];
+  const all = types.flatMap((row, r) => row.map((_, c) => ({ r, c })));
+  if ((ta === STAR && tb === SMOOTHIE) || (ta === SMOOTHIE && tb === STAR)) {
+    const fruit = pickFruit();
+    const turned = fruit === null ? [] : cellsOf(types, fruit);
+    return { start: [...turned, a, b], turned, spent: [] as Cell[] };
+  }
+  if (ta === STAR && tb === STAR) return { start: all, turned: [], spent: all };
+  if (ta === STAR || tb === STAR) {
+    const [star, fruitCell] = ta === STAR ? [a, b] : [b, a];
+    const fruit = types[fruitCell.r][fruitCell.c]!;
+    // a 🌟 swapped onto a fruit clears that colour (only); a 🥤 swapped next to it isn't a fruit here
+    return { start: [...cellsOf(types, fruit), star], turned: [], spent: [star] };
+  }
+  return { start: [a, b].filter((x) => isSpecial(types[x.r][x.c])), turned: [], spent: [] as Cell[] };
+}
+
+// How many pieces a swap would clear right away (0 = it wouldn't do anything). Swaps with a special are
+// counted with its blast — 🌟's colour estimated as the most common fruit, since the real pick is random.
+function swapClears(types: TypeGrid, a: Cell, b: Cell): number {
+  const copy = types.map((row) => row.slice());
+  [copy[a.r][a.c], copy[b.r][b.c]] = [copy[b.r][b.c], copy[a.r][a.c]];
+  if (!isSpecial(copy[a.r][a.c]) && !isSpecial(copy[b.r][b.c])) return findMatches(copy).length;
+  const counts = FRUITS.map((_, f) => cellsOf(copy, f).length);
+  const common = counts.indexOf(Math.max(...counts));
+  const plan = specialSwapPlan(copy, a, b, () => common);
+  plan.turned.forEach((m) => (copy[m.r][m.c] = SMOOTHIE));
+  return blastCells(copy, plan.start, () => common, plan.spent).length;
 }
 
 // The swap that clears the most fruit right away (a 5 over a 4 over a 3, an L/T or double
-// match counts every fruit), or null when the board is stuck. Ties are picked at random so the
-// hint doesn't always point at the same spot — Math.random is fine here: it only picks which
-// hint to show, it never changes the board.
+// match counts every fruit; a special's blast counts what it clears), or null when the board is stuck.
+// Ties are picked at random so the hint doesn't always point at the same spot — Math.random is fine
+// here: it only picks which hint to show, it never changes the board.
 function findMove(types: TypeGrid): [Cell, Cell] | null {
   let moves: [Cell, Cell][] = [];
   let best = 0;
   const trySwap = (a: Cell, b: Cell) => {
-    const copy = types.map((row) => row.slice());
-    [copy[a.r][a.c], copy[b.r][b.c]] = [copy[b.r][b.c], copy[a.r][a.c]];
-    const cleared = findMatches(copy).length;
+    const cleared = swapClears(types, a, b);
     if (cleared === 0 || cleared < best) return;
     if (cleared > best) {
       best = cleared;
@@ -188,6 +289,9 @@ function findMove(types: TypeGrid): [Cell, Cell] | null {
 
 // Order a hint pair as [drag from, drag to] so the hand moves the fruit that lands in the match.
 function orientMove(types: TypeGrid, [a, b]: [Cell, Cell]): [Cell, Cell] {
+  // a special is what the player should drag (onto the fruit/special next to it)
+  if (isSpecial(types[a.r][a.c])) return [a, b];
+  if (isSpecial(types[b.r][b.c])) return [b, a];
   const copy = types.map((row) => row.slice());
   [copy[a.r][a.c], copy[b.r][b.c]] = [copy[b.r][b.c], copy[a.r][a.c]];
   return findMatches(copy).some((m) => sameCell(m, b)) ? [a, b] : [b, a];
@@ -203,6 +307,7 @@ function tutorialFocus(types: TypeGrid, [from, to]: [Cell, Cell]): Cell[] {
   const at = (r: number, c: number) => (r >= 0 && r < SIZE && c >= 0 && c < SIZE ? copy[r][c] : null);
   for (const cell of [from, to]) {
     const type = copy[cell.r][cell.c];
+    if (!isFruit(type)) continue; // specials don't line up
     for (const [dr, dc] of [
       [0, 1],
       [1, 0],
@@ -595,39 +700,97 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     await delay(FALL_MS);
   };
 
-  const clearMatches = async (first: Cell[], gen: number) => {
-    let matches = first;
+  // Pop `cells` (shrink away), let the board fall, and score them. `grown` = specials that appeared in
+  // this step: they swell while the others pop, then settle.
+  const popCells = async (cells: Cell[], points: number, gen: number, grown: Tile[] = []) => {
+    scoreRef.current += cells.length * points;
+    setScore(scoreRef.current);
+    cells.forEach(({ r, c }) => {
+      const tile = gridRef.current[r][c];
+      if (!tile) return;
+      tile.popping = true;
+      poppingRef.current.push(tile);
+      gridRef.current[r][c] = null;
+    });
+    grown.forEach((t) => (t.grow = true));
+    sync();
+    await delay(POP_MS);
+    if (gen !== genRef.current) return;
+    grown.forEach((t) => (t.grow = false));
+    poppingRef.current = [];
+    await applyGravity(gen);
+  };
+
+  // A pick for a 🌟: one of the fruit colours still on the board (seeded "special" stream)
+  const pickFruit = () => {
+    const present = FRUITS.map((_, f) => f).filter((f) => cellsOf(typesOf(gridRef.current), f).length > 0);
+    return present.length ? present[Math.floor(rngsRef.current.special() * present.length)] : null;
+  };
+
+  // Match groups, then the cascades they cause. A group of 4 leaves a 🥤 and 5+ a 🌟 (on the swapped cell
+  // when it's in the group — `swapped`, only for the swap's own match — else the group's middle).
+  const clearMatches = async (first: Cell[][], gen: number, swapped: Cell[] = []) => {
+    let groups = first;
     let chain = 0;
-    while (matches.length > 0) {
+    while (groups.length > 0) {
       chain++;
-      const gained = matches.length * POINTS_PER_FRUIT;
-      scoreRef.current += gained;
-      setScore(scoreRef.current);
+      const clear: Cell[] = [];
+      const grown: Tile[] = [];
+      for (const g of groups) {
+        const special = g.length >= 5 ? STAR : g.length === 4 ? SMOOTHIE : null;
+        const at = special === null ? null : (swapped.find((s) => g.some((m) => sameCell(m, s))) ?? g[Math.floor(g.length / 2)]);
+        for (const m of g) {
+          const tile = gridRef.current[m.r][m.c];
+          if (at && sameCell(at, m) && tile && special !== null) {
+            tile.type = special;
+            grown.push(tile);
+            logEvent("special_made", { game_id: "G19", run: runRef.current, special: SPECIALS[special].name, group: g.length });
+          } else clear.push(m);
+        }
+      }
       logEvent("match_clear", {
         game_id: "G19",
         run: runRef.current,
         move: MOVES_PER_RUN - movesRef.current,
         chain,
-        fruits: matches.length,
-        points: gained,
+        fruits: clear.length,
+        points: clear.length * POINTS_PER_FRUIT,
       });
+      await popCells(clear, POINTS_PER_FRUIT, gen, grown);
+      if (gen !== genRef.current) return;
+      swapped = [];
+      groups = findMatchGroups(typesOf(gridRef.current));
+    }
+  };
 
-      matches.forEach(({ r, c }) => {
-        const tile = gridRef.current[r][c];
-        if (!tile) return;
-        tile.popping = true;
-        poppingRef.current.push(tile);
-        gridRef.current[r][c] = null;
+  // A swap with a special (a and b = where the two pieces ended up): 🥤 clears its row + column, 🌟 the
+  // colour it was swapped onto, 🌟 + 🌟 the board, 🌟 + 🥤 turns a colour into 🥤 first. Then cascades.
+  const fireSpecials = async (a: Cell, b: Cell, gen: number) => {
+    const types = typesOf(gridRef.current);
+    const plan = specialSwapPlan(types, a, b, pickFruit);
+    if (plan.turned.length) {
+      const turned = plan.turned.map((m) => gridRef.current[m.r][m.c]!).filter(Boolean);
+      turned.forEach((t) => {
+        t.type = SMOOTHIE;
+        t.grow = true;
       });
       sync();
-      await delay(POP_MS);
+      await delay(COMBO_PAUSE_MS);
       if (gen !== genRef.current) return;
-      poppingRef.current = [];
-
-      await applyGravity(gen);
-      if (gen !== genRef.current) return;
-      matches = findMatches(typesOf(gridRef.current));
+      turned.forEach((t) => (t.grow = false));
     }
+    const cells = blastCells(typesOf(gridRef.current), plan.start, pickFruit, plan.spent);
+    logEvent("special_blast", {
+      game_id: "G19",
+      run: runRef.current,
+      move: MOVES_PER_RUN - movesRef.current,
+      pieces: [types[a.r][a.c], types[b.r][b.c]].map((t) => (isSpecial(t) ? SPECIALS[t].name : "fruit")),
+      cleared: cells.length,
+      points: cells.length * POINTS_PER_BLAST,
+    });
+    await popCells(cells, POINTS_PER_BLAST, gen);
+    if (gen !== genRef.current) return;
+    await clearMatches(findMatchGroups(typesOf(gridRef.current)), gen);
   };
 
   const reshuffle = async (gen: number) => {
@@ -689,8 +852,10 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     await delay(SWAP_MS);
     if (gen !== genRef.current) return;
 
-    const matches = findMatches(typesOf(grid));
-    if (matches.length === 0) {
+    // a special always goes off when swapped; otherwise the swap needs a match
+    const withSpecial = isSpecial(t1.type) || isSpecial(t2.type);
+    const groups = withSpecial ? [] : findMatchGroups(typesOf(grid));
+    if (!withSpecial && groups.length === 0) {
       // swap back, like the mock — no move used
       place(t1, t2, b, a);
       sync();
@@ -711,7 +876,9 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     setMovesLeft(movesRef.current);
     logEvent("swap", { game_id: "G19", run: runRef.current, from: a, to: b, moves_left: movesRef.current });
 
-    await clearMatches(matches, gen);
+    // t1 (dragged) now sits on b, t2 on a — a special is made where the dragged fruit landed if it's in the match
+    if (withSpecial) await fireSpecials(b, a, gen);
+    else await clearMatches(groups, gen, [b, a]);
     if (gen !== genRef.current) return;
 
     if (movesRef.current <= 0) {
@@ -963,7 +1130,8 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
               >
                 {tiles.map((t) => {
                   const cell = { r: t.r, c: t.c };
-                  const fruit = FRUITS[t.type];
+                  const special = isSpecial(t.type) ? SPECIALS[t.type] : null;
+                  const fruit = special ?? FRUITS[t.type];
                   const isSelected = sameCell(selected, cell);
                   const hinted = isHint(cell);
                   const pressed = pressedId === t.id;
@@ -992,14 +1160,20 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                         style={{
                           backgroundColor: fruit.bg,
                           borderColor: fruit.edge,
-                          transform: t.popping ? "scale(0)" : pressed ? "translateY(2px)" : undefined,
+                          transform: t.popping
+                            ? "scale(0)"
+                            : t.grow
+                              ? "scale(1.15)"
+                              : pressed
+                                ? "translateY(2px)"
+                                : undefined,
                           opacity: t.popping ? 0 : 1,
                           filter: pressed || isDragTarget ? "brightness(0.95)" : undefined,
                           boxShadow: pressed ? "none" : `0 2px 0 0 ${fruit.edge}`,
                           transition: t.popping
                             ? // shrink to nothing (a tiny swell first), fading only at the very end
                               `transform ${POP_MS}ms cubic-bezier(0.4, -0.4, 0.7, 0.6), opacity ${POP_MS * 0.35}ms ease ${POP_MS * 0.65}ms`
-                            : "transform 0.1s, box-shadow 0.1s",
+                            : `transform ${SPECIAL_GROW_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.1s, background-color ${SPECIAL_GROW_MS}ms`,
                           // added: picked fruit (tap-selected or held), the drag's swap target, and the idle hint
                           outline: picked
                             ? "4px solid #2563EB"
@@ -1011,8 +1185,19 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                           outlineOffset: picked || isDragTarget || hinted ? "-2px" : undefined,
                         }}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design */}
-                        <img src={fruit.icon} alt="" draggable={false} className="pointer-events-none block h-[75%] w-[75%]" />
+                        {special ? (
+                          // specials (not in the Figma design yet): the mock's emoji, sized like the 48px fruit
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none block leading-none"
+                            style={{ fontFamily: EMOJI_FONT, fontSize: `${(48 / BOARD_W_PX) * 100 * 0.85}cqw` }}
+                          >
+                            {special.emoji}
+                          </span>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design
+                          <img src={FRUITS[t.type].icon} alt="" draggable={false} className="pointer-events-none block h-[75%] w-[75%]" />
+                        )}
                       </span>
                     </button>
                   );

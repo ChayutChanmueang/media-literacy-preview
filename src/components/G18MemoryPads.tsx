@@ -70,13 +70,14 @@ const PADS = DATA.pads as Pad[];
 const LEAD_IN_MS = 900; // pause before the first light, so the player can look at the board
 const TIMING = { on: 650, off: 300 };
 const PRESS_FLASH_MS = 250;
-// pauses after a turn, long enough to read the popup over the board (was 1300 / 1600 before the popup)
-const CORRECT_PAUSE_MS = 1600;
-const RESULT_PAUSE_MS = 2000; // let the "wrong" message register before the score screen
 // Popup over the board after each turn (StagePopup, same look as G19/G20's finish text). It zooms in,
 // holds and fades out within the pause after the turn, so in/out are quicker than G19/G20's 500/450.
-const TURN_POPUP_IN_MS = 350;
-const TURN_POPUP_OUT_MS = 300;
+// Off at the team's request; flip back to true to bring it back (the pauses lengthen with it).
+const SHOW_TURN_POPUP = false;
+// pauses after a turn — longer while the popup shows, so it can be read
+const CORRECT_PAUSE_MS = SHOW_TURN_POPUP ? 1600 : 1300;
+const RESULT_PAUSE_MS = SHOW_TURN_POPUP ? 2000 : 1600; // let the "wrong" turn register before the score screen
+const TURN_POPUP_IN_MS = 350;const TURN_POPUP_OUT_MS = 300;
 // "ดูอีกครั้ง" (replay the sequence) — off to match the Figma design; flip back on if the final design has it
 const SHOW_REPLAY_BUTTON = false;
 // pad face sits this far above its darker base; a lit/pressed pad drops onto it (× --gp-s, like GameAnswerButton)
@@ -242,7 +243,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   // Popup for the pause of `totalMs` after a turn: zoom in, hold, fade out just before the pause ends.
   // Not in the tutorial — its own box above the board already says right / try again.
   const showTurnPopup = (right: boolean, totalMs: number) => {
-    if (isTutorialLevel()) return;
+    if (!SHOW_TURN_POPUP || isTutorialLevel()) return;
     setTurnPopup({ right, stage: "enter" }); // mounted hidden first so the next change transitions in
     after(30, () => setTurnPopup({ right, stage: "show" }));
     after(totalMs - TURN_POPUP_OUT_MS, () => setTurnPopup({ right, stage: "leave" }));
@@ -370,11 +371,11 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="จำให้ขึ้นใจ"
-        objective="ดูไฟกะพริบทีละปุ่ม แล้วกดตามให้ถูกลำดับ ผ่านแต่ละด่าน ไฟจะยาวขึ้นอีก 1 ดวง ไปได้ไกลแค่ไหนก็ได้"
+        objective="ดูไฟกะพริบ แล้วกดให้ถูกตามลำดับ"
         choices={
           SHOW_REPLAY_BUTTON
-            ? "ถ้ากดผิดแม้แต่ปุ่มเดียว จะจบรอบทันที ลืมลำดับเมื่อไหร่ กด “ดูอีกครั้ง” ก่อนได้"
-            : "ถ้ากดผิดแม้แต่ปุ่มเดียว จะจบรอบทันที"
+            ? "ถ้ากดผิด จะจบรอบทันที ลืมลำดับเมื่อไหร่ กด “ดูอีกครั้ง” ก่อนได้"
+            : "ถ้ากดผิด จะจบรอบทันที"
         }
         icon={Brain}
         onStart={() => {
@@ -395,9 +396,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
             <p className="gp-text-32 font-bold gp-leading-40 text-black">{score > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
             {score > 0 ? (
               <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
-                ผ่านมาได้ <span className="font-bold text-[#2563EB]">{score}</span> ด่าน
-                <br />
-                จำไฟได้ยาวถึง {score} ดวง
+                ทำได้ต่อเนื่อง <span className="font-bold text-[#2563EB]">{score}</span> ด่าน
               </p>
             ) : (
               <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
@@ -621,8 +620,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
                   className={`absolute top-[2%] left-[2%] block h-[96%] w-[96%] transition-opacity duration-300 ${
                     phase === "watch" ? "opacity-100" : "opacity-0"
                   }`}
-                />
-              </div>
+                />              </div>
               {/* After each turn of the real game (not the tutorial): "เก่งมาก!" for the whole pattern, "กดผิดปุ่ม" for a wrong pad —
                   short lines, so each fits on one line over a 352px board */}
               {turnPopup && (

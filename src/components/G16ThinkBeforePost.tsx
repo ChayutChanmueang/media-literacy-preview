@@ -135,17 +135,14 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
             {isComment ? "ความเห็น" : "โพสต์"}ที่ {currentIdx + 1} จาก {POSTS.length} — ควรโพสต์ไหม?
           </p>
 
-          {/* กรอบหน้าสร้างโพสต์จำลอง — ไม่มีปุ่มปิด/ย้อนกลับ กันผู้สูงอายุเข้าใจผิดว่ากดออกจากเกม */}
+          {/* กรอบหน้าสร้างโพสต์จำลอง — ไม่มีปุ่มปิด/ย้อนกลับ/ปุ่มโพสต์ กันผู้สูงอายุเข้าใจผิดว่ากดได้จริง
+              การตัดสินใจจริงอยู่ที่ปุ่มใหญ่ด้านล่าง */}
           <div
             className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[24px] border-2 border-b-0 border-solid border-[#D9D9D9] bg-white`}
           >
-            <div className="flex gp-h-58 shrink-0 items-center justify-between border-b-2 border-solid border-[#D9D9D9] gp-px-16">
+            <div className="flex gp-h-58 shrink-0 items-center justify-center border-b-2 border-solid border-[#D9D9D9] gp-px-16 text-center">
               <span className="gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]">
                 {isComment ? "แสดงความคิดเห็น" : "สร้างโพสต์"}
-              </span>
-              {/* ปุ่มโพสต์ของแอปเป็นของตกแต่ง — การตัดสินใจจริงอยู่ที่ปุ่มใหญ่ด้านล่าง */}
-              <span aria-hidden="true" className="rounded-full bg-[#1877F2] gp-px-16 gp-py-4 gp-text-20 font-semibold gp-leading-30 text-white opacity-80">
-                โพสต์
               </span>
             </div>
 

@@ -53,13 +53,12 @@ export default function LessonCompletePage() {
                 ครบถ้วน
               </>
             }
-            caption="ท่านเรียนรู้ครบทุกกิจกรรมแล้ว ขอชื่นชมในความตั้งใจของท่าน"
           />
         </div>
       </div>
 
       <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
-        <Button3D onClick={handleBackHome}>กดเพื่อกลับไปหน้าหลัก</Button3D>
+        <Button3D onClick={handleBackHome}>กลับหน้าหลัก</Button3D>
       </div>
     </div>
   );

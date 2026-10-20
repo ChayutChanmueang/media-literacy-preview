@@ -16,77 +16,113 @@ import { getOrderedLessonIds, getVideoByLessonId } from "@/lib/videos";
 // the face slides down over it in 90ms, and the base hides only once fully covered (no grey sliver at
 // the rounded corners) and comes back at once on release. Face (children) carries the white fill,
 // the #D9D9D9 2px border and the rounding; baseRadius must match that rounding.
+// depth: how far below the face the base shows (8px like Button3D; the mode cards use Figma's 2px shadow).
+// Full class strings per depth so Tailwind can see them.
+const PRESS_DEPTH = {
+  8: { pad: "pb-[8px]", base: "top-[8px]", press: "group-active:translate-y-[8px]" },
+  2: { pad: "pb-[2px]", base: "top-[2px]", press: "group-active:translate-y-[2px]" },
+} as const;
+
 function Press3D({
   onClick,
   className = "",
   baseRadius,
+  depth = 8,
   children,
 }: {
   onClick: () => void;
   className?: string;
   baseRadius: string;
+  depth?: keyof typeof PRESS_DEPTH;
   children: React.ReactNode;
 }) {
+  const d = PRESS_DEPTH[depth];
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative block cursor-pointer border-0 bg-transparent p-0 pb-[8px] text-left ${className}`}
+      className={`group relative block cursor-pointer border-0 bg-transparent p-0 ${d.pad} text-left ${className}`}
     >
       <span
         aria-hidden="true"
-        className={`absolute inset-x-0 bottom-0 top-[8px] ${baseRadius} bg-[#D9D9D9] transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]`}
+        className={`absolute inset-x-0 bottom-0 ${d.base} ${baseRadius} bg-[#D9D9D9] transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]`}
       />
-      <span className="relative block transition-transform duration-[90ms] ease-out group-active:translate-y-[8px]">
+      <span className={`relative block transition-transform duration-[90ms] ease-out ${d.press}`}>
         {children}
       </span>
     </button>
   );
 }
 
-// Figma node "เลือกโหมด" — การ์ดเลือกโหมดเดินเรื่อง (คลิกได้ทั้งใบ ไม่มีปุ่มยืนยันแยก)
-// ช่อง "image 27" (132×152) ใช้ไอคอนโหมดจาก public/images/mode-selection — ภาพสี่เหลี่ยมจัตุรัส จึงวางขนาด 132×132 กึ่งกลางช่อง
+// Figma node 3347:15420 "เลือกโหมด1" — การ์ดเลือกโหมด 352×256 (คลิกได้ทั้งใบ ไม่มีปุ่มยืนยันแยก):
+// ภาพซ้าย (ห่างขอบ 20) · ชื่อโหมด + คำอธิบาย กึ่งกลางแนวตั้ง (คอลัมน์ 148) · ลูกศรฟ้า 44px มุมขวาล่าง (ห่างขอบ 20)
+// The image slot keeps Figma's size and crop (art = the image's box inside the slot, as % of the slot) and
+// shrinks with its aspect ratio on narrow phones, so the text column never has to re-wrap.
 function ModeCard({
   name,
-  icon,
   body,
-  caption,
+  art,
   onClick,
 }: {
   name: string;
-  icon: string;
   /** ขึ้นบรรทัดตามที่ Figma ตั้งใจตัดไว้เอง — ภาษาไทยไม่มีเว้นวรรคระหว่างคำ เบราว์เซอร์บางตัว
    * (โดยเฉพาะเบราว์เซอร์ในแอป LINE ที่กลุ่มผู้ใช้หลักเข้าเว็บผ่าน) ตัดคำผิดกลางคำได้ถ้าปล่อยให้ wrap เอง */
   body: string[];
-  caption: string[];
+  art: {
+    src: string;
+    /** source image size (px) — for next/image */
+    width: number;
+    height: number;
+    /** Figma slot size (px) */
+    slotW: number;
+    slotH: number;
+    /** image box inside the slot, % of the slot (Figma's crop) */
+    left: number;
+    top: number;
+    w: number;
+    h: number;
+  };
   onClick: () => void;
 }) {
   return (
-    <Press3D onClick={onClick} className="w-full max-w-[352px]" baseRadius="rounded-[24px]">
-      {/* min-h, not h: on narrow screens the wrapped text can need more room than the 152px image — the card must grow, never clip */}
-      <div className="flex min-h-[256px] items-center gap-[16px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[24px] py-[20px]">
-        <div className="flex h-[152px] w-[132px] shrink-0 items-center justify-center" aria-hidden="true">
-          {/* next/image: the source PNGs are 1254px / ~0.6–0.9 MB — served resized for the 132px slot */}
-          <Image src={icon} alt="" width={132} height={132} className="h-[132px] w-[132px] object-contain" />
+    <Press3D onClick={onClick} className="w-full max-w-[352px]" baseRadius="rounded-[20px]" depth={2}>
+      {/* min-h, not h: if the text ever needs more room the card grows, never clips */}
+      <div className="relative flex min-h-[256px] items-center gap-[20px] rounded-[20px] border-2 border-solid border-[#D9D9D9] bg-white py-[20px] pl-[20px] pr-[16px]">
+        <div
+          className="relative min-w-0 flex-1 overflow-hidden"
+          style={{ maxWidth: art.slotW, aspectRatio: `${art.slotW} / ${art.slotH}` }}
+          aria-hidden="true"
+        >
+          <Image
+            src={art.src}
+            alt=""
+            width={art.width}
+            height={art.height}
+            sizes={`${Math.round((art.slotW * art.w) / 100)}px`}
+            className="absolute max-w-none"
+            style={{ left: `${art.left}%`, top: `${art.top}%`, width: `${art.w}%`, height: `${art.h}%` }}
+          />
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-[8px]">
-          <p className="text-[28px] font-bold leading-[36px] text-[#4B4B4B]">{name}</p>
-          <p className="text-[20px] font-normal leading-[30px] text-[#4B4B4B]">
+        <div className="w-[148px] shrink-0 text-[#4B4B4B]">
+          <p className="text-[28px] font-bold leading-[36px]">{name}</p>
+          <p className="text-[20px] font-normal leading-[30px]">
             {body.map((line, i) => (
               <span key={i} className="block">
                 {line}
               </span>
             ))}
           </p>
-          <div className="h-[2px] w-full bg-[#4B4B4B]" />
-          <p className="text-[18px] font-normal leading-[26px] text-[#4B4B4B]">
-            {caption.map((line, i) => (
-              <span key={i} className="block">
-                {line}
-              </span>
-            ))}
-          </p>
         </div>
+        {/* decorative: the whole card is the button */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
+        <img
+          src="/images/mode-selection/mode_arrow.svg"
+          alt=""
+          aria-hidden="true"
+          width={44}
+          height={44}
+          className="absolute bottom-[18px] right-[18px] block"
+        />
       </div>
     </Press3D>
   );
@@ -138,7 +174,7 @@ const FUN_GAMES = [
   { id: "g18", icon: "/images/lessons/category-fun.png", label: "จำให้ขึ้นใจ" },
   { id: "g19", icon: "/images/lessons/category-fun.png", label: "เรียงผลไม้" },
   { id: "g20", icon: "/images/lessons/category-fun.png", label: "ผักบุ้งลอยฟ้า" },
-  // รุ่นทดลอง (ฉากร้านอาหาร) ให้ผู้ทดสอบเล่นเทียบกับ G20 — ชื่อมี "(ทดลอง)" กำกับ
+  // รุ่นทดลอง (ไม่มีลูกศรแรงโยน เล็งด้วยจุดวิถีโยน) ให้ผู้ทดสอบเล่นเทียบกับ G20 — ชื่อมี "(ทดลอง)" กำกับ
   { id: "g20k", icon: "/images/lessons/category-fun.png", label: "ผักบุ้งลอยฟ้า (ทดลอง)" },
 ];
 
@@ -306,26 +342,46 @@ export default function LessonSelectorPage() {
     return (
       <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="flex min-h-full flex-col items-center gap-[32px] px-[24px] py-[28px]">
+          <div className="flex min-h-full flex-col items-center gap-[36px] px-[24px] py-[36px]">
             <p className="text-center text-[28px] font-bold leading-[36px]">
               โปรดเลือกรูปแบบการเรียนรู้
               <br />
               ของคุณ
             </p>
 
-            <div className="flex w-full flex-col items-center gap-[24px]">
+            <div className="flex w-full flex-col items-center gap-[36px]">
               <ModeCard
                 name="เนื้อเรื่อง"
-                icon="/images/mode-selection/story_mode_ico.png"
                 body={["การเรียนรู้เรียง", "ต่อไปเรื่อยๆ"]}
-                caption={["เรียนรู้ตามลำดับ", "ขั้นตอนเนื้อหาเข้าใจ", "ง่าย"]}
+                // Figma "image 27": 132×152 slot, image at (−1.5%, 5.2%) sized 103% × 89.6%
+                art={{
+                  src: "/images/mode-selection/story_mode_books.png",
+                  width: 600,
+                  height: 601,
+                  slotW: 132,
+                  slotH: 152,
+                  left: -1.5,
+                  top: 5.2,
+                  w: 103,
+                  h: 89.6,
+                }}
                 onClick={handleStartFlowMode}
               />
               <ModeCard
                 name="อิสระ"
-                icon="/images/mode-selection/free_mode_ico.png"
-                body={["เลือกการเรียนรู้ได้", "อย่างอิสระ"]}
-                caption={["เลือกหัวข้อที่สนใจ", "เรียนรู้ด้วยตัวเอง"]}
+                body={["เลือกหัวข้อที่สนใจ", "เรียนรู้ด้วย", "ตัวเอง"]}
+                // Figma "image 28": 136×208 slot, image at (−9%, −7.87%) sized 118% × 115.73%
+                art={{
+                  src: "/images/mode-selection/free_mode_signpost.png",
+                  width: 736,
+                  height: 1104,
+                  slotW: 136,
+                  slotH: 208,
+                  left: -9,
+                  top: -7.87,
+                  w: 118,
+                  h: 115.73,
+                }}
                 onClick={handleStartManualMode}
               />
             </div>

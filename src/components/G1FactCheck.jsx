@@ -175,7 +175,7 @@ export default function G1FactCheck({ onFinish, logEvent }) {
     return (
       <GameIntro
         title="เกมจริงหรือมั่ว"
-        objective="อ่านข้อความต่อไปนี้ แล้วพิจารณาว่าจริงหรือไม่ แล้วเลือกตอบ"
+        objective="อ่านข้อความต่อไปนี้ และพิจารณาคำตอบให้เหมาะสม"
         choices="จริง · ปลอม · ไม่แน่ใจ"
         imageSrc="/assets/icons/g1-right-o-wrong.jpg"
         onStart={() => {

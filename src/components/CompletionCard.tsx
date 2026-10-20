@@ -5,7 +5,7 @@ interface CompletionCardProps {
   icon: ReactNode;
   eyebrow: string;
   title: ReactNode;
-  caption: ReactNode;
+  caption?: ReactNode;
 }
 
 // Figma component "Frame 478" (completion card). Text uses <p>, not headings: globals.css styles h1/h2 unlayered, which overrides Tailwind utilities.
@@ -22,7 +22,7 @@ export default function CompletionCard({ icon, eyebrow, title, caption }: Comple
         </div>
         <p className="w-full text-[24px] font-semibold leading-[32px]">{eyebrow}</p>
         <p className="w-full text-[28px] font-bold leading-[36px]">{title}</p>
-        <p className="w-full text-[18px] font-normal leading-[26px]">{caption}</p>
+        {caption && <p className="w-full text-[18px] font-normal leading-[26px]">{caption}</p>}
       </div>
     </div>
   );

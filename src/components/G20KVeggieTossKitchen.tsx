@@ -8,27 +8,22 @@ import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
 
 /**
- * G20K — ผักบุ้งลอยฟ้า (ทดลอง: ร้านอาหาร) — EXPERIMENTAL copy of G20VeggieToss
+ * G20K — ผักบุ้งลอยฟ้า (ทดลอง: ไม่มีลูกศร) — EXPERIMENTAL copy of G20VeggieToss
  *
- * Same game, rules and UI as G20 (header card, aim arrow, "เหลือ n ต้น", physics, bowl catch,
- * level ramp); only the scene is new — a shop/kitchen backdrop: the bowl stands on a table under a
- * shop wall, and the veggie waits in a frying pan on a stove at the bottom, with a tiled wall between.
- * Question it's here to answer: does a scene with visible height make players throw in a curve?
- * The veggie and pan sit a little higher than in G20 (on the stove), so the throw is slightly shorter.
- * Events log as game_id "G20K" so they can be compared with G20. Dev Game Hub only.
- * Tutorial and level ramp are the same as G20 (see its notes): 3 practice steps on entering the game
- * (bowl middle / right for the curve / left for the throw off the right wall, live aim hints and a target
- * arrow while dragging, nothing scored), and the bowl stays still for levels 1–7 then speeds up every
- * 2 levels. The tutorial flicks are re-checked for G20K's higher veggie spot (TUTORIAL_FLICK), and the
- * message box is placed through the stage layout (s/ox/oy) instead of percentages.
+ * The kitchen scene was first built here (the bowl on a table under a shop wall, the veggie in a frying
+ * pan on a stove, a tiled wall between) and has since been copied into G20, so both now share the scene,
+ * rules and UI. What still differs is the aiming: G20K has no power arrow (SHOW_AIM_ARROW) — players
+ * aim with the trajectory dots — and the tutorial shows a dotted guide line of each step's throw while
+ * dragging, where G20 shows a faint target arrow. Live aim hints, the level ramp and the practice steps
+ * are otherwise the same as G20. Events log as game_id "G20K" so they can be compared with G20.
  *
  * --- G20's notes, still true here ---
  * G20 — ผักบุ้งลอยฟ้า (flick-to-basket)
  *
  * Ported from the team's "shootball7.html" mock: touch the pan and flick upwards to toss the
  * morning glory (🥬) into the bowl (canvas-drawn, side view) at the top; it can bounce off the left/right walls.
- * Every serve is a new level — level 1 the plate is centred, levels 2–7 it sits still at a random spot,
- * level 8+ it slides left and right, slowly at first and a little faster every 2 levels.
+ * Every serve is a new level — level 1 the plate is centred, levels 2–5 it sits still at a random spot,
+ * level 6+ it slides left and right, slowly at first (1) and 1 faster every 2 levels.
  * A pure fun game — no lesson content.
  * Same canvas scene as the mock (540×960 stage, pan, physics, catch zone, level ramp, colours).
  * Differences from the HTML mock, to follow AGENT.md (elderly-first):
@@ -42,7 +37,7 @@ import GameIntro from "@/components/GameIntro";
  * - the aim arrow stops AIM_TIP_GAP short of the finger, so the finger doesn't cover its tip
  * - a short pause in the bowl after a serve so the player sees it land (the mock jumped straight
  *   to the next level)
- * - gentler plate ramp: still until level 8 (mock: moves from level 3), starts slower and speeds up every
+ * - gentler plate ramp: still until level 6 (mock: moves from level 3), starts slower and speeds up every
  *   2 levels instead of every level, capped lower (MAX_PLATE_SPEED 6, mock: 8)
  * - physics runs on elapsed time, not per frame, so 90/120 Hz phones don't play at double speed
  * Dev-hub only, not wired into GameShell/lesson flow.
@@ -81,10 +76,11 @@ const PLATE_W = 140;
 const PLATE_CATCH = 30; // catch window above/below the plate's centre line
 const PLATE_MARGIN = 40;
 const MAX_PLATE_SPEED = 6;
-// plate ramp (see plateSpeedFor): still for levels 1–7, slides from level 8 at 1.5, +0.75 every 2 levels
-const FIRST_MOVING_LEVEL = 8;
-const PLATE_START_SPEED = 1.5;
-const PLATE_SPEED_STEP = 0.75;
+// plate ramp (see plateSpeedFor): still for levels 1–5, slides from level 6 at 1, +1 every 2 levels
+// (6–7: 1 · 8–9: 2 · 10–11: 3 · 12–13: 4 · 14–15: 5 · 16: 6 — level 16 is the most a 15-throw run reaches)
+const FIRST_MOVING_LEVEL = 6;
+const PLATE_START_SPEED = 1;
+const PLATE_SPEED_STEP = 1;
 const PLATE_SPEED_UP_EVERY = 2;
 const FRAME_MS = 1000 / 60;
 
@@ -153,6 +149,10 @@ const TUTORIAL_FLICK: Record<TutorialStep, Point> = {
   2: { x: 30, y: -270 },
   3: { x: 153, y: -273 },
 };
+// Step 3 (bounce off the wall): the drag can't lean left of straight up, so a throw can't reach the bowl
+// (on the left) directly — without a bounce it lands at the middle or further right, so only the throw
+// off the right wall serves. Dragging further left just holds the aim straight up (hint: tilt right).
+const STEP3_MIN_DX = 0;
 // how far (stage units of drag) the aim can be off before the hint says which way to fix it
 const TUTORIAL_AIM_TOLERANCE: Record<TutorialStep, Point> = { 1: { x: 11, y: 60 }, 2: { x: 16, y: 20 }, 3: { x: 25, y: 16 } };
 
@@ -164,7 +164,7 @@ const toTip = (text: string, tone: TutorialTip["tone"] = "info"): TutorialTip =>
 
 type AimHint = "short" | "ok" | "weak" | "strong" | "left" | "right";
 const AIM_HINT_TEXT: Record<AimHint, string> = {
-  short: "ลากนิ้วขึ้น\nให้ลูกศรทับลูกศรจาง ๆ",
+  short: "ลากนิ้วขึ้น\nให้จุดวิ่งตามเส้นนำทาง",
   ok: "✓ ตรงแล้ว\nปล่อยนิ้วได้เลย",
   weak: "แรงยังไม่พอ\nลากนิ้วให้ยาวขึ้นอีกนิด",
   strong: "แรงมากไป\nลากนิ้วให้สั้นลงหน่อย",
@@ -204,12 +204,14 @@ function simulateThrow(vx0: number, vy0: number) {
   return null;
 }
 
-// Step 3's dotted guide line: the path of its fixed flick
-const STEP3_GUIDE = (() => {
-  const { vx, vy } = flickVelocity(TUTORIAL_FLICK[3].x, TUTORIAL_FLICK[3].y);
+// Each step's dotted guide line: the path of its fixed flick into the bowl
+// (replaces G20's faint target arrow, since G20K has no aim arrow to line up with it)
+function guideFor(step: TutorialStep) {
+  const { vx, vy } = flickVelocity(TUTORIAL_FLICK[step].x, TUTORIAL_FLICK[step].y);
   const r = simulateThrow(vx, vy);
   return { path: r?.path ?? [], bounce: r?.bounce ?? null };
-})();
+}
+const TUTORIAL_GUIDE: Record<TutorialStep, ReturnType<typeof guideFor>> = { 1: guideFor(1), 2: guideFor(2), 3: guideFor(3) };
 
 // What to tell the player about the drag they are holding: "ok" when it would land in the bowl,
 // otherwise the bigger of the two errors against the step's flick (sideways / power)
@@ -549,13 +551,17 @@ const MAX_DRAG = AIM_RADIUS + AIM_TIP_GAP;
 // the arrow is long (so they carry on from its tip) and end once it falls back below the table top.
 // On/off switch for the trajectory dots — set false to aim with the arrow only
 const SHOW_TRAJECTORY = true;
+// On/off switch for the power (aim) arrow — off in G20K, players aim with the trajectory dots only.
+// The tutorial shows each step's throw as a dotted guide line instead (TUTORIAL_GUIDE).
+const SHOW_AIM_ARROW = false;
 const TRAJECTORY_EVERY = 3; // frames between dots
 const TRAJECTORY_MAX_FRAMES = 240;
 const TRAJECTORY_DOT_R = 6;
 
 function drawTrajectory(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
   if (dy >= -MIN_DRAG_UP) return; // too short to throw — onPointerUp wouldn't throw either
-  const arrowLength = Math.hypot(dx, dy) - AIM_TIP_GAP;
+  // dots carry on from the arrow's tip; with no arrow they start just clear of the veggie
+  const arrowLength = SHOW_AIM_ARROW ? Math.hypot(dx, dy) - AIM_TIP_GAP : VEGGIE_RADIUS;
   // same launch as onPointerUp
   let vx = dx * POWER;
   let vy = Math.max(dy * POWER * 1.5, -MAX_UP_SPEED);
@@ -612,24 +618,6 @@ function traceAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: 
   return { ux, uy, tip: { x: x + ux * length, y: y + uy * length } };
 }
 
-// Tutorial target: where the aim arrow should be for the step's flick — the same shape, faint, dashed
-// blue edge (solid green once the player's aim would land). Returns its tip, for the parked 👆.
-function drawTargetArrow(ctx: CanvasRenderingContext2D, x: number, y: number, flick: Point, onTarget: boolean) {
-  ctx.save();
-  const arrow = traceAimArrow(ctx, x, y, flick.x, flick.y);
-  if (arrow) {
-    ctx.fillStyle = onTarget ? "rgba(34, 197, 94, 0.35)" : "rgba(255, 255, 255, 0.45)";
-    ctx.fill();
-    ctx.lineJoin = "round";
-    ctx.setLineDash(onTarget ? [] : [10, 8]);
-    ctx.strokeStyle = onTarget ? "#16A34A" : "#2563EB";
-    ctx.lineWidth = onTarget ? 5 : 4;
-    ctx.stroke();
-  }
-  ctx.restore();
-  return arrow?.tip ?? null;
-}
-
 // Mock's drawTutorial, minus the text box (DOM): glow behind the veggie, then (over it) the dashed
 // line and the 👆 moving up together
 function drawTutorialGlow(ctx: CanvasRenderingContext2D, x: number, y: number) {
@@ -671,8 +659,9 @@ function drawTutorialHand(
   ctx.restore();
 }
 
-// Step 3: where the throw goes — dotted line from the veggie, off the wall (ring), into the bowl
-function drawGuidePath(ctx: CanvasRenderingContext2D, guide: { path: Point[]; bounce: Point | null }) {
+// Tutorial: where the step's throw goes — dotted line from the veggie (off the wall, ring, in step 3)
+// into the bowl; turns green once the player's aim would land
+function drawGuidePath(ctx: CanvasRenderingContext2D, guide: { path: Point[]; bounce: Point | null }, onTarget = false) {
   if (guide.path.length < 2) return;
   ctx.save();
   ctx.beginPath();
@@ -680,14 +669,14 @@ function drawGuidePath(ctx: CanvasRenderingContext2D, guide: { path: Point[]; bo
   ctx.setLineDash([2, 16]);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = "rgba(37, 99, 235, 0.7)";
+  ctx.strokeStyle = onTarget ? "rgba(22, 163, 74, 0.85)" : "rgba(37, 99, 235, 0.7)";
   ctx.lineWidth = 9;
   ctx.stroke();
   ctx.setLineDash([]);
   if (guide.bounce) {
     ctx.beginPath();
     ctx.arc(guide.bounce.x, guide.bounce.y, 26, 0, Math.PI * 2);
-    ctx.strokeStyle = "#2563eb";
+    ctx.strokeStyle = onTarget ? "#16A34A" : "#2563eb";
     ctx.lineWidth = 5;
     ctx.stroke();
   }
@@ -1042,19 +1031,18 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     drawPanBack(ctx);
 
     const tStep = tutorialStepRef.current;
-    if (tStep === 3 && veggie.state !== "served") drawGuidePath(ctx, STEP3_GUIDE);
+    const aiming = tStep !== 0 && veggie.state === "dragging";
+    // guide line while dragging (all steps); step 3 keeps it up before the drag too, for the wall bounce
+    if (aiming || (tStep === 3 && veggie.state !== "served")) {
+      drawGuidePath(ctx, TUTORIAL_GUIDE[tStep as TutorialStep], aiming && aimHintRef.current === "ok");
+    }
     if (tStep >= 2) drawTrail(ctx, trailRef.current);
     const showGuide = tStep !== 0 && guideRef.current && veggie.state === "idle";
-    const aiming = tStep !== 0 && veggie.state === "dragging";
     if (showGuide) drawTutorialGlow(ctx, veggie.x, veggie.y);
-    // target arrow only once the player is dragging (the guide before that is the mock's hand + dashed line)
-    const targetTip = aiming
-      ? drawTargetArrow(ctx, veggie.x, veggie.y, TUTORIAL_FLICK[tStep as TutorialStep], aimHintRef.current === "ok")
-      : null;
 
     // over the bowl (a long aim reaches it), under the veggie so the veggie covers the arrow's tail
     if (veggie.state === "dragging" && drag) {
-      drawAimArrow(ctx, veggie.x, veggie.y, drag.x - drag.startX, drag.y - drag.startY);
+      if (SHOW_AIM_ARROW) drawAimArrow(ctx, veggie.x, veggie.y, drag.x - drag.startX, drag.y - drag.startY);
       if (SHOW_TRAJECTORY) drawTrajectory(ctx, veggie.x, veggie.y, drag.x - drag.startX, drag.y - drag.startY);
     }
 
@@ -1069,8 +1057,6 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
       const from = { x: veggie.x, y: tStep === 1 ? TUTORIAL_HAND_START_Y : veggie.y };
       const to = { x: from.x + flick.x, y: from.y + flick.y };
       drawTutorialHand(ctx, veggie.x, veggie.y, from, to, (performance.now() % TUTORIAL_LOOP_MS) / TUTORIAL_LOOP_MS);
-    } else if (aiming && targetTip) {
-      drawTutorialHand(ctx, veggie.x, veggie.y, targetTip, targetTip, 0, false); // parked at the target's tip
     }
   };
 
@@ -1171,7 +1157,8 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     if (world.veggie.state !== "dragging" || !world.drag) return;
     const pos = toGame(e);
     // keep the drag inside MAX_DRAG of where it started (same direction, shorter), so the arrow stops at AIM_RADIUS
-    const dx = pos.x - world.drag.startX;
+    let dx = pos.x - world.drag.startX;
+    if (tutorialStepRef.current === 3) dx = Math.max(dx, STEP3_MIN_DX); // step 3: bounce only, no direct throw
     const dy = pos.y - world.drag.startY;
     const k = Math.min(1, MAX_DRAG / (Math.hypot(dx, dy) || 1));
     world.drag.x = world.drag.startX + dx * k;
@@ -1244,8 +1231,8 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="ผักบุ้งลอยฟ้า (ทดลอง)"
-        objective={`${TOUCH_HINT}แล้วลากนิ้วขึ้น โยนผักบุ้งให้ลอยขึ้นไปลงจานด้านบน โยนชิ่งกำแพงซ้าย-ขวาก็ได้ ลงจานแล้วจะขึ้นเลเวลใหม่`}
-        choices={`โยนได้ ${THROWS_PER_RUN} ครั้ง ไม่จับเวลา ค่อย ๆ เล็งได้เลย`}
+        objective="โยนผักบุ้งให้ลอยไปบนจาน สามารถโยนชิ่งกำแพงได้"
+        choices={`โยนได้ ${THROWS_PER_RUN} ครั้ง ไม่จับเวลา`}
         icon={Salad}
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G20K" });
@@ -1269,8 +1256,6 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
             {served > 0 ? (
               <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
                 เสิร์ฟลงจานได้ <span className="font-bold text-[#B45309]">{served}</span> จาน
-                <br />
-                ไปถึงเลเวล {level}
               </p>
             ) : (
               <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">

@@ -27,7 +27,7 @@ const G17ScamBreaker = dynamic(() => import("@/components/G17ScamBreaker"), { ss
 const G18MemoryPads = dynamic(() => import("@/components/G18MemoryPads"), { ssr: false });
 const G19FruitMatch = dynamic(() => import("@/components/G19FruitMatch"), { ssr: false });
 const G20VeggieToss = dynamic(() => import("@/components/G20VeggieToss"), { ssr: false });
-// รุ่นทดลองของ G20 (ฉากร้านอาหาร) — โหมดอิสระ › เกมสนุก "ผักบุ้งลอยฟ้า (ทดลอง)"
+// รุ่นทดลองของ G20 (ไม่มีลูกศรแรงโยน) — โหมดอิสระ › เกมสนุก "ผักบุ้งลอยฟ้า (ทดลอง)"
 const G20KVeggieTossKitchen = dynamic(() => import("@/components/G20KVeggieTossKitchen"), { ssr: false });
 
 const getGameId = (lessonId: string) => {

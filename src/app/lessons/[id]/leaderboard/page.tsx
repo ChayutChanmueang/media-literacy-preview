@@ -124,7 +124,7 @@ function LeaderboardPageInner() {
   const [pickerOpen, setPickerOpen] = useState(false); // US-CF-52: popup เลือกเกมบนหน้า browse
   const [gameName, setGameName] = useState(""); // ชื่อเกมมาจาก DB (response.game.name) เสมอ ไม่ hardcode
   const [reloadKey, setReloadKey] = useState(0);
-  // empty name on "กดเพื่อยืนยัน": the name field shakes (gp1-shake) instead of showing a message
+  // empty name on "ยืนยัน": the name field shakes (gp1-shake) instead of showing a message
   const [nameShaking, setNameShaking] = useState(false);
   const [playerScore, setPlayerScore] = useState<number | null>(null);
   // new personal best: which row climbs, from/to (set by the loader) and the running number
@@ -324,7 +324,7 @@ function LeaderboardPageInner() {
     rowTopsRef.current = tops;
   }, [orderKey, climbPlan]);
 
-  // "กดเพื่อยืนยัน": keep the profile if the name is unchanged (a new name = a new player), then show the board —
+  // "ยืนยัน": keep the profile if the name is unchanged (a new name = a new player), then show the board —
   // its loader saves the pending score for this player, so the board appears once the score is saved
   const handleSaveName = (data: LeaderboardNameInput) => {
     const reused = Boolean(player && player.name === data.name);
@@ -503,9 +503,9 @@ function LeaderboardPageInner() {
     );
   }
 
-  // Figma "Insert Name" (Scammer Game Prototype, node 3157:15657): card with the avatar, title, caption and
-  // name field, and the blue "กดเพื่อยืนยัน" button (Button3D = Figma Component 24) at the bottom.
-  // Caption is 20px (Figma 18px) — AGENT.md: no reading text under 20px.
+  // Figma "Insert Name" (Scammer Game Prototype, node 3347:15533): no card — the avatar, title and name field
+  // (344px wide, 28px from the screen edges) sit centred in the space above the blue "ยืนยัน" button
+  // (Button3D = Figma Component 24; Figma still says "กดเพื่อยืนยัน", shortened at the team's request).
   return (
     <main className={`${notoLoopedThai.className} gp-compact flex h-full min-h-0 flex-col bg-white`}>
       <form
@@ -518,17 +518,11 @@ function LeaderboardPageInner() {
       >
         <div className="scroll-region flex-1">
           <div className="mx-auto flex min-h-full w-full max-w-[400px] flex-col justify-center gp-px-24 gp-py-24">
-            <section className="flex flex-col items-center gap-[16px] rounded-[24px] border border-solid border-[#7F7F7F] bg-white px-[24px] pt-[19px] pb-[21px] text-center">
+            <section className="flex flex-col items-center gap-[16px] px-[4px] text-center">
               {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
               <img src="/assets/icons/leaderboard-avatar.svg" alt="" aria-hidden="true" width={100} height={100} className="block shrink-0" />
 
               <h1 className="text-[28px] font-bold leading-[36px] text-[#4B4B4B]">กรอกชื่อเพื่อเก็บคะแนน</h1>
-              <p id="leaderboard-name-help" className="text-[20px] font-normal leading-[28px] text-[#4B4B4B]">
-                ชื่อนี้จะแสดงพร้อมคะแนนของคุณ
-                <br />
-                บนกระดานคะแนนของเกมนี้
-              </p>
-
               <div className="w-full">
                 <label htmlFor="leaderboard-name" className="sr-only">
                   ชื่อที่ต้องการแสดง
@@ -539,7 +533,7 @@ function LeaderboardPageInner() {
                   autoComplete="nickname"
                   maxLength={30}
                   placeholder="กรอกชื่อของคุณ"
-                  aria-describedby={errors.name ? "leaderboard-name-error" : "leaderboard-name-help"}
+                  aria-describedby={errors.name ? "leaderboard-name-error" : undefined}
                   aria-invalid={Boolean(errors.name)}
                   {...register("name")}
                   onAnimationEnd={() => setNameShaking(false)}
@@ -566,7 +560,7 @@ function LeaderboardPageInner() {
         <div className="shrink-0 gp-px-24 gp-pb-action-bar gp-pt-22">
           {/* grey (inactive) until a valid name is typed — still pressable, so an empty name shakes the field */}
           <Button3D type="submit" inactive={!isValid || isSubmitting}>
-            กดเพื่อยืนยัน
+            ยืนยัน
           </Button3D>
         </div>
       </form>
