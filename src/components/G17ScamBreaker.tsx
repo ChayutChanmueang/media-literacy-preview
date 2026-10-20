@@ -88,8 +88,7 @@ const PADDLE_WIDTH = 140;
 const PADDLE_HEIGHT = 20;
 const PADDLE_COLOR = "#595959";
 const PADDLE_BOTTOM = 100; // space under the paddle
-const BALL_SRC = "/assets/g17/ball.svg";
-const BALL_RADIUS = 12; // drawn as a 24px icon
+const BALL_RADIUS = 12; // collision circle; the shield sprite (drawShield) is drawn to fit it
 const BALL_RADIUS_MAX = 20;
 const MAX_BALLS = 6;
 const ITEM_DROP_CHANCE = 0.25;
@@ -110,9 +109,9 @@ const MAX_BOUNCE_ANGLE = (60 * Math.PI) / 180;
 const TAP_SLOP_PX = 10;
 
 const ITEM_INFO: Record<ItemType, { emoji: string; toast: string }> = {
-  split: { emoji: "🪄", toast: "🪄 ลูกบอลแยกเป็น 3 ลูก!" },
-  grow: { emoji: "🍄", toast: "🍄 ลูกบอลใหญ่ขึ้น!" },
-  slow: { emoji: "🐢", toast: "🐢 ลูกบอลช้าลง เล่นสบายขึ้น" },
+  split: { emoji: "🪄", toast: "🪄 โล่แยกเป็น 3 อัน!" },
+  grow: { emoji: "🍄", toast: "🍄 โล่ใหญ่ขึ้น!" },
+  slow: { emoji: "🐢", toast: "🐢 โล่ช้าลง เล่นสบายขึ้น" },
 };
 const ITEM_TYPES = Object.keys(ITEM_INFO) as ItemType[];
 
@@ -217,6 +216,87 @@ const drawPictureCut = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, ar
   );
 };
 
+/**
+ * The bouncing piece: a shield drawn on the canvas, centred on (x, y) and fitting the ball's collision
+ * circle of radius r (so the physics is unchanged). Look follows the team's reference sprite: thick silver
+ * rim, blue face split down the middle (light left / deeper right), a soft gloss and a small spark.
+ */
+const shieldPath = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => {
+  const top = y - h / 2;
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, top + h * 0.08);
+  // top edge: corners up, a gentle rise to the middle
+  ctx.quadraticCurveTo(x - w / 4, top + h * 0.1, x, top);
+  ctx.quadraticCurveTo(x + w / 4, top + h * 0.1, x + w / 2, top + h * 0.08);
+  // sides down, then in to the point
+  ctx.lineTo(x + w / 2, top + h * 0.45);
+  ctx.bezierCurveTo(x + w / 2, top + h * 0.75, x + w * 0.22, top + h * 0.9, x, top + h);
+  ctx.bezierCurveTo(x - w * 0.22, top + h * 0.9, x - w / 2, top + h * 0.75, x - w / 2, top + h * 0.45);
+  ctx.closePath();
+};
+
+const drawShield = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+  const w = r * 1.8;
+  const h = r * 2.1;
+  ctx.save();
+  // rim: silver, lit from the top left, with a dark outline
+  shieldPath(ctx, x, y, w, h);
+  const rim = ctx.createLinearGradient(x - w / 2, y - h / 2, x + w / 2, y + h / 2);
+  rim.addColorStop(0, "#F8FAFC");
+  rim.addColorStop(0.55, "#CBD5E1");
+  rim.addColorStop(1, "#64748B");
+  ctx.fillStyle = rim;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, r * 0.09);
+  ctx.strokeStyle = "#334155";
+  ctx.stroke();
+  // face: light blue left half, deeper blue right half
+  const fw = w * 0.74;
+  const fh = h * 0.76;
+  const fy = y + h * 0.015;
+  shieldPath(ctx, x, fy, fw, fh);
+  ctx.save();
+  ctx.clip();
+  const left = ctx.createLinearGradient(x, fy - fh / 2, x, fy + fh / 2);
+  left.addColorStop(0, "#7DD3FC");
+  left.addColorStop(1, "#38BDF8");
+  ctx.fillStyle = left;
+  ctx.fillRect(x - fw / 2, fy - fh / 2, fw / 2, fh);
+  const right = ctx.createLinearGradient(x, fy - fh / 2, x, fy + fh / 2);
+  right.addColorStop(0, "#0EA5E9");
+  right.addColorStop(1, "#0369A1");
+  ctx.fillStyle = right;
+  ctx.fillRect(x, fy - fh / 2, fw / 2, fh);
+  // gloss on the upper left
+  ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+  ctx.beginPath();
+  ctx.ellipse(x - fw * 0.2, fy - fh * 0.22, fw * 0.16, fh * 0.26, -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  // thin outline around the face (re-trace it: the current path is the gloss ellipse)
+  shieldPath(ctx, x, fy, fw, fh);
+  ctx.lineWidth = Math.max(0.75, r * 0.05);
+  ctx.strokeStyle = "rgba(3, 105, 161, 0.8)";
+  ctx.stroke();
+  // spark on the top-right corner
+  const sx = x + w * 0.42;
+  const sy = y - h * 0.44;
+  const s = r * 0.32;
+  ctx.fillStyle = "#FEF9C3";
+  ctx.beginPath();
+  ctx.moveTo(sx, sy - s);
+  ctx.quadraticCurveTo(sx, sy, sx + s, sy);
+  ctx.quadraticCurveTo(sx, sy, sx, sy + s);
+  ctx.quadraticCurveTo(sx, sy, sx - s, sy);
+  ctx.quadraticCurveTo(sx, sy, sx, sy - s);
+  ctx.fill();
+  ctx.fillStyle = "#FACC15";
+  ctx.beginPath();
+  ctx.arc(sx, sy, s * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+};
+
 const pictureReady = (img: HTMLImageElement | undefined): img is HTMLImageElement =>
   !!img && img.complete && img.naturalWidth > 0;
 
@@ -291,7 +371,6 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
   // the picture of each stage — picked once per game, all preloaded when the game starts
   const picturesRef = useRef<Picture[] | null>(null);
   const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
-  const ballImageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<{ pointerId: number; startX: number; moved: boolean } | null>(null);
   const logRef = useRef(logEvent);
   useEffect(() => {
@@ -315,11 +394,6 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
   // start loading every stage's picture up front, so the next stage's bricks are ready when it starts
   const preloadPictures = () => {
-    if (!ballImageRef.current) {
-      const ball = new Image();
-      ball.src = BALL_SRC;
-      ballImageRef.current = ball;
-    }
     for (let i = 0; i < LEVELS.length; i++) {
       const { media } = pictureOf(i);
       if (imagesRef.current.has(media)) continue;
@@ -500,7 +574,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       return;
     }
 
-    // ลูกหลุดหมด = ไม่แพ้ แค่วางลูกใหม่บนแถบแล้วให้กำลังใจ
+    // โล่หลุดหมด = ไม่แพ้ แค่วางโล่ใหม่บนแถบแล้วให้กำลังใจ
     if (world.balls.length === 0) {
       missesRef.current += 1;
       levelMissesRef.current += 1;
@@ -557,17 +631,10 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     ctx.fillStyle = PADDLE_COLOR;
     ctx.fill();
 
-    const ballImg = ballImageRef.current;
-    if (pictureReady(ballImg ?? undefined)) {
-      const d = world.radius * 2;
-      for (const ball of world.balls) ctx.drawImage(ballImg!, ball.x - d / 2, ball.y - d / 2, d, d);
-    } else {
-      ctx.font = `${world.radius * 2}px sans-serif`;
-      for (const ball of world.balls) ctx.fillText("⚪", ball.x, ball.y + 1);
-    }
+    for (const ball of world.balls) drawShield(ctx, ball.x, ball.y, world.radius);
 
     if (world.attached) {
-      const label = "แตะจอเพื่อปล่อยลูก";
+      const label = "แตะจอเพื่อปล่อยโล่";
       ctx.font = `600 ${textPx(22)}px ${fontFamily}`;
       const w = ctx.measureText(label).width + px(32);
       const pillH = px(44, 36);
@@ -712,8 +779,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="โล่กันโกง"
-        objective="ลากแถบด้านล่างไปซ้าย-ขวา รับลูกบอลให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริง ภาพ AI หรือภาพตัดต่อ"
-        choices="ของช่วย: 🪄 ลูกบอลแยกเป็น 3 ลูก · 🍄 ลูกบอลใหญ่ขึ้น · 🐢 ลูกบอลช้าลง"
+        objective="ลากแถบด้านล่างไปซ้าย-ขวา รับโล่ให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริง ภาพ AI หรือภาพตัดต่อ"
+        choices="ของช่วย: 🪄 โล่แยกเป็น 3 อัน · 🍄 โล่ใหญ่ขึ้น · 🐢 โล่ช้าลง"
         icon={Shield}
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G17" });
@@ -795,7 +862,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       <div className="relative min-h-0 flex-1">
         <canvas
           ref={canvasRef}
-          aria-label="พื้นที่เกม ลากซ้ายขวาเพื่อขยับแถบ แตะเพื่อปล่อยลูกบอล"
+          aria-label="พื้นที่เกม ลากซ้ายขวาเพื่อขยับแถบ แตะเพื่อปล่อยโล่"
           className="absolute inset-0 block h-full w-full cursor-pointer touch-none"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
