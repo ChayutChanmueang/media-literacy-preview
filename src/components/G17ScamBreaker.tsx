@@ -90,7 +90,8 @@ const PADDLE_COLOR = "#595959";
 const PADDLE_BOTTOM = 100; // space under the paddle
 const BALL_RADIUS = 12; // collision circle; the shield sprite (drawShield) is drawn to fit it
 const BALL_RADIUS_MAX = 20;
-const MAX_BALLS = 6;
+// no cap on shields from 🪄 (each split adds 2) — set a number (was 6) to bring the limit back
+const MAX_BALLS = Infinity;
 const ITEM_DROP_CHANCE = 0.25;
 const ITEM_SIZE = 32;
 
