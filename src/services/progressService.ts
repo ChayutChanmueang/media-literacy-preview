@@ -15,6 +15,44 @@ const COOKIE_MAX_AGE_DAYS = 365;
 
 export type AppMode = "normal" | "research";
 
+export type DeviceMetadata = NonNullable<ReturnType<typeof progressService.getDeviceMetadata>>;
+
+export interface SessionLocation {
+  province: string;
+  district: string;
+  subdistrict: string;
+  source: string;
+  coordinates?: { latitude: number; longitude: number };
+  [key: string]: unknown;
+}
+
+/** Anonymous session persisted in localStorage + cookie (naplab_ml_session). */
+export interface UserSession {
+  sessionId: string;
+  ageGroup: string | null;
+  consentGiven: boolean;
+  role?: string;
+  isTestingGroup?: boolean;
+  location: SessionLocation;
+  deviceMetadata: DeviceMetadata | null;
+  createdAt: string;
+  [key: string]: unknown;
+}
+
+/** Learning progress persisted in localStorage + cookie (naplab_ml_progress). */
+export interface UserProgress {
+  currentStep: string;
+  completedLessons: string[];
+  stars: Record<string, number>;
+  currentLessonId?: string;
+  lastUpdated: string;
+  learningMode?: "flow" | "manual";
+  pretest_completed?: boolean;
+  posttest_completed?: boolean;
+  selfAssessment?: Partial<Record<"pre" | "post", Record<string, number>>>;
+  [key: string]: unknown;
+}
+
 // Set per deployment from the APP_MODE env (read server-side in the root layout and
 // handed to AppLayout, which calls configureAppMode during render so it is ready
 // before any page's effects run).

@@ -9,16 +9,10 @@ import ClipTitleCard from "@/components/ClipTitleCard";
 import Button3D from "@/components/Button3D";
 import { getVideoByLessonId, isVideoSkipped } from "@/lib/videos";
 import { useDevSkip } from "@/lib/devSkip";
+import type { YTPlayer, YTPlayerEvent } from "@/types/youtube";
 
 // US-CF-49: เวลาที่ปุ่ม "ข้าม" บน header จะโผล่ หลังเข้าช่วงวิดีโอ (นับรวมเวลารอคลิปโหลด)
 const HEADER_SKIP_DELAY_MS = 5590;
-
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: (() => void) | undefined;
-  }
-}
 
 export default function VideoLessonPage() {
   const params = useParams();
@@ -58,7 +52,7 @@ export default function VideoLessonPage() {
   const [phase, setPhase] = useState<"loading" | "intro" | "video">("loading");
   // โหมดอิสระ (manual): วิดีโอเป็นหมวดแยกจากเกม ดูจบแล้วไม่มีเกมบังคับต่อ จึงกลับหน้าหมวดหมู่แทน
   const [learningMode, setLearningMode] = useState<"flow" | "manual">("manual");
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const videoPlayingRef = useRef(false);
@@ -135,14 +129,14 @@ export default function VideoLessonPage() {
           modestbranding: 1,
         },
         events: {
-          onReady: (event: any) => {
+          onReady: (event: YTPlayerEvent) => {
             setPlayerReady(true);
             playerReadyRef.current = true;
             try {
               event.target.playVideo();
             } catch (e) { }
           },
-          onStateChange: (event: any) => {
+          onStateChange: (event: YTPlayerEvent) => {
             // YT.PlayerState.PLAYING is 1, BUFFERING is 3
             // คลิปกลับมาเล่นอีกครั้ง = ผู้ใช้ดูซ้ำ ต้องยกเลิก countdown ด้วย ไม่ใช่แค่ซ่อนแถบปุ่ม
             // เพราะการเล่นซ้ำจาก UI ของ YouTube เอง (ปุ่ม replay/play/ลากแถบเวลาในตัวเล่น)
