@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- G20 / G20K ผักบุ้งลอยฟ้า: เปลี่ยนภาพผักจากไอคอนบรอกโคลีชั่วคราว (`broccoli.svg`) เป็นภาพผักบุ้งมัดยางแดง `public/assets/g20/morning-glory.svg` (ขนาด/ฟิสิกส์เท่าเดิม) และอัปเดต `docs/gdd/design-g20-veggie-toss.md`
+
 ## [0.21.0] - 2026-10-22
 
 ### Added

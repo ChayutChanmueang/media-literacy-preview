@@ -33,8 +33,8 @@ import GameIntro from "@/components/GameIntro";
  *   the mock's start overlay is replaced by the shared GameIntro
  * - the mock's floating pills are replaced by the shared header card (throws left / level);
  *   no on-screen guide text, but a screen-reader-only status line (what to do, served / missed)
- * - look follows the Figma design (Scammer Game Prototype, node 3028:13071): green gradient, broccoli
- *   icon as the veggie — but the bowl is kept (Figma has a plate); G20 hides its pan, G20K shows a new one
+ * - look follows the Figma design (Scammer Game Prototype, node 3028:13071): green gradient, a ผักบุ้ง
+ *   bunch as the veggie (replaced Figma's broccoli icon) — but the bowl is kept (Figma has a plate); G20 hides its pan, G20K shows a new one
  * - the aim arrow stops AIM_TIP_GAP short of the finger, so the finger doesn't cover its tip
  * - a short pause in the bowl after a serve so the player sees it land (the mock jumped straight
  *   to the next level)
@@ -98,11 +98,11 @@ const BACKGROUND = "#EFE6D8"; // warm, close to the kitchen wall — only seen f
 // the pan is part of this scene (G20 hides its pan)
 const TOUCH_HINT = "แตะที่กระทะ";
 
-// Veggie: Figma's broccoli icon, an 80px box on the 400px-wide design = 108 stage units. The drawing
-// sits inset in that box like in Figma (left 12.51%, top 6.25%, right 10.57%, bottom 5.96%).
-const VEGGIE_SRC = "/assets/g20/broccoli.svg";
+// Veggie: a tied bunch of ผักบุ้ง (replaced Figma's broccoli icon) in the same 80px box on the 400px-wide design
+// = 108 stage units. The SVG is drawn to fill its square box, so no inset.
+const VEGGIE_SRC = "/assets/g20/morning-glory.svg";
 const VEGGIE_SIZE = 108;
-const VEGGIE_INSET = { left: 0.1251, top: 0.0625, right: 0.1057, bottom: 0.0596 };
+const VEGGIE_INSET = { left: 0, top: 0, right: 0, bottom: 0 };
 // "เหลือ n ต้น" on the stove front, under the pan (the veggie's spot) — between the two knobs
 const LEFT_COUNT_Y = STOVE_TOP + 18;
 
@@ -728,7 +728,7 @@ function drawVeggie(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null,
     return;
   }
   ctx.font = `80px ${EMOJI_FONT}`;
-  ctx.fillText("🥦", x, y);
+  ctx.fillText("🥬", x, y); // leafy-green stand-in until the ผักบุ้ง sprite loads
 }
 
 export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
@@ -898,7 +898,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     v.vx = 0;
     v.vy = 0;
     v.y = PLATE_Y + 8; // lower half hidden by the bowl's front, so it reads as "in the bowl"
-    v.plateOffset = Math.max(-16, Math.min(16, v.x - world.plate.x)); // keep the broccoli inside the bowl's opening
+    v.plateOffset = Math.max(-16, Math.min(16, v.x - world.plate.x)); // keep the ผักบุ้ง inside the bowl's opening
 
     const tStep = tutorialStepRef.current;
     if (tStep) {
