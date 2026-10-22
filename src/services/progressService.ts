@@ -15,6 +15,33 @@ const COOKIE_MAX_AGE_DAYS = 365;
 
 export type AppMode = "normal" | "research";
 
+export interface UserSession {
+  sessionId: string;
+  ageGroup: string | null;
+  consentGiven: boolean;
+  role?: string;
+  location?: {
+    province?: string;
+    district?: string;
+    subdistrict?: string;
+    source?: string;
+    coordinates?: { latitude: number; longitude: number };
+  };
+  deviceMetadata?: Record<string, string> | null;
+  createdAt?: string;
+  [key: string]: any;
+}
+
+export interface UserProgress {
+  currentStep: string; // 'landing' | 'consent' | 'video' | 'game' | 'reward'
+  completedLessons: string[];
+  stars: Record<string, number>; // { lessonId: numberOfStars }
+  currentLessonId: string;
+  learningMode?: "flow" | "manual";
+  lastUpdated: string;
+  [key: string]: any;
+}
+
 // Set per deployment from the APP_MODE env (read server-side in the root layout and
 // handed to AppLayout, which calls configureAppMode during render so it is ready
 // before any page's effects run).

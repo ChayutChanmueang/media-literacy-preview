@@ -13,13 +13,6 @@ import { useDevSkip } from "@/lib/devSkip";
 // US-CF-49: เวลาที่ปุ่ม "ข้าม" บน header จะโผล่ หลังเข้าช่วงวิดีโอ (นับรวมเวลารอคลิปโหลด)
 const HEADER_SKIP_DELAY_MS = 5590;
 
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: (() => void) | undefined;
-  }
-}
-
 export default function VideoLessonPage() {
   const params = useParams();
   const router = useRouter();
