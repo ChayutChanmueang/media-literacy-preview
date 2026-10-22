@@ -1,0 +1,25 @@
+graph TB
+    subgraph ClientLayer ["Client Layer (Mobile Web / PWA)"]
+        UI["React 19 / Next.js 15 (App Router)"]
+        GameEngine["Phaser.js 3.80+ (Arcade Physics Canvas)"]
+        Style["Tailwind CSS v4 + Zero-Scroll Tokens"]
+    end
+
+    subgraph ServiceLayer ["Service Layer & State Management"]
+        Progress["ProgressService (LocalStorage + Cookie Backup)"]
+        Logging["LoggingService (Asynchronous Beacon Pipeline)"]
+        Leaderboard["LeaderboardService"]
+    end
+
+    subgraph BackendLayer ["Backend & Database Layer (Supabase)"]
+        API["Next.js Route Handlers (Edge API)"]
+        Postgres[("Supabase PostgreSQL Database")]
+    end
+
+    UI --> Progress
+    UI --> Logging
+    GameEngine --> Leaderboard
+    Logging --> API
+    Leaderboard --> API
+    Progress --> API
+    API --> Postgres

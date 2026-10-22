@@ -1,14 +1,26 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import QuizScreen from "@/components/QuizScreen";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
+import { useIsClient } from "@/lib/useIsClient";
+
+// Verify all 5 key topics have stars (topic-1, topic-2, topic-3, topic-5, topic-6)
+const REQUIRED_LESSONS = ["topic-1", "topic-2", "topic-6", "topic-5", "topic-3"];
+
+function canEnterPosttest() {
+  const session = progressService.getOrCreateSession();
+  if (!session?.consentGiven || !session?.ageGroup) return false;
+  const progress = progressService.getProgress();
+  return !!progress.pretest_completed && REQUIRED_LESSONS.every((id) => progress.stars[id] !== undefined);
+}
 
 export default function PosttestPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  // Spinner until mounted on the client and the guard passes (the effect below redirects otherwise)
+  const loading = !(useIsClient() && canEnterPosttest());
 
   useEffect(() => {
     // Posttest is accessible only after completing all lessons (stars collected)
@@ -30,9 +42,7 @@ export default function PosttestPage() {
       return;
     }
 
-    // Verify all 5 key topics have stars (topic-1, topic-2, topic-3, topic-5, topic-6)
-    const requiredLessons = ["topic-1", "topic-2", "topic-6", "topic-5", "topic-3"];
-    const allCompleted = requiredLessons.every((id) => progress.stars[id] !== undefined);
+    const allCompleted = REQUIRED_LESSONS.every((id) => progress.stars[id] !== undefined);
     
     if (!allCompleted) {
       // Send back to dashboard if not finished yet
@@ -40,8 +50,6 @@ export default function PosttestPage() {
       router.push("/lessons");
       return;
     }
-
-    setLoading(false);
   }, [router]);
 
   const handleComplete = (score: number) => {

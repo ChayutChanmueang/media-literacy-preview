@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { progressService } from "@/services/progressService";
+import { useIsClient } from "@/lib/useIsClient";
 import { loggingService } from "@/services/loggingService";
 import { FLOW_SEQUENCE, firstIncompleteFlowLesson } from "@/lib/flow";
 import { notoLoopedThai } from "@/lib/fonts";
@@ -13,18 +14,16 @@ import pkg from "../../package.json";
 // Figma node 2065:7228 "รู้ทันสื่อ"
 export default function LandingPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
+  const loading = !useIsClient();
 
   useEffect(() => {
-    // Log page entry
-    const sess = progressService.getOrCreateSession();
-    setSession(sess);
+    // Create the anonymous session on first visit, then log page entry
+    progressService.getOrCreateSession();
     loggingService.logEvent("landing_page_view");
-    setLoading(false);
   }, []);
 
   const handleNext = () => {
+    const session = progressService.getOrCreateSession();
     if (!session?.consentGiven || !session?.ageGroup) {
       router.push("/consent");
       return;

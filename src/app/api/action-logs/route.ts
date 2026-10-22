@@ -22,9 +22,9 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(analytics);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in GET /api/action-logs:", error);
-    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
 
@@ -62,8 +62,8 @@ export async function POST(req: NextRequest) {
     ]);
 
     return NextResponse.json({ success: true, log: result.rows[0] }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in POST /api/action-logs:", error);
-    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

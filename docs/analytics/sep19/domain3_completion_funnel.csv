@@ -1,0 +1,12 @@
+﻿step_order,step_code,step_name,unique_users,pct_of_landing_page,pct_of_identified_users
+1,landing,เข้าสู่หน้าแรก (Landing Page),453,100.00,155.67
+2,consent_view,เข้าสู่หน้ายินยอม (Consent Page View),398,87.86,136.77
+3,consent_submitted,ยืนยันความยินยอมและระบุข้อมูล (Consent Submitted),291,64.24,100.00
+4,dashboard_view,เข้าสู่หน้าเลือกบทเรียน (Lessons Dashboard View),312,68.87,107.22
+5,started_content,เริ่มทำกิจกรรมใดๆ (Started Content),315,69.54,108.25
+6,topic1_completed,จบหมวด 1: ข่าวจริง/มั่ว (วิดีโอ + เกม),188,41.50,64.60
+7,topic6_completed,จบหมวด 6: แชท LINE (วิดีโอ + เกม),182,40.18,62.54
+8,topic3_completed,จบหมวด 3: AI หรือคนจริง (วิดีโอ + เกม),167,36.87,57.39
+9,all_3_completed,จบครบทั้ง 3 หมวดหมู่หลัก (Completed All 3 Core Topics),153,33.77,52.58
+10,completion_screen,เข้าถึงหน้าจบหลักสูตร (Course Completion View),89,19.65,30.58
+11,back_home,กดกลับสู่หน้าหลักหลังจบหลักสูตร (Course Completion Back Home),79,17.44,27.15

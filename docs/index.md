@@ -1,8 +1,8 @@
 # 🎮 รู้ทันสื่อ Interactive — Project Index
 
 **Project:** Web Application สร้างเสริมสมรรถนะรู้เท่าทันสื่อ/สแกม/AI สำหรับผู้สูงอายุ (NAPLAB Media Literacy)
-**Status:** Active | **Current Sprint:** [Sprint 04](./agile/sprint-backlog/sprint-04.md) — 🟡 Pre-Phrae/Nan Readiness (ปรับจาก feedback เชียงใหม่เตรียมงานแพร่ 17–18 ส.ค.) | **Fast-Tracked:** [Sprint 03B](./agile/sprint-backlog/sprint-03b-refinement.md) (Completed 80%+)
-**Last Updated:** 2026-08-18
+**Status:** Active | **Current Sprint:** [Sprint 06](./agile/sprint-backlog/sprint-06.md) — 🟡 Pre/Post-test + UI ชุดใหม่ + เตรียมส่งงวดที่ 2 (อบรมครบ 3 จังหวัดแล้ว: เชียงใหม่ 10 ส.ค., แพร่ 19–21 ส.ค., น่าน 18 ก.ย.) | สถานะทุก Sprint: [Sprint Planning](./agile/02-sprint-planning.md)
+**Last Updated:** 2026-10-01
 
 **ที่มา:** เอกสาร Requirement [Interactive เกม-ระบบ.docx](./wiki/base-requirement/Interactive%20เกม-ระบบ.docx)
 **Deadline สำคัญ:** ใช้งานจริงครั้งแรก — เชียงใหม่ 6–7 ส.ค. 2569, แพร่ 17–18 ส.ค., น่าน 24–25 ส.ค.
@@ -32,7 +32,7 @@
   - [G10 — นี้แอปฉัน นั้นแอปใคร?](./gdd/design-g10.md) — หา/ลบแอปปลอมในตารางไอคอนมือถือ
   - [G11 — หยุดนิ้ว! คิดก่อนกด](./gdd/design-g11.md) — 🔨 Prototype แตะมือหยุดนิ้วก่อนกดข้อมูลหลอกลวง ([US-GAME-11](./agile/user-stories/US-GAME-11.md))
   - [G12 — อย่ากดลิงก์จี้ ถ้าไม่รีบหยุดกด](./gdd/design-g12.md) — 🟡 ผสาน Chuzzle + คอมเมนต์ลิงก์อันตราย + นิ้วที่กำลังกด [NEW]
-  - [G13 — ต่อไอติมรู้ทันสื่อ](./gdd/design-g13.md) — 🔨 DOM Prototype ใช้เป็นเกมปิดท้าย Flow; มี task [US-GAME-13-R2 — Canvas Remake](./agile/user-stories/US-GAME-13-R2.md) รอเริ่ม (ไอติมจริง + ระเบิด + stack collision ใหม่)
+  - [G13 — ต่อไอติมฝึกสมอง](./gdd/design-g13.md) — 🔨 DOM Prototype ใช้เป็นเกมปิดท้าย Flow; มี task [US-GAME-13-R2 — Canvas Remake](./agile/user-stories/US-GAME-13-R2.md) รอเริ่ม (ไอติมจริง + ระเบิด + stack collision ใหม่)
   - [G15 — ลองถาม AI](./gdd/design-g15-ai-chat.md) — 🔍 In QA จำลองแชท AI (เดิม GP3) — โหมดอิสระ › เกมเพื่อการเรียนรู้
   - [G16 — คิดก่อนโพสต์](./gdd/design-g16-think-before-post.md) — 🔍 In QA จำลองหน้าสร้างโพสต์ (เดิม GP4) — โหมดอิสระ › เกมเพื่อการเรียนรู้
   - [G17 — โล่กันโกง](./gdd/design-g17-scam-breaker.md) — 🔍 In QA เด้งลูกทำลายบล็อกภาพ (เดิม GP6) — โหมดอิสระ › เกมเพื่อการเรียนรู้
@@ -50,6 +50,7 @@
 - [05 — Screen Design](./software/05-screen-design.md) — 🟢 การจัดวางหน้าจอผู้สูงอายุและสเปก Leaderboard แบบแยก `gid`/รองรับรายการเลื่อนได้
 - [06 — Session & Identifier Specification](./software/06-session-specification.md) — ข้อกำหนดการจัดการ Session ID สภาพแวดล้อมจัดเก็บข้อมูลคู่ออฟไลน์ และทางเลือกกรณีเปิดข้ามเบราว์เซอร์ [NEW]
 - 07 — Class Diagram — ⏳ ยังไม่สร้าง
+- [08 — คู่มือเพิ่มเกมเข้า Leaderboard](./software/08-leaderboard-add-game.md) — 🟢 checklist ทุกจุดที่ต้องแก้ (DB `game_id`, `src/lib/leaderboard.ts`, หน้าเกม/หน้ากระดาน, เทสต์) + สถานะ Leaderboard รายเกม + วิธีตรวจ
 
 ## 🚀 Agile Management
 
@@ -61,7 +62,11 @@
 - [Sprint 04 — Pre-Phrae/Nan Readiness & Facilitator](./agile/sprint-backlog/sprint-04.md) — 🟡 เตรียมความพร้อมสำหรับงานลงพื้นที่แพร่ (17–18 ส.ค.) และ น่าน (24–25 ส.ค.) — Active
 - [US-CF-50 — Leaderboard แยกตามเกม](./agile/user-stories/US-CF-50.md) — 🟡 In Progress: G13 score submission, Supabase DB QA และ browse-only regression ผ่านแล้ว; full mobile/LINE QA ยังรอ
 - [Sprint 07 — Top-Down Mini Prototype](./agile/sprint-backlog/sprint-07.md) — 🆕 R&D: Canvas 2D world ห่อมินิเกม G1–G10 "รู้ทันกลางสายหมอก" (Epic E-WORLD, US-WORLD-01…09) — Planned
-- [Weekly Progress Reports](./reports/weekly/) — 🆕 รายงานสรุปความคืบหน้าประจำสัปดาห์ (ล่าสุด [Weekly 2026-W32 (27 ก.ย. – 8 ส.ค. 2026)](./reports/weekly/weekly-2026-W32.md) และ [Weekly 2026-W30](./reports/weekly/weekly-2026-W30.md)) [NEW]
+- [📊 Master Analytics & Action Logs Report (รอบ 7 ส.ค.)](./analytics/aug07/aug07_usage_report.md) — 🆕 รายงานวิเคราะห์ข้อมูล Action Logs 16,525 รายการ (123 Users) สรุปพฤติกรรมผู้เรียน สเปกเครื่องผู้สูงอายุ และผลการอบรมภาคสนาม (19 ก.ค. – 12 ส.ค. 2026)
+- [🧪 Master Analytics & Action Logs Report (รอบทดสอบ 18 ส.ค. / เตรียมพร้อม 19 ส.ค.)](./analytics/aug18/aug18_usage_report.md) — 🆕 รายงานวิเคราะห์ข้อมูล Action Logs 29,853 รายการ (234 Sessions) สรุปพฤติกรรมผู้เรียน สถิติการดูวิดีโอ การเล่นมินิเกม และความพร้อมของระบบ
+- [📊 Field Workshop Analytics Report (รอบลงพื้นที่จริง 19 ส.ค. 12:00–16:00 น.)](./analytics/aug19/aug19_usage_report.md) — 🆕 รายงานวิเคราะห์ข้อมูล Action Logs 9,131 รายการ จาก 63 ผู้เรียนจริง ณ จ.แพร่
+- [🌟 Master Unique User Analytics Report (รอบ 19 ก.ย. 2026 - ตั้งแต่วันแรกถึงปัจจุบัน)](./analytics/sep19/sep19_unique_user_report.md) — 🆕 รายงานสรุปผลวิเคราะห์ผู้ใช้ไม่ซ้ำ 548 คน จาก 35 อำเภอทั่วภาคเหนือ อัตราเรียนจบ 52.6% พร้อมชุดข้อมูล CSV 8 มิติ
+- [🔬 Research & Development Summary (สรุปกระบวนการวิจัยและพัฒนาเพื่อเขียนเล่มรายงาน)](./wiki/research-dev-summary/README.md) — 🆕 สรุปกระบวนการออกแบบและพัฒนาระบบตั้งแต่เริ่มจนถึงปัจจุบัน สำหรับนำไปเขียนรายงานวิจัย 5 บท (ทฤษฎี, การออกแบบ, พัฒนา Agile, ทดสอบภาคสนาม, บทเรียน)
 
 ---
 

@@ -1,0 +1,557 @@
+{
+  "total_actions": 9131,
+  "unique_sessions": 63,
+  "time_range": [
+    "2026-08-19 12:00:01.808000+07:00",
+    "2026-08-19 15:35:20.168000+07:00"
+  ],
+  "os_sessions": {
+    "Android": 40,
+    "Desktop / PC": 5,
+    "iOS": 18
+  },
+  "os_actions": {
+    "Android": 5580,
+    "iOS": 3324,
+    "Desktop / PC": 227
+  },
+  "demographics": {
+    "age_range": {
+      "50-59": 65,
+      "60-69": 26,
+      "other": 10,
+      "70-79": 6
+    },
+    "province": {
+      "แพร่": 105,
+      "เชียงใหม่": 2
+    },
+    "district": {
+      "ลอง": 52,
+      "ร้องกวาง": 17,
+      "หนองม่วงไข่": 15,
+      "เมืองแพร่": 14,
+      "สูงเม่น": 5,
+      "สอง": 2,
+      "เมืองเชียงใหม่": 1,
+      "สะเมิง": 1
+    },
+    "sub_district": {
+      "ปากกาง": 50,
+      "ร้องเข็ม": 11,
+      "แม่หล่าย": 8,
+      "ร้องกวาง": 4,
+      "แม่คำมี": 4,
+      "ตำหนักธรรม": 4,
+      "น้ำรัด": 4,
+      "สูงเม่น": 3,
+      "ในเวียง": 3,
+      "วังหลวง": 2,
+      "ทุ่งโฮ้ง": 2,
+      "แม่ยางร้อง": 1,
+      "บ้านหนุน": 1,
+      "บ้านกวาง": 1,
+      "เตาปูน": 1,
+      "บ้านเวียง": 1,
+      "ห้วยอ้อ": 1,
+      "หัวทุ่ง": 1,
+      "ป่าแมต": 1,
+      "ช้างเผือก": 1,
+      "หนองม่วงไข่": 1,
+      "ดอนมูล": 1,
+      "สะเมิงใต้": 1
+    }
+  },
+  "pages": [
+    {
+      "page_url": "/",
+      "users": 59,
+      "actions": 94
+    },
+    {
+      "page_url": "/lessons",
+      "users": 50,
+      "actions": 224
+    },
+    {
+      "page_url": "/lessons/topic-1/video",
+      "users": 49,
+      "actions": 310
+    },
+    {
+      "page_url": "/consent",
+      "users": 48,
+      "actions": 172
+    },
+    {
+      "page_url": "/lessons/topic-1/game",
+      "users": 46,
+      "actions": 674
+    },
+    {
+      "page_url": "/lessons/topic-6/video",
+      "users": 44,
+      "actions": 220
+    },
+    {
+      "page_url": "/lessons/topic-6/game",
+      "users": 43,
+      "actions": 740
+    },
+    {
+      "page_url": "/lessons/topic-3/video",
+      "users": 42,
+      "actions": 232
+    },
+    {
+      "page_url": "/lessons/topic-3/game",
+      "users": 42,
+      "actions": 1484
+    },
+    {
+      "page_url": "/lessons/flow-g13/game",
+      "users": 39,
+      "actions": 4832
+    },
+    {
+      "page_url": "/lessons/flow-g13/leaderboard",
+      "users": 28,
+      "actions": 83
+    },
+    {
+      "page_url": "/lessons/complete",
+      "users": 19,
+      "actions": 48
+    },
+    {
+      "page_url": "/lessons/flow-g13/leaderboard?view=browse",
+      "users": 3,
+      "actions": 14
+    },
+    {
+      "page_url": "/?fbclid=IwY2xjawTiOntwZG9mAWV4dG4DYWVtAjEwAGJyaWQRMTFmaEVvN1RkTjFWSkRtdERzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeRpK_8aX-Nb-yO7amkQgHsegVVJXW3CJrijeE-kjduKHAdyUVIt5B47OfHkI_aem_78j0kReT0sRNWVw39F0XYA",
+      "users": 1,
+      "actions": 3
+    },
+    {
+      "page_url": "/?fbclid=IwcGRvZgRleHRuA2FlbQIxMQBzcnRjBmFwcF9pZAwyNTYyODEwNDA1NTgAAR7qYJ7Tx0Rd6N3NMF0mvEvISKEudrN4-YxRyk5DNjxLfKjMXASAKWg-6JWoYQ_aem_Z_J3Miuw7_24kMiMUFv2Yw",
+      "users": 1,
+      "actions": 1
+    }
+  ],
+  "events": [
+    {
+      "event_name": "scoop_catch",
+      "users": 36,
+      "actions": 3187
+    },
+    {
+      "event_name": "game_finish",
+      "users": 44,
+      "actions": 925
+    },
+    {
+      "event_name": "bomb_dodge",
+      "users": 36,
+      "actions": 850
+    },
+    {
+      "event_name": "game_complete",
+      "users": 44,
+      "actions": 766
+    },
+    {
+      "event_name": "answer_question",
+      "users": 44,
+      "actions": 501
+    },
+    {
+      "event_name": "enter_question",
+      "users": 44,
+      "actions": 410
+    },
+    {
+      "event_name": "game_start",
+      "users": 48,
+      "actions": 282
+    },
+    {
+      "event_name": "double_catch",
+      "users": 36,
+      "actions": 273
+    },
+    {
+      "event_name": "play_video",
+      "users": 45,
+      "actions": 204
+    },
+    {
+      "event_name": "enter_video",
+      "users": 49,
+      "actions": 204
+    },
+    {
+      "event_name": "game_intro_start",
+      "users": 44,
+      "actions": 141
+    },
+    {
+      "event_name": "select_response",
+      "users": 43,
+      "actions": 129
+    },
+    {
+      "event_name": "video_complete",
+      "users": 44,
+      "actions": 128
+    },
+    {
+      "event_name": "select_lesson",
+      "users": 49,
+      "actions": 109
+    },
+    {
+      "event_name": "lessons_dashboard_view",
+      "users": 50,
+      "actions": 108
+    },
+    {
+      "event_name": "consent_submitted",
+      "users": 45,
+      "actions": 107
+    },
+    {
+      "event_name": "landing_page_view",
+      "users": 60,
+      "actions": 98
+    },
+    {
+      "event_name": "bomb_hit",
+      "users": 32,
+      "actions": 93
+    },
+    {
+      "event_name": "enter_scenario",
+      "users": 43,
+      "actions": 86
+    },
+    {
+      "event_name": "scoop_miss",
+      "users": 25,
+      "actions": 79
+    },
+    {
+      "event_name": "video_skip_slow_load",
+      "users": 11,
+      "actions": 78
+    },
+    {
+      "event_name": "consent_page_view",
+      "users": 48,
+      "actions": 68
+    },
+    {
+      "event_name": "clip_intro_start",
+      "users": 42,
+      "actions": 49
+    },
+    {
+      "event_name": "leaderboard_page_view",
+      "users": 31,
+      "actions": 46
+    },
+    {
+      "event_name": "video_auto_advance",
+      "users": 26,
+      "actions": 43
+    },
+    {
+      "event_name": "course_completion_view",
+      "users": 18,
+      "actions": 28
+    },
+    {
+      "event_name": "video_slow_load_shown",
+      "users": 20,
+      "actions": 26
+    },
+    {
+      "event_name": "leaderboard_name_saved",
+      "users": 22,
+      "actions": 22
+    },
+    {
+      "event_name": "video_slow_load_resolved",
+      "users": 14,
+      "actions": 20
+    },
+    {
+      "event_name": "leaderboard_score_saved",
+      "users": 19,
+      "actions": 20
+    },
+    {
+      "event_name": "course_completion_back_home",
+      "users": 17,
+      "actions": 19
+    },
+    {
+      "event_name": "nav_leaderboard_from_drawer",
+      "users": 4,
+      "actions": 8
+    },
+    {
+      "event_name": "leaderboard_browse_open",
+      "users": 3,
+      "actions": 6
+    },
+    {
+      "event_name": "open_fullscreen_image",
+      "users": 3,
+      "actions": 6
+    },
+    {
+      "event_name": "video_skip_stutter",
+      "users": 4,
+      "actions": 4
+    },
+    {
+      "event_name": "double_miss",
+      "users": 3,
+      "actions": 3
+    },
+    {
+      "event_name": "nav_home_from_drawer",
+      "users": 2,
+      "actions": 3
+    },
+    {
+      "event_name": "leaderboard_name_skipped",
+      "users": 2,
+      "actions": 2
+    }
+  ],
+  "questions": [
+    {
+      "gid": "G1",
+      "qid": "g1-q1",
+      "total": 46,
+      "correct": true,
+      "correct_count": 43,
+      "incorrect_count": 3
+    },
+    {
+      "gid": "G1",
+      "qid": "g1-q2",
+      "total": 45,
+      "correct": true,
+      "correct_count": 43,
+      "incorrect_count": 2
+    },
+    {
+      "gid": "G1",
+      "qid": "g1-q3",
+      "total": 45,
+      "correct": true,
+      "correct_count": 42,
+      "incorrect_count": 3
+    },
+    {
+      "gid": "G1",
+      "qid": "g1-q4",
+      "total": 45,
+      "correct": true,
+      "correct_count": 29,
+      "incorrect_count": 16
+    },
+    {
+      "gid": "G1",
+      "qid": "g1-q5",
+      "total": 45,
+      "correct": true,
+      "correct_count": 41,
+      "incorrect_count": 4
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-ai-cooking",
+      "total": 19,
+      "correct": true,
+      "correct_count": 16,
+      "incorrect_count": 3
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-ai-dance",
+      "total": 22,
+      "correct": true,
+      "correct_count": 22,
+      "incorrect_count": 0
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-ai-doctor",
+      "total": 17,
+      "correct": true,
+      "correct_count": 16,
+      "incorrect_count": 1
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-ai-farmers",
+      "total": 25,
+      "correct": true,
+      "correct_count": 22,
+      "incorrect_count": 3
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-ai-market",
+      "total": 18,
+      "correct": true,
+      "correct_count": 16,
+      "incorrect_count": 2
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-ai-spokesperson",
+      "total": 17,
+      "correct": true,
+      "correct_count": 16,
+      "incorrect_count": 1
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-edited-naga",
+      "total": 20,
+      "correct": true,
+      "correct_count": 19,
+      "incorrect_count": 1
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-elephant-vintage",
+      "total": 10,
+      "correct": true,
+      "correct_count": 6,
+      "incorrect_count": 4
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-firewood-cooking",
+      "total": 15,
+      "correct": true,
+      "correct_count": 4,
+      "incorrect_count": 11
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-flower-market",
+      "total": 19,
+      "correct": true,
+      "correct_count": 6,
+      "incorrect_count": 13
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-green-sky",
+      "total": 18,
+      "correct": true,
+      "correct_count": 9,
+      "incorrect_count": 9
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-lanterns",
+      "total": 12,
+      "correct": true,
+      "correct_count": 7,
+      "incorrect_count": 5
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-longneck",
+      "total": 15,
+      "correct": true,
+      "correct_count": 12,
+      "incorrect_count": 3
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-mountain-road",
+      "total": 13,
+      "correct": true,
+      "correct_count": 6,
+      "incorrect_count": 7
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-rice-terrace",
+      "total": 15,
+      "correct": true,
+      "correct_count": 4,
+      "incorrect_count": 11
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-songkran",
+      "total": 13,
+      "correct": true,
+      "correct_count": 6,
+      "incorrect_count": 7
+    },
+    {
+      "gid": "G3",
+      "qid": "g3-real-sun-halo",
+      "total": 7,
+      "correct": true,
+      "correct_count": 3,
+      "incorrect_count": 4
+    }
+  ],
+  "scenarios": [
+    {
+      "sid": "g6-s1",
+      "total": 43,
+      "safe_count": 42,
+      "unsafe_count": 1
+    },
+    {
+      "sid": "g6-s2",
+      "total": 43,
+      "safe_count": 41,
+      "unsafe_count": 2
+    },
+    {
+      "sid": "g6-s3",
+      "total": 43,
+      "safe_count": 42,
+      "unsafe_count": 1
+    }
+  ],
+  "screen_sizes": {
+    "414x720": 4,
+    "390x669": 3,
+    "384x649": 2,
+    "384x640": 2,
+    "384x671": 2,
+    "360x613": 2,
+    "412x924": 1,
+    "384x678": 1,
+    "412x915": 1,
+    "393x665": 1,
+    "430x775": 1,
+    "360x660": 1,
+    "393x695": 1,
+    "384x723": 1,
+    "320x541": 1
+  },
+  "session_duration": {
+    "mean_min": 17.02,
+    "median_min": 13.67,
+    "max_min": 145.52,
+    "p75_min": 16.33,
+    "actions_mean": 144.94,
+    "actions_median": 162.0
+  }
+}

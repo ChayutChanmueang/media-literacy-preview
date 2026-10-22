@@ -1,14 +1,21 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import QuizScreen from "@/components/QuizScreen";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
+import { useIsClient } from "@/lib/useIsClient";
+
+function hasConsent() {
+  const session = progressService.getOrCreateSession();
+  return !!session?.consentGiven && !!session?.ageGroup;
+}
 
 export default function PretestPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  // Spinner until mounted on the client and the guard passes (the effect below redirects otherwise)
+  const loading = !(useIsClient() && hasConsent());
 
   useEffect(() => {
     // Basic guard: verify session exists
@@ -22,7 +29,6 @@ export default function PretestPage() {
       session.isTestingGroup = true;
       progressService.saveSession(session);
     }
-    setLoading(false);
   }, [router]);
 
   const handleComplete = (score: number) => {

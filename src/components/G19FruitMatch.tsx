@@ -2,8 +2,9 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
-import { Cherry, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
+import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
@@ -1025,7 +1026,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
         title="เรียงผลไม้"
         objective="ลากผลไม้สลับกับช่องข้าง ๆ ให้ผลไม้ชนิดเดียวกันเรียงติดกัน 3 ผลขึ้นไป แนวนอนหรือแนวตั้งก็ได้ ผลไม้จะหายไปและได้คะแนน"
         choices={`สลับได้ ${MOVES_PER_RUN} ครั้ง ไม่จับเวลา ค่อย ๆ เล่นได้เลย`}
-        icon={Cherry}
+        imageSrc="/assets/icons/g19-fruit-match.png"
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G19" });
           startRun();
@@ -1045,21 +1046,15 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
             <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
               ได้คะแนน <span className="font-bold text-[#B45309]">{score}</span> คะแนน
             </p>
-            {newBest && <p className="gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
-            {runs > 1 && (
+            {SHOW_RESULT_BEST_SCORE && newBest && <p className="gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
+            {SHOW_RESULT_BEST_SCORE && runs > 1 && (
               <p className="gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} คะแนน</p>
             )}
           </div>
         </div>
         <div className="flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
-          <Button3D onClick={startRun}>เล่นอีกครั้ง</Button3D>
-          <button
-            type="button"
-            onClick={finish}
-            className="min-h-[56px] rounded-[16px] border-2 border-solid border-[#CBD5E1] bg-white gp-text-22 font-bold text-[#1a1a1a]"
-          >
-            จบเกม
-          </button>
+          <Button3D variant="secondary" onClick={startRun}>เล่นอีกครั้ง</Button3D>
+          <Button3D onClick={finish}>จบเกม</Button3D>
         </div>
       </div>
     );

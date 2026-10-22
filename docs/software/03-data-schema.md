@@ -109,7 +109,7 @@ values
   ('G3', 'AI หรือ คน?'),
   ('G5', 'กางโล่กู้ชีพ'),
   ('G6', 'จำลองแชท LINE'),
-  ('G13', 'ต่อไอติมรู้ทันสื่อ')
+  ('G13', 'ต่อไอติมฝึกสมอง')
 on conflict (gid) do update set name = excluded.name;
 ```
 

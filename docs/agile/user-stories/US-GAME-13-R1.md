@@ -1,4 +1,4 @@
-# User Story: US-GAME-13-R1 - รื้อ UI/Layout เกม G13 ต่อไอติมรู้ทันสื่อ (Rework)
+# User Story: US-GAME-13-R1 - รื้อ UI/Layout เกม G13 ต่อไอติมฝึกสมอง (Rework)
 
 **Status:** ⛔ Superseded by [US-GAME-13-R2 — Canvas Remake](./US-GAME-13-R2.md) (2026-07-30)
 **Sprint:** [Sprint 08](../sprint-backlog/sprint-08.md) — breakdown ของ [US-UX-05](./US-UX-05.md) (responsive + นำ design UX/UI มาใช้จริง)

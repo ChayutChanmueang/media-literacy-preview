@@ -114,7 +114,7 @@ function LeaderboardPageInner() {
   const lessonId = params.id;
   const game = getLeaderboardGame(lessonId);
   const gid = game?.gid;
-  // G18–G20: กระดานคะแนนในเครื่อง ยังไม่ส่ง/ดึงจากฐานข้อมูล (ดู LOCAL_LEADERBOARD_GAMES)
+  // เกม localOnly: กระดานคะแนนในเครื่อง ไม่ส่ง/ดึงจากฐานข้อมูล (ดู LOCAL_LEADERBOARD_GAMES — ตอนนี้ยังไม่มีเกมในกลุ่มนี้)
   const localOnly = Boolean(game?.localOnly);
   const localName = game?.name ?? "";
   const [player, setPlayer] = useState<LeaderboardPlayer | null | undefined>(undefined);
@@ -352,7 +352,7 @@ function LeaderboardPageInner() {
     setReloadKey((currentKey) => currentKey + 1);
   };
 
-  // ปุ่มจบของเกมสนุกที่มาหน้านี้ตรงจากเกม (G13 + G18–G20)
+  // ปุ่มจบของเกมสนุกที่มาหน้านี้ตรงจากเกม (G13 + G18–G20K)
   const handleFinishFunGame = () => {
     // nothing should be left pending once the player leaves (the popup's "ไม่" already dropped it)
     if (gid) leaderboardScoreService.clearPendingScore(gid);
@@ -493,9 +493,9 @@ function LeaderboardPageInner() {
         <div className="mx-auto w-full max-w-[400px] shrink-0 gp-px-24 gp-pb-action-bar pt-[17px]">
           {isBrowse ? (
             <Button3D onClick={() => setPickerOpen(true)}>เลือกเกม</Button3D>
-          ) : gid === "G13" || localOnly ? (
+          ) : (
             <Button3D onClick={handleFinishFunGame}>กดเพื่อเสร็จสิ้น</Button3D>
-          ) : null}
+          )}
         </div>
 
         <LeaderboardGamePicker open={pickerOpen} onClose={() => setPickerOpen(false)} />

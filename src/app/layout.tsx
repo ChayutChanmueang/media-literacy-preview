@@ -37,7 +37,7 @@ export default async function RootLayout({
   const sizeCookie = cookieStore.get("naplab_ml_size");
 
   // Theme is always purple regardless of province (retained for future use)
-  let theme = "purple";
+  const theme = "purple";
   let size = "normal";
 
   // if (sessionCookie?.value) {

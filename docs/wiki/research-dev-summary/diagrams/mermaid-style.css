@@ -1,0 +1,10 @@
+
+* {
+  font-family: 'Leelawadee UI', 'Tahoma', 'Segoe UI', sans-serif !important;
+}
+.node rect, .node circle, .node ellipse, .node polygon, .node path {
+  stroke-width: 1.5px;
+}
+text {
+  font-weight: 500;
+}

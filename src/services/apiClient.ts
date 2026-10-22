@@ -3,9 +3,19 @@
  */
 import type { LeaderboardResponse } from "@/lib/leaderboard";
 import type { LeaderboardResultInput } from "@/lib/validations";
+import type { UserSession } from "./progressService";
+
+/** Row sent to POST /api/action-logs (also queued offline by loggingService). */
+export interface ActionLogInput {
+  session_id: string;
+  event_name: string;
+  page_url?: string;
+  payload?: Record<string, unknown>;
+  created_at?: string;
+}
 
 export const apiClient = {
-  async post(url: string, data: any) {
+  async post(url: string, data: unknown) {
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -27,7 +37,7 @@ export const apiClient = {
     return await response.json();
   },
 
-  async saveSession(session: any) {
+  async saveSession(session: UserSession) {
     const payload = {
       id: session.sessionId,
       age_range: session.ageGroup,
@@ -52,7 +62,7 @@ export const apiClient = {
     });
   },
 
-  async logEvent(logData: any) {
+  async logEvent(logData: ActionLogInput) {
     return this.post("/api/action-logs", {
       session_id: logData.session_id,
       event_name: logData.event_name,

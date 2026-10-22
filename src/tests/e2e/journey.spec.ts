@@ -55,8 +55,7 @@ test.describe("Media Literacy Interactive E2E User Journey", () => {
     
     // Perform a mock client action that triggers loggingService event log
     await page.evaluate(() => {
-      // @ts-ignore
-      if (window.next) {
+      if ((window as unknown as { next?: unknown }).next) {
         // Trigger manual event log to test cache queue
         fetch("/api/action-logs", {
           method: "POST",

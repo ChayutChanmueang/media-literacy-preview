@@ -1,4 +1,4 @@
-# User Story: US-GAME-13 - เกมต่อไอติมรู้ทันสื่อ (G13 Stack Smart Scoops) — Prototype
+# User Story: US-GAME-13 - เกมต่อไอติมฝึกสมอง (G13 Stack Smart Scoops) — Prototype
 
 **Status:** 🔨 Prototype — โค้ดเสร็จ (`G13ScoopStacker.tsx` + `g13-scoop-items.json` + ลงทะเบียนใน Dev Game Hub), **รอ QA playtest คลิกจริงในเบราว์เซอร์** (ยังไม่ mark AC เป็น done ตามกติกา AGENT ข้อ 1)
 **Sprint:** ผูกเป็นเกมปิดท้าย Flow ใหม่ ([US-FLOW-01](./US-FLOW-01.md)) — เป็น terminal `flow-g13` ก่อน posttest

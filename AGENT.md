@@ -27,6 +27,7 @@ Web App เชิงโต้ตอบ (SPA, mobile-first, no-login) สอน�
 - `src/services/loggingService.js` — ส่ง event log แบบ async ไม่บล็อก UI, มี offline queue fallback ผ่าน `localStorage` ถ้าเซิร์ฟเวอร์ล่ม/เน็ตหลุด — ทุก action สำคัญ (ข้ามคลิป, เปิดคำถาม, ตอบ, จบเกม) ต้องยิง `loggingService.logEvent(...)`
 - `src/components/GameShell.jsx` — เชลล์กลางของทุกมินิเกม (progress dots, ปุ่มเสียงอ่าน, การ์ดเฉลย) — เกมใหม่ควรคุยกับ `GameShell` ผ่าน props `onFinish(stars)` และ `logEvent`, ไม่ต้อง reinvent การ layout เอง
 - แต่ละมินิเกมเป็น component แยก ตามรหัส G-number: `G1FactCheck`, `G2ScamSpotter`, `G3AIOrNot`, `G5DigitalShield`, `G6LineSimulation` — ก่อนเพิ่มเกมใหม่ ให้ดู [docs/gdd/01-mechanics.md](./docs/gdd/01-mechanics.md) และ design doc เฉพาะเกม (`docs/gdd/design-g*.md`) ก่อนเสมอ ห้ามเดาสเปกเอง
+- Leaderboard: ก่อนเพิ่ม/ย้ายเกมเข้ากระดานคะแนน อ่าน [docs/software/08-leaderboard-add-game.md](./docs/software/08-leaderboard-add-game.md) — มีหลายจุดที่ยังเขียนเช็ค G13 ตรงๆ การเพิ่มแค่ config/ปุ่มเลือกเกมไม่พอ
 - ธีม / Design tokens ทั้งหมดอยู่ที่ `src/app/globals.css` (ไม่ใช่ `src/App.css` หรือ `src/index.css` — สองไฟล์นั้นไม่มีแล้วหลัง migrate) โหลดผ่าน `src/app/layout.tsx`
 
 ## Design Tokens & Accessibility (ข้อบังคับ ไม่ใช่ทางเลือก)

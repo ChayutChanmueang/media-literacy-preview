@@ -322,7 +322,7 @@ export default function ConsentLocationPage() {
     const isTesting = redirect === "/pretest" || !!current?.isTestingGroup;
 
     await progressService.saveSession({
-      ...current,
+      ...current!,
       consentGiven: true,
       location: { ...values, source: "manual" },
       isTestingGroup: isTesting,

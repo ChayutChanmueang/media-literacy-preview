@@ -40,28 +40,30 @@ const LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {
     gid: "G13",
     icon: "/assets/icons/g13-ice-cream.jpg",
   },
+  // เกมสนุก G18–G20 (โหมดอิสระ) — เดิมเป็นกระดานในเครื่อง (localOnly) ย้ายมาใช้ DB แล้ว ชื่อเกมดึงจาก game_id
+  g18: { lessonId: "g18", gid: "G18", icon: "/assets/icons/g18-simon.png" },
+  g19: { lessonId: "g19", gid: "G19", icon: "/assets/icons/g19-fruit-match.png" },
+  g20: { lessonId: "g20", gid: "G20", icon: "/assets/icons/g20-veggie-tross.png" },
+  // G20K = อีกรุ่นของ G20 (ของจริงจะเหลือรุ่นเดียว) จึงใช้กระดานเดียวกับ G20 (gid "G20")
+  // ไม่อยู่ใน BROWSABLE_LEADERBOARD_GAMES — เมนูเลือกเกมเปิดกระดาน G20 ผ่าน g20 อยู่แล้ว
+  g20k: { lessonId: "g20k", gid: "G20", icon: "/assets/icons/g20-veggie-tross.png" },
 };
 
-// เกมสนุกที่ยังไม่ต่อฐานข้อมูล (G18–G20): มีกระดานคะแนนแต่เก็บในเครื่องอย่างเดียว ไม่ส่ง/ไม่ดึงจาก DB
-// ตอนต่อ DB: เพิ่มแถวในตาราง game_id, ย้ายเข้า LEADERBOARD_GAMES + BROWSABLE + MAX_SCORE_BY_GID แล้วลบ localOnly/name ออก
-// ไม่รวมใน SUPPORTED_GIDS โดยตั้งใจ — API จะยังปฏิเสธ gid เหล่านี้อยู่
-const LOCAL_LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {
-  g18: { lessonId: "g18", gid: "G18", localOnly: true, name: "จำให้ขึ้นใจ", icon: "/images/lessons/category-fun.png" },
-  g19: { lessonId: "g19", gid: "G19", localOnly: true, name: "เรียงผลไม้", icon: "/images/lessons/category-fun.png" },
-  g20: { lessonId: "g20", gid: "G20", localOnly: true, name: "ผักบุ้งลอยฟ้า", icon: "/images/lessons/category-fun.png" },
-};
+// เกมที่ยังไม่ต่อฐานข้อมูล: มีกระดานคะแนนแต่เก็บในเครื่องอย่างเดียว ไม่ส่ง/ไม่ดึงจาก DB (ใส่ localOnly + name)
+// ตอนนี้ไม่มีเกมในกลุ่มนี้แล้ว (G18–G20K ย้ายไป DB) — เก็บกลไกไว้สำหรับเกมทดลองในอนาคต
+// ไม่รวมใน SUPPORTED_GIDS โดยตั้งใจ — API จะปฏิเสธ gid เหล่านี้
+const LOCAL_LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {};
 
 export const LOCAL_BROWSABLE_LEADERBOARD_GAMES: LeaderboardGame[] = Object.values(LOCAL_LEADERBOARD_GAMES);
 
-// รุ่นทดลอง: กระดานในเครื่องแยกของตัวเอง (คะแนนไม่ปนกับเกมจริง) ให้จบเกมแล้วไปกระดานคะแนนแบบเดียวกับเกมจริง
-// แต่ไม่อยู่ในรายการเลือกเกมของเมนู "กระดานคะแนน" (ไม่รวมใน LOCAL_BROWSABLE_LEADERBOARD_GAMES)
-const EXPERIMENTAL_LOCAL_LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {
-  g20k: { lessonId: "g20k", gid: "G20K", localOnly: true, name: "ผักบุ้งลอยฟ้า (ทดลอง)", icon: "/images/lessons/category-fun.png" },
-};
-
-// US-CF-52: เกมที่เก็บคะแนนจริงและเปิดให้ browse กระดานคะแนนจากเมนู (ตอนนี้พร้อมเฉพาะ G13)
+// US-CF-52: เกมที่เก็บคะแนนจริงและเปิดให้ browse กระดานคะแนนจากเมนู
 // เพิ่มเกมใหม่ที่นี่เมื่อพร้อมเล่น+เก็บคะแนน โดยไม่ต้องแก้ UI
-export const BROWSABLE_LEADERBOARD_GAMES: LeaderboardGame[] = [LEADERBOARD_GAMES["flow-g13"]];
+export const BROWSABLE_LEADERBOARD_GAMES: LeaderboardGame[] = [
+  LEADERBOARD_GAMES["flow-g13"],
+  LEADERBOARD_GAMES["g18"],
+  LEADERBOARD_GAMES["g19"],
+  LEADERBOARD_GAMES["g20"],
+];
 
 const SUPPORTED_GIDS = new Set(Object.values(LEADERBOARD_GAMES).map((game) => game.gid));
 const MAX_SCORE_BY_GID: Record<string, number> = {
@@ -71,10 +73,16 @@ const MAX_SCORE_BY_GID: Record<string, number> = {
   G5: 1_000,
   G6: 1_000,
   G13: 500,
+  // G18 เล่นได้ไม่สิ้นสุด (คะแนน = จำนวนด่านที่ผ่าน) — ตั้งสูงกว่าที่คนจำลำดับไฟได้จริงพอสมควร
+  G18: 100,
+  // G19 สลับได้ 20 ครั้ง ครั้งละไม่เกินราว 500 (🌟+🌟 ล้างทั้งกระดาน 25 ชิ้น × 20) + เรียงต่อ — เผื่อไว้
+  G19: 20_000,
+  // G20/G20K โยนได้ 15 ครั้งต่อรอบ คะแนน = จำนวนจานที่เสิร์ฟได้
+  G20: 15,
 };
 
 export function getLeaderboardGame(lessonId: string): LeaderboardGame | null {
-  return LEADERBOARD_GAMES[lessonId] ?? LOCAL_LEADERBOARD_GAMES[lessonId] ?? EXPERIMENTAL_LOCAL_LEADERBOARD_GAMES[lessonId] ?? null;
+  return LEADERBOARD_GAMES[lessonId] ?? LOCAL_LEADERBOARD_GAMES[lessonId] ?? null;
 }
 
 export function isSupportedLeaderboardGid(gid: string): boolean {

@@ -2,8 +2,9 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
-import { Brain, Eye, Trophy } from "lucide-react";
+import { Eye, Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
+import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
 import StagePopup, { type StagePopupStage } from "@/components/StagePopup";
@@ -377,7 +378,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
             ? "ถ้ากดผิด จะจบรอบทันที ลืมลำดับเมื่อไหร่ กด “ดูอีกครั้ง” ก่อนได้"
             : "ถ้ากดผิด จะจบรอบทันที"
         }
-        icon={Brain}
+        imageSrc="/assets/icons/g18-simon.png"
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G18" });
           startRun();
@@ -403,21 +404,15 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
                 ด่านแรกมีไฟดวงเดียว ค่อย ๆ ดูแล้วกดตามได้เลย
               </p>
             )}
-            {newBest && <p className="gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
-            {runs > 1 && (
+            {SHOW_RESULT_BEST_SCORE && newBest && <p className="gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
+            {SHOW_RESULT_BEST_SCORE && runs > 1 && (
               <p className="gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} ด่าน</p>
             )}
           </div>
         </div>
         <div className="flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
-          <Button3D onClick={startRun}>เล่นอีกครั้ง</Button3D>
-          <button
-            type="button"
-            onClick={finish}
-            className="min-h-[56px] rounded-[16px] border-2 border-solid border-[#CBD5E1] bg-white gp-text-22 font-bold text-[#1a1a1a]"
-          >
-            จบเกม
-          </button>
+          <Button3D variant="secondary" onClick={startRun}>เล่นอีกครั้ง</Button3D>
+          <Button3D onClick={finish}>จบเกม</Button3D>
         </div>
       </div>
     );

@@ -23,6 +23,12 @@ interface Question {
   options: Option[];
 }
 
+interface QuizAnswer {
+  question_id: string;
+  selected_option_id: string;
+  is_correct: boolean;
+}
+
 interface QuizScreenProps {
   testType: "pretest" | "posttest";
   title: string;
@@ -36,8 +42,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   
-  // Track answers: { question_id, selected_option_id, is_correct }
-  const [answers, setAnswers] = useState<any[]>([]);
+  const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -103,7 +108,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
     const isCorrect = selectedOption ? selectedOption.is_correct : false;
 
     // Record answer
-    const newAnswer = {
+    const newAnswer: QuizAnswer = {
       question_id: currentQuestion.id,
       selected_option_id: selectedOptionId,
       is_correct: isCorrect,
@@ -132,7 +137,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
     }
   };
 
-  const submitQuizResults = async (finalScore: number, finalAnswers: any[]) => {
+  const submitQuizResults = async (finalScore: number, finalAnswers: QuizAnswer[]) => {
     setSubmitting(true);
     const session = progressService.getOrCreateSession();
     const sessionId = session?.sessionId || "";

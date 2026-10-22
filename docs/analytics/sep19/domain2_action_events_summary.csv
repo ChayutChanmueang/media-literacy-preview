@@ -1,0 +1,68 @@
+﻿event_name,functional_domain,total_occurrences,unique_users_triggered,pct_of_all_users
+scoop_catch,Minigame: G1/G13 IceCream,27724,176,32.12
+bomb_dodge,Minigame: G1/G13 IceCream,7644,175,31.93
+answer_question,Minigame: G1/G3 Questions,3200,235,42.88
+enter_question,Minigame: G1/G3 Questions,2626,233,42.52
+game_complete,Minigame: G1/G13 IceCream,2516,233,42.52
+game_start,Minigame: G1/G13 IceCream,2424,270,49.27
+game_finish,Minigame: G1/G13 IceCream,2395,231,42.15
+double_catch,Minigame: G1/G13 IceCream,2196,170,31.02
+play_video,Video Engagement,1445,266,48.54
+enter_video,Video Engagement,1277,290,52.92
+lessons_dashboard_view,Navigation & Course Flow,1096,312,56.93
+landing_page_view,Navigation & Course Flow,1030,453,82.66
+scoop_miss,Minigame: G1/G13 IceCream,961,116,21.17
+game_intro_start,Minigame: G1/G13 IceCream,933,238,43.43
+bomb_hit,Minigame: G1/G13 IceCream,924,148,27.01
+select_response,Minigame: G6 LINE Chat,831,202,36.86
+select_lesson,Navigation & Course Flow,775,299,54.56
+video_complete,Video Engagement,721,231,42.15
+consent_page_view,Navigation & Course Flow,573,398,72.63
+enter_scenario,Minigame: G6 LINE Chat,562,203,37.04
+consent_submitted,Navigation & Course Flow,423,291,53.10
+leaderboard_page_view,Leaderboard,323,92,16.79
+clip_intro_start,Other,288,194,35.40
+video_complete_skipped,Video Engagement,255,85,15.51
+video_auto_advance,Video Engagement,201,129,23.54
+course_completion_view,Navigation & Course Flow,137,89,16.24
+reset_application_state,Navigation & Course Flow,117,78,14.23
+course_completion_back_home,Navigation & Course Flow,113,79,14.42
+video_skip_slow_load,Video Engagement,106,30,5.47
+reward_view,Other,84,5,0.91
+unmute_video,Video Engagement,82,50,9.12
+leaderboard_browse_open,Leaderboard,82,17,3.10
+leaderboard_score_saved,Leaderboard,81,54,9.85
+skip_video,Video Engagement,75,4,0.73
+video_slow_load_shown,Video Engagement,73,59,10.77
+leaderboard_name_saved,Leaderboard,72,59,10.77
+nav_home_from_drawer,Navigation & Course Flow,64,39,7.12
+double_miss,Minigame: G1/G13 IceCream,56,37,6.75
+open_fullscreen_image,Other,51,20,3.65
+nav_leaderboard_from_drawer,Leaderboard,50,21,3.83
+video_slow_load_resolved,Video Engagement,48,36,6.57
+gps_location_requested,Location / GPS,40,27,4.93
+resume_flow,Navigation & Course Flow,36,21,3.83
+tap_hotspot,Other,33,2,0.36
+click_scam_element,Other,32,14,2.55
+reward_goto_dashboard,Other,30,3,0.55
+leaderboard_name_skipped,Leaderboard,27,12,2.19
+change_font_size,Other,26,3,0.55
+game_g5_block,Other,26,3,0.55
+gps_location_success,Location / GPS,21,18,3.28
+g13_dev_skip_timer,Minigame: G1/G13 IceCream,20,3,0.55
+gps_location_failed,Location / GPS,19,9,1.64
+facilitator_lesson_view,Other,18,18,3.28
+video_skip_stutter,Video Engagement,15,9,1.64
+check_scenario,Minigame: G6 LINE Chat,11,2,0.36
+game_g5_miss,Other,9,2,0.36
+submit_quiz_answer,Quiz / Assessment,9,2,0.36
+replay_video,Video Engagement,8,6,1.09
+pretest_completed_screen_transition,Quiz / Assessment,5,3,0.55
+click_locked_lesson,Navigation & Course Flow,4,1,0.18
+start_quiz,Quiz / Assessment,4,2,0.36
+toggle_audio,Video Engagement,2,1,0.18
+certificate_page_view,Certificate,2,1,0.18
+click_hotline,Other,1,1,0.18
+generate_certificate,Certificate,1,1,0.18
+posttest_completed_screen_transition,Quiz / Assessment,1,1,0.18
+certificate_back_to_dashboard,Certificate,1,1,0.18

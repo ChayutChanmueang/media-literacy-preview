@@ -1,0 +1,8 @@
+flowchart TD
+    A[กระบวนการทดสอบระบบ] --> B[1. Unit & Lint Testing]
+    A --> C[2. Automated E2E Testing]
+    A --> D[3. Cross-Device Physical Testing]
+
+    B --> B1[Vitest & Oxlint ตรวจสอบความถูกต้องของตรรกะโค้ด]
+    C --> C1[Playwright จำลองการคลิกผ่านด่านตั้งแต่ต้นจนจบ]
+    D --> D1[ทดสอบบนสมาร์ทโฟนจริง 15+ รุ่นที่ผู้สูงอายุใช้งาน]

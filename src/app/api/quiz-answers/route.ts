@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
       const result = await pool.query(queryText, [attempt_id, question_id, selected_option_id, is_correct]);
       return NextResponse.json({ success: true, answer: result.rows[0] }, { status: 201 });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in POST /api/quiz-answers:", error);
-    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

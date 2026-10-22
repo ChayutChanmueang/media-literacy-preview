@@ -7,6 +7,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    // src/tests/e2e is Playwright's (npm run test:e2e); Vitest can't run those specs.
+    exclude: ["**/node_modules/**", "**/.next/**", "src/tests/e2e/**"],
   },
   resolve: {
     alias: {

@@ -88,13 +88,24 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
     synthRef.current.speak(utterance);
   };
 
-  // Spawns and triggers transition animation smoothly
-  useEffect(() => {
-    if (gameState === 'playing') {
-      // First set to start position
+  // Advance to the next hazard (or finish). The bubble is reset to its start position here, in the
+  // same update that switches to 'playing', so the effect below only has to start the fall.
+  const goToNextHazard = () => {
+    const nextIdx = activeHazardIdx + 1;
+    if (nextIdx < HAZARDS.length) {
       setBubbleYStyle('10%');
       setIsFalling(false);
+      setActiveHazardIdx(nextIdx);
+      setGameState('playing');
+    } else {
+      setGameState('finished');
+      logEvent('game_complete', { game_id: 'G5', score: 100, stars: 3 });
+    }
+  };
 
+  // Spawns and triggers transition animation smoothly (bubble starts at '10%', not falling)
+  useEffect(() => {
+    if (gameState === 'playing') {
       // Trigger transition on next browser repaint frame
       const frameId = requestAnimationFrame(() => {
         const timeoutId = setTimeout(() => {
@@ -111,7 +122,6 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
   // Slogan sequence trigger
   useEffect(() => {
     if (gameState === 'slogan') {
-      setSloganStep(0);
       speakSlogan(SLOGANS[0].text);
       const timer = setInterval(() => {
         setSloganStep(prev => {
@@ -122,16 +132,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
           } else {
             clearInterval(timer);
             // Slogan complete, check victory
-            setTimeout(() => {
-              const nextIdx = activeHazardIdx + 1;
-              if (nextIdx < HAZARDS.length) {
-                setActiveHazardIdx(nextIdx);
-                setGameState('playing');
-              } else {
-                setGameState('finished');
-                logEvent('game_complete', { game_id: 'G5', score: 100, stars: 3 });
-              }
-            }, 800);
+            setTimeout(goToNextHazard, 800);
             return prev;
           }
         });
@@ -165,6 +166,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
     const newConfidence = confidence + 20;
     setConfidence(newConfidence);
     logEvent('game_g5_block', { hazard_id: HAZARDS[activeHazardIdx].id, confidence: newConfidence });
+    setSloganStep(0);
     setGameState('slogan');
   };
 
@@ -180,14 +182,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
   const handleCloseAdvice = () => {
     // Advance to next hazard index directly
-    const nextIdx = activeHazardIdx + 1;
-    if (nextIdx < HAZARDS.length) {
-      setActiveHazardIdx(nextIdx);
-      setGameState('playing');
-    } else {
-      setGameState('finished');
-      logEvent('game_complete', { game_id: 'G5', score: 100, stars: 3 });
-    }
+    goToNextHazard();
   };
 
   const handleFinish = () => {
@@ -275,7 +270,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                   ⚠️ {currentHazard.type}
                 </span>
                 <p className="text-[clamp(12px,3.7vw,17px)] font-bold text-[#f8fafc] m-0 text-center leading-snug">
-                  "{currentHazard.text}"
+                  &quot;{currentHazard.text}&quot;
                 </p>
 
                 {/* Assist circle indicator */}
@@ -343,7 +338,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                 {/* Question Quote */}
                 <div className="my-4 p-3 bg-[var(--bg-app)] rounded-xl border-l-4 border-l-[#ef4444] text-left">
                   <p className="text-[clamp(10px,3.26vw,15px)] text-[var(--text-primary)] italic m-0">
-                    "{currentHazard.text}"
+                    &quot;{currentHazard.text}&quot;
                   </p>
                 </div>
 
@@ -396,7 +391,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
           <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-secondary)] leading-relaxed max-w-[360px] mb-7">
             ยอดเยี่ยมมาก! คุณลุงคุณป้ามีความคุ้นชินและเตรียมพร้อมรับมือภัยออนไลน์ด้วยหลักคิด
-            <strong> "หยุด คิด ถาม ทำ"</strong> อย่างเต็มร้อย นำความรู้ไปประยุกต์ใช้เพื่อความสุขไซเบอร์นะ
+            <strong> &quot;หยุด คิด ถาม ทำ&quot;</strong> อย่างเต็มร้อย นำความรู้ไปประยุกต์ใช้เพื่อความสุขไซเบอร์นะ
           </p>
 
           {/* Finish Button */}

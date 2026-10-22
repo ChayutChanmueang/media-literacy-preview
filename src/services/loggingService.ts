@@ -1,11 +1,11 @@
-import { apiClient } from "./apiClient";
+import { apiClient, type ActionLogInput } from "./apiClient";
 import { progressService } from "./progressService";
 
 const OFFLINE_LOGS_KEY = "naplab_ml_offline_logs";
 const MAX_OFFLINE_LOGS = 500;
 
 // Get queued offline logs
-function getOfflineLogs(): any[] {
+function getOfflineLogs(): ActionLogInput[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(OFFLINE_LOGS_KEY);
@@ -16,7 +16,7 @@ function getOfflineLogs(): any[] {
 }
 
 // Save queued offline logs
-function saveOfflineLogs(logs: any[]) {
+function saveOfflineLogs(logs: ActionLogInput[]) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(OFFLINE_LOGS_KEY, JSON.stringify(logs));
@@ -31,13 +31,13 @@ export const loggingService = {
    * @param eventName - Name of the event (e.g., 'skip_video', 'enter_question')
    * @param payload - Optional extra metadata
    */
-  async logEvent(eventName: string, payload: any = {}) {
+  async logEvent(eventName: string, payload: Record<string, unknown> = {}) {
     if (typeof window === "undefined") return;
 
     const session = progressService.getOrCreateSession();
     const sessionId = session?.sessionId || "unknown-session";
     
-    const logData = {
+    const logData: ActionLogInput = {
       session_id: sessionId,
       event_name: eventName,
       page_url: window.location.pathname + window.location.search,
@@ -76,7 +76,7 @@ export const loggingService = {
   /**
    * Save a log locally to be synchronized later.
    */
-  queueOfflineLog(logData: any) {
+  queueOfflineLog(logData: ActionLogInput) {
     try {
       const logs = getOfflineLogs();
       logs.push(logData);
@@ -105,7 +105,7 @@ export const loggingService = {
 
     console.log(`[LoggingService] Attempting to sync ${logs.length} cached offline logs in FIFO order...`);
     
-    const failedLogs: any[] = [];
+    const failedLogs: ActionLogInput[] = [];
     try {
       // Send each log sequentially (FIFO order)
       for (const log of logs) {

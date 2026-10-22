@@ -69,7 +69,13 @@ VALUES
     ('G3', 'AI หรือ คน?'),
     ('G5', 'กางโล่กู้ชีพ'),
     ('G6', 'จำลองแชท LINE'),
-    ('G13', 'ต่อไอติมรู้ทันสื่อ')
+    ('G13', 'ต่อไอติมฝึกสมอง'),
+    ('G15', 'ลองถามเอไอ'),
+    ('G16', 'คิดก่อนโพสต์'),
+    ('G17', 'โล่กันโกง'),
+    ('G18', 'จำให้ขึ้นใจ'),
+    ('G19', 'เรียงผลไม้'),
+    ('G20', 'ผักบุ้งลอยฟ้าช')
 ON CONFLICT (gid) DO UPDATE SET name = EXCLUDED.name;
 
 -- Browser roles must not access leaderboard tables directly; Next.js Route

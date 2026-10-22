@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Globe, Maximize2, SquarePen } from "lucide-react";
+import { Globe, Maximize2 } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import FullscreenImageViewer from "@/components/FullscreenImageViewer";
@@ -115,7 +115,7 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
         title="คิดก่อนโพสต์"
         objective="อ่านโพสต์ที่กำลังจะลงโซเชียล แล้วตัดสินใจว่าควรโพสต์ไหม ระวังข้อมูลส่วนตัวของตัวเอง ครอบครัว และลูกหลาน"
         choices="โพสต์เลย · ไม่โพสต์"
-        icon={SquarePen}
+        imageSrc="/assets/icons/g16-posting.png"
         onStart={() => {
           setShowHowTo(false);
           logEvent("game_intro_start", { game_id: "G16" });

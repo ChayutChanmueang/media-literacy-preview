@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  BROWSABLE_LEADERBOARD_GAMES,
   getLeaderboardGame,
   getLeaderboardMaxScore,
   isSupportedLeaderboardGid,
+  LOCAL_BROWSABLE_LEADERBOARD_GAMES,
 } from "@/lib/leaderboard";
 import { leaderboardNameSchema } from "@/lib/validations";
 import {
@@ -74,7 +76,7 @@ describe("leaderboard game routing", () => {
     expect(getLeaderboardGame("flow-g13")).toEqual({
       lessonId: "flow-g13",
       gid: "G13",
-      name: "ต่อไอติมรู้ทันสื่อ",
+      icon: "/assets/icons/g13-ice-cream.jpg",
     });
   });
 
@@ -83,5 +85,30 @@ describe("leaderboard game routing", () => {
     expect(isSupportedLeaderboardGid("G13")).toBe(true);
     expect(isSupportedLeaderboardGid("G999")).toBe(false);
     expect(getLeaderboardMaxScore("G13")).toBe(500);
+  });
+
+  it("puts G18–G20 on the database leaderboard with names from game_id", () => {
+    for (const [lessonId, gid] of [["g18", "G18"], ["g19", "G19"], ["g20", "G20"]]) {
+      const game = getLeaderboardGame(lessonId);
+      expect(game).toMatchObject({ lessonId, gid });
+      expect(game?.localOnly).toBeUndefined();
+      expect(game?.name).toBeUndefined();
+      expect(isSupportedLeaderboardGid(gid)).toBe(true);
+      expect(getLeaderboardMaxScore(gid)).toBeGreaterThan(0);
+      expect(BROWSABLE_LEADERBOARD_GAMES.map((browsable) => browsable.gid)).toContain(gid);
+    }
+    expect(LOCAL_BROWSABLE_LEADERBOARD_GAMES).toEqual([]);
+  });
+
+  it("shares G20's leaderboard with the G20K variant without listing it twice in the game picker", () => {
+    expect(getLeaderboardGame("g20k")).toMatchObject({ lessonId: "g20k", gid: "G20" });
+    expect(isSupportedLeaderboardGid("G20K")).toBe(false);
+    expect(BROWSABLE_LEADERBOARD_GAMES.filter((game) => game.gid === "G20").map((game) => game.lessonId)).toEqual(["g20"]);
+  });
+
+  it("caps G18–G20 scores at each game's ceiling", () => {
+    expect(getLeaderboardMaxScore("G18")).toBe(100);
+    expect(getLeaderboardMaxScore("G19")).toBe(20_000);
+    expect(getLeaderboardMaxScore("G20")).toBe(15);
   });
 });

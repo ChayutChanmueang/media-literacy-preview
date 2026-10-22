@@ -13,6 +13,8 @@ interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Grey like disabled but still pressable — e.g. a form that highlights what is missing when pressed.
    *  Announced as unavailable (aria-disabled) while onClick still fires. */
   inactive?: boolean;
+  /** "secondary": smaller white face with a light-grey side (e.g. "เล่นอีกครั้ง" under a primary "จบเกม") — same press motion */
+  variant?: "primary" | "secondary";
 }
 
 // Figma "Component 24": variant "1"/"2" = enabled/pressed, "Def-def" = disabled.
@@ -25,8 +27,16 @@ export default function Button3D({
   onAutoAdvance,
   autoAdvancePaused = false,
   inactive = false,
+  variant = "primary",
   ...props
 }: Button3DProps) {
+  const secondary = variant === "secondary";
+  // side = outer − face height (primary 8px, secondary 6px); the face's press slide below must match it
+  const outerSize = secondary ? "gp-h-64 rounded-[16px]" : "gp-h-104 rounded-[24px]";
+  const faceSize = secondary ? "gp-h-58 rounded-[16px]" : "gp-h-96 rounded-[24px]";
+  const baseColour = secondary ? "bg-[#CBD5E1]" : "bg-[#0078A8]";
+  const faceText = secondary ? "gp-text-22 gp-leading-32" : "gp-text-28 gp-leading-36";
+  const faceColour = secondary ? "border-2 border-solid border-[#CBD5E1] bg-white text-[#1a1a1a]" : "bg-[#00A3E0] text-white";
   const autoAdvanceRef = useRef(onAutoAdvance);
   useEffect(() => {
     autoAdvanceRef.current = onAutoAdvance;
@@ -36,7 +46,9 @@ export default function Button3D({
   // grey = Figma "Def-def" colours: disabled (no press) or inactive (grey but still slides when pressed)
   const grey = disabled || inactive;
   const pressBase = "transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]";
-  const pressFace = "transition-transform duration-[90ms] ease-out group-active:translate-y-[calc(8px*var(--gp-s,1))]";
+  const pressFace = `transition-transform duration-[90ms] ease-out ${
+    secondary ? "group-active:translate-y-[calc(6px*var(--gp-s,1))]" : "group-active:translate-y-[calc(8px*var(--gp-s,1))]"
+  }`;
 
   // Time left, kept across pauses so the countdown resumes where it stopped
   const remainingRef = useRef(autoAdvanceMs ?? 0);
@@ -61,22 +73,22 @@ export default function Button3D({
       {...props}
       disabled={disabled}
       aria-disabled={inactive || undefined}
-      className={`${notoLoopedThai.className} group relative block gp-h-104 w-full shrink-0 cursor-pointer rounded-[24px] disabled:cursor-not-allowed ${className}`}
+      className={`${notoLoopedThai.className} group relative block ${outerSize} w-full shrink-0 cursor-pointer disabled:cursor-not-allowed ${className}`}
     >
       {/* Base (the dark "side"): its own layer at the bottom, so pressing never swaps colours mid-frame.
           Pressed, it hides only after the face has fully covered it (delay = slide time), so no dark
           sliver shows around the face's rounded corners; on release it comes back at once. */}
       <span
         aria-hidden="true"
-        className={`absolute inset-x-0 bottom-0 gp-h-96 rounded-[24px] ${
-          disabled ? "bg-[#7F7F7F]" : `${grey ? "bg-[#7F7F7F]" : "bg-[#0078A8]"} ${pressBase}`
+        className={`absolute inset-x-0 bottom-0 ${faceSize} ${
+          disabled ? "bg-[#7F7F7F]" : `${grey ? "bg-[#7F7F7F]" : baseColour} ${pressBase}`
         }`}
       />
-      {/* Face: slides down by the base height (8px × --gp-s, matching gp-h-104 − gp-h-96) */}
+      {/* Face: slides down by the base height (× --gp-s): 8px = gp-h-104 − gp-h-96, secondary 6px = gp-h-64 − gp-h-58 */}
       <span
-        className={`absolute inset-x-0 top-0 flex gp-h-96 items-center justify-center overflow-clip rounded-[24px] gp-text-28 font-bold gp-leading-36 text-white ${
-          disabled ? "bg-[#A5A5A5]" : `${grey ? "bg-[#A5A5A5]" : "bg-[#00A3E0]"} ${pressFace}`
-        }`}
+        className={`absolute inset-x-0 top-0 flex ${faceSize} items-center justify-center overflow-clip ${faceText} font-bold ${
+          grey ? "bg-[#A5A5A5] text-white" : faceColour
+        } ${disabled ? "" : pressFace}`}
       >
         {counting && (
           <span

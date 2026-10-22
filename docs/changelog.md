@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## [0.20.6] - 2026-10-21
+
+### Changed
+- Leaderboard G18, G19, G20, G20K ย้ายจากกระดานในเครื่อง (localStorage) ไปใช้ฐานข้อมูล (`POST /api/game-results` / `GET /api/leaderboard`): ย้าย config เข้า `LEADERBOARD_GAMES` (ชื่อเกมดึงจาก `game_id`), เพิ่ม `MAX_SCORE_BY_GID` (G18 100, G19 20,000, G20 15), เพิ่ม G18–G20 ในเมนูเลือกเกม — G20K ใช้ `gid: "G20"` จึงแชร์กระดานเดียวกับ G20 และไม่มีรายการแยกในเมนู; คะแนนเก่าในเครื่อง (`naplab_ml_local_leaderboard`) ไม่ถูกย้ายไป DB
+- `handleFinishGame` (`src/app/lessons/[id]/game/page.tsx`) เปิด popup เก็บคะแนนให้ทุกเกมที่มี config และส่ง `score` (เดิมเฉพาะ `localOnly`) · ปุ่ม "กดเพื่อเสร็จสิ้น" บนหน้ากระดานแสดงทุกครั้งที่ไม่ใช่โหมด browse (เดิมเฉพาะ G13/`localOnly`)
+- อัปเดต `docs/software/08-leaderboard-add-game.md` (ตารางสถานะ, ข้อ 5.7 หลายรุ่นใช้กระดานเดียว), `docs/gdd/design-g20-veggie-toss.md` (G20K), `docs/software/04-application-flow.md`
+- `docs/supabase-schema.sql`: seed ตาราง `game_id` เพิ่ม G15–G20 (ลองถามเอไอ, คิดก่อนโพสต์, โล่กันโกง, จำให้ขึ้นใจ, เรียงผลไม้, ผักบุ้งลอยฟ้าช) และแก้ชื่อ G13 จาก "ต่อไอติมรู้ทันสื่อ" เป็น "ต่อไอติมฝึกสมอง" ให้ตรงกับ Supabase หลัก
+- เปลี่ยนชื่อเกม G13 เป็น "ต่อไอติมฝึกสมอง" ในเอกสารที่ยังใช้งาน (`docs/index.md`, product backlog, user stories US-GAME-13/13-R1, US-CF-13/14, US-FLOW-01, `docs/gdd/design-g13.md`, `docs/software/03-data-schema.md`, `docs/software/05-screen-design.md`, research-dev-summary) — ไม่แตะ `archives/` และรายงานรายสัปดาห์ย้อนหลัง
+
+### Added
+- `docs/software/08-leaderboard-add-game.md`: คู่มือเพิ่มเกมเข้า Leaderboard สำหรับ dev/AI agent — flow คะแนนจากเกมถึง DB, ตารางสถานะรายเกม, checklist ย้ายเกม localOnly (G18–G20) ไป DB และเพิ่มเกมใหม่ (รวมจุดที่ยังเขียนเช็ค G13 ตรงๆ ในหน้าเกม/หน้ากระดาน), ข้อควรระวัง, query ตรวจ DB และวิธีทดสอบ — ลิงก์จาก `docs/index.md` และ `AGENT.md`
+
+**Bump rationale:** ย้าย Leaderboard ของ G18, G19, G20, G20K จากกระดานในเครื่องไปใช้ฐานข้อมูล (G20K แชร์กระดานกับ G20) พร้อมเอกสารคู่มือเพิ่มเกมเข้า Leaderboard ต่อจาก 0.20.5 จึงอัปเดต PATCH จาก `0.20.5` เป็น `0.20.6` ตามที่ผู้ใช้กำหนด
+
+## [0.20.5] - 2026-10-21
+
+### Changed
+- ไอคอนเกมใหม่ใน `public/assets/icons/` แทนไอคอนชั่วคราว: G15 ลองถาม AI (`g15-ask-ai.png`), G16 คิดก่อนโพสต์ (`g16-posting.png`), G18 จำให้ขึ้นใจ (`g18-simon.png`), G19 เรียงผลไม้ (`g19-fruit-match.png`), G20 ผักบุ้งลอยฟ้า และรุ่นทดลอง G20K (`g20-veggie-tross.png`) — ใช้ทั้งหน้าเลือกเกมและหน้าเริ่มเกม (`GameIntro` ใช้ `imageSrc` แทนไอคอน Lucide) และในรายการเลือกเกมของกระดานคะแนน (G18, G19, G20, G20K)
+- ไอคอนหมวด "เกมเพื่อการเรียนรู้" / "เกมสนุก" เปลี่ยนเป็น `edu-game.png` / `fun-game.png` (G17 ที่ยังไม่มีไอคอนเฉพาะเกมใช้ `edu-game.png`); `public/images/lessons/category-learning.png` และ `category-fun.png` ไม่ได้ใช้ในแอปแล้ว
+
+**Bump rationale:** เพิ่มไอคอนเฉพาะเกมของ G15, G16, G18, G19, G20 และไอคอนหมวดเกมใหม่ ต่อจาก 0.20.4 จึงอัปเดต PATCH จาก `0.20.4` เป็น `0.20.5` ตามที่ผู้ใช้กำหนด
+
+## [0.20.4] - 2026-10-21
+
+### Changed
+- เกมเล่นซ้ำ (G13, G18, G19, G20, G20K): ซ่อนบรรทัด "สถิติดีที่สุด" และป้าย "🎉 สถิติใหม่ของคุณ!" ในหน้าจบรอบไว้ก่อน ผ่านตัวสลับ `SHOW_RESULT_BEST_SCORE` ใน `src/lib/gameScore.ts` (ตั้ง `true` เพื่อเปิดกลับ; เกมยังเก็บ/log สถิติดีที่สุดและใช้เป็นคะแนนกระดานตามเดิม)
+- เกมเล่นซ้ำ (G13, G18, G19, G20, G20K): สลับสไตล์ปุ่มหน้าจบรอบ — "จบเกม" (G13 โหมด flow: "เสร็จสิ้นบทเรียน") ใช้ `Button3D` ขนาดเต็ม, "เล่นอีกครั้ง" ใช้ `Button3D variant="secondary"` ใหม่ (หน้าขาวขอบเทา สูง 64 ขอบล่าง 6px กดยุบ/เด้งกลับแบบเดียวกับปุ่มหลัก); ลำดับปุ่มเหมือนเดิม
+
+**Bump rationale:** ซ่อนสถิติดีที่สุดในหน้าจบรอบและสลับสไตล์ปุ่มเล่นอีกครั้ง/จบเกมของเกมเล่นซ้ำ ต่อจาก 0.20.3 จึงอัปเดต PATCH จาก `0.20.3` เป็น `0.20.4` ตามที่ผู้ใช้กำหนด
+
 ## [0.20.3] - 2026-10-20
 
 ### Changed

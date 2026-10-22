@@ -264,7 +264,7 @@ Dev Game Hub ใช้ระบบ **mock** เพื่อแยกขาดจ
 7. เรียก `GET /api/leaderboard?gid=<gid>&limit=10`; endpoint ต้องปฏิเสธ request ที่ไม่มี `gid`
 8. Query และ UI แสดงเฉพาะคะแนนของ `gid` นั้น ไม่มีตัวเลือกผสมหรือสลับเกมในหน้าปัจจุบัน
 9. สำหรับ G13 เมื่อเล่นจบ ให้ส่งความสูงหอเป็นคะแนน (G18–G20K ส่งสถิติดีที่สุด) เก็บ pending score ใน `sessionStorage` แล้วถามเก็บคะแนนตามข้อ 1
-10. เมื่อมี pending score และ local player profile ให้ `POST /api/game-results` เพื่อเพิ่ม history ใหม่หนึ่งแถว (G18–G20K: บันทึกลงเครื่องผ่าน `localLeaderboardService`) จากนั้นโหลด Top 10 ใหม่; ถ้าเลือก "ไม่" ใน popup ให้ล้าง pending score โดยไม่ส่ง API
+10. เมื่อมี pending score และ local player profile ให้ `POST /api/game-results` เพื่อเพิ่ม history ใหม่หนึ่งแถว (G20K บันทึกลงกระดานเดียวกับ G20 — `gid: "G20"`) จากนั้นโหลด Top 10 ใหม่; ถ้าเลือก "ไม่" ใน popup ให้ล้าง pending score โดยไม่ส่ง API
 11. ปุ่ม "เสร็จสิ้นบทเรียน" ใต้ Leaderboard นำไป `/lessons/complete` เพื่อคงหน้าชื่นชมปลาย Flow เดิม
 
 **Browse จากเมนู (US-CF-52):**

@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { progressService } from "@/services/progressService";
+import { progressService, type UserProgress } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import { firstIncompleteFlowLesson } from "@/lib/flow";
+import { useIsClient } from "@/lib/useIsClient";
 import { notoLoopedThai } from "@/lib/fonts";
 import CustomScrollArea from "@/components/CustomScrollArea";
 import { PAGE_SCROLL_TRACK_CLASS, SCROLL_THUMB_CLASS } from "@/lib/scrollbarStyles";
@@ -162,33 +163,33 @@ function BackPillButton({ onClick }: { onClick: () => void }) {
 }
 
 const CATEGORIES = [
-  { id: "learning", icon: "/images/lessons/category-learning.png", label: "เกมเพื่อการเรียนรู้" },
-  { id: "fun", icon: "/images/lessons/category-fun.png", label: "เกมสนุก" },
+  { id: "learning", icon: "/assets/icons/edu-game.png", label: "เกมเพื่อการเรียนรู้" },
+  { id: "fun", icon: "/assets/icons/fun-game.png", label: "เกมสนุก" },
   { id: "video", icon: "/images/lessons/category-video.png", label: "วิดีโอ" },
 ] as const;
 
 // เกมสนุก (นอกสาย Flow) — G13 + G18–G20 (เดิม prototype GP7–GP9) เปิดเฉพาะโหมดอิสระ
-// G18–G20 ยังไม่มีไอคอนเฉพาะเกม จึงใช้ไอคอนหมวด "เกมสนุก" ไปก่อน
+// G18–G20 (รวมรุ่นทดลอง G20K) มีไอคอนเฉพาะเกมแล้ว
 const FUN_GAMES = [
   { id: "flow-g13", icon: "/assets/icons/g13-ice-cream.jpg", label: "ต่อไอติมฝึกสมอง" },
-  { id: "g18", icon: "/images/lessons/category-fun.png", label: "จำให้ขึ้นใจ" },
-  { id: "g19", icon: "/images/lessons/category-fun.png", label: "เรียงผลไม้" },
-  { id: "g20", icon: "/images/lessons/category-fun.png", label: "ผักบุ้งลอยฟ้า" },
+  { id: "g18", icon: "/assets/icons/g18-simon.png", label: "จำให้ขึ้นใจ" },
+  { id: "g19", icon: "/assets/icons/g19-fruit-match.png", label: "เรียงผลไม้" },
+  { id: "g20", icon: "/assets/icons/g20-veggie-tross.png", label: "ผักบุ้งลอยฟ้า" },
   // รุ่นทดลอง (ไม่มีลูกศรแรงโยน เล็งด้วยจุดวิถีโยน) ให้ผู้ทดสอบเล่นเทียบกับ G20 — ชื่อมี "(ทดลอง)" กำกับ
-  { id: "g20k", icon: "/images/lessons/category-fun.png", label: "ผักบุ้งลอยฟ้า (ทดลอง)" },
+  { id: "g20k", icon: "/assets/icons/g20-veggie-tross.png", label: "ผักบุ้งลอยฟ้า (ทดลอง)" },
 ];
 
 // Figma node "เกมเพื่อการเรียนรู้" — mockup มี 3 แถว (แถวสุดท้ายซ้ำข้อความแถวแรกในต้นฉบับ ดูเป็น
 // placeholder พลาด) ใช้ 3 เกมที่มีอยู่จริงในสาย Flow แทน (G2/G5 ยังเล่นได้จาก /dev/games เท่านั้น)
 // + G15–G17 (เดิม prototype GP3/GP4/GP6) เปิดเฉพาะโหมดอิสระ ไม่อยู่ในสาย Flow/โหมดวิจัย
-// G15–G17 ยังไม่มีไอคอนเฉพาะเกม จึงใช้ไอคอนหมวด "เกมเพื่อการเรียนรู้" ไปก่อน
+// G15, G16 มีไอคอนเฉพาะเกมแล้ว — G17 ยังใช้ไอคอนหมวด "เกมเพื่อการเรียนรู้" (edu-game.png) ไปก่อน
 const LEARNING_GAMES = [
   { id: "topic-1", icon: "/assets/icons/g1-right-o-wrong.jpg", label: "เกมจริงหรือมั่ว" },
   { id: "topic-6", icon: "/assets/icons/g6-line-sim.jpg", label: "เกมจำลองแชทไลน์" },
   { id: "topic-3", icon: "/assets/icons/g3-ai-o-fake.jpg", label: "เอไอ หรือ ของจริง" },
-  { id: "g15", icon: "/images/lessons/category-learning.png", label: "ลองถาม AI" },
-  { id: "g16", icon: "/images/lessons/category-learning.png", label: "คิดก่อนโพสต์" },
-  { id: "g17", icon: "/images/lessons/category-learning.png", label: "โล่กันโกง" },
+  { id: "g15", icon: "/assets/icons/g15-ask-ai.png", label: "ลองถาม AI" },
+  { id: "g16", icon: "/assets/icons/g16-posting.png", label: "คิดก่อนโพสต์" },
+  { id: "g17", icon: "/assets/icons/edu-game.png", label: "โล่กันโกง" },
 ];
 
 // รายการวิดีโอ — ดึงจาก videos.json แหล่งเดียวกับหน้าคลิปจริง ไม่พิมพ์ชื่อซ้ำเอง กันข้อมูลสองที่ไม่ตรงกัน
@@ -199,11 +200,16 @@ const VIDEOS = getOrderedLessonIds()
   .filter((video) => !video.skip)
   .map((video) => ({ id: video.lessonId, icon: "/images/lessons/category-video.png", label: video.clipIntro }));
 
+// แสดง dashboard ได้เมื่อยินยอมแล้ว และไม่ใช่โหมดวิจัย (ซึ่ง effect ด้านล่างพาเข้าสายเนื้อเรื่องอัตโนมัติ)
+function canShowDashboard() {
+  const session = progressService.getOrCreateSession();
+  if (!session?.consentGiven || !session?.ageGroup) return false;
+  return progressService.getAppMode() !== "research";
+}
+
 export default function LessonSelectorPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState<any>(null);
-  const [activeSubPage, setActiveSubPage] = useState<"modes" | "categories" | "lessons" | "fun-games" | "videos">("modes");
+  const isClient = useIsClient();
 
   useEffect(() => {
     const session = progressService.getOrCreateSession();
@@ -213,7 +219,6 @@ export default function LessonSelectorPage() {
     }
 
     const currentProgress = progressService.getProgress();
-    setProgress(currentProgress);
 
     // โหมดวิจัย: ไม่มีหน้าเลือกโหมด/โหมดอิสระ/เกมสนุก — เข้าสาย "เนื้อเรื่อง" อัตโนมัติเสมอ
     if (progressService.getAppMode() === "research") {
@@ -229,21 +234,34 @@ export default function LessonSelectorPage() {
       return;
     }
 
-    // เคยเลือกโหมดอิสระค้างไว้ → กลับเข้าหน้าหมวดหมู่เลย ไม่ต้องเลือกโหมดซ้ำ
-    if (currentProgress.learningMode === "manual") {
-      setActiveSubPage("categories");
-    } else {
-      setActiveSubPage("modes");
-    }
-
     loggingService.logEvent("lessons_dashboard_view");
-    setLoading(false);
   }, [router]);
+
+  if (!isClient || !canShowDashboard()) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-[var(--primary)] rounded-full animate-spin"></div>
+        <span className="text-lg">กำลังโหลดแผนผังบทเรียน...</span>
+      </div>
+    );
+  }
+
+  return <LessonSelector />;
+}
+
+// Rendered only on the client (after the guard above), so state can initialise straight from progressService.
+function LessonSelector() {
+  const router = useRouter();
+  const [progress, setProgress] = useState<UserProgress>(() => progressService.getProgress());
+  // เคยเลือกโหมดอิสระค้างไว้ → กลับเข้าหน้าหมวดหมู่เลย ไม่ต้องเลือกโหมดซ้ำ
+  const [activeSubPage, setActiveSubPage] = useState<"modes" | "categories" | "lessons" | "fun-games" | "videos">(
+    () => (progress.learningMode === "manual" ? "categories" : "modes"),
+  );
 
   // โหมดอิสระ (วิดีโอ): เลือกดูคลิปไหนก่อนก็ได้ ไม่มีการล็อกตามลำดับอีกต่อไป
   const handleGameClick = (lessonId: string) => {
     loggingService.logEvent("select_lesson", { lesson_id: lessonId, mode: "manual" });
-    const updatedProgress = {
+    const updatedProgress: UserProgress = {
       ...progress,
       currentStep: "video",
       currentLessonId: lessonId,
@@ -256,7 +274,7 @@ export default function LessonSelectorPage() {
   // โหมดอิสระ (เกมเพื่อการเรียนรู้): เข้าเกมตรงๆ ไม่ผ่านหน้าคลิปนำก่อน
   const handleLearningGameClick = (lessonId: string) => {
     loggingService.logEvent("select_lesson", { lesson_id: lessonId, mode: "manual" });
-    const updatedProgress = {
+    const updatedProgress: UserProgress = {
       ...progress,
       currentStep: "game",
       currentLessonId: lessonId,
@@ -273,7 +291,7 @@ export default function LessonSelectorPage() {
 
     loggingService.logEvent("select_lesson", { lesson_id: targetLesson, mode: "flow" });
 
-    const updatedProgress = {
+    const updatedProgress: UserProgress = {
       ...progress,
       currentStep: "video",
       currentLessonId: targetLesson,
@@ -285,7 +303,7 @@ export default function LessonSelectorPage() {
   };
 
   const handleStartManualMode = () => {
-    const updatedProgress = {
+    const updatedProgress: UserProgress = {
       ...progress,
       learningMode: "manual",
     };
@@ -295,7 +313,7 @@ export default function LessonSelectorPage() {
   };
 
   const handleBackToModes = () => {
-    const updatedProgress = {
+    const updatedProgress: UserProgress = {
       ...progress,
       learningMode: undefined,
     };
@@ -319,7 +337,7 @@ export default function LessonSelectorPage() {
 
   const handleFunGameClick = (gameId: string) => {
     loggingService.logEvent("select_lesson", { lesson_id: gameId, mode: "manual", category: "fun" });
-    const updatedProgress = {
+    const updatedProgress: UserProgress = {
       ...progress,
       currentStep: "game",
       currentLessonId: gameId,
@@ -328,15 +346,6 @@ export default function LessonSelectorPage() {
     progressService.saveProgress(updatedProgress);
     router.push(`/lessons/${gameId}/game`);
   };
-
-  if (loading || !progress) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[var(--primary)] rounded-full animate-spin"></div>
-        <span className="text-lg">กำลังโหลดแผนผังบทเรียน...</span>
-      </div>
-    );
-  }
 
   if (activeSubPage === "modes") {
     return (

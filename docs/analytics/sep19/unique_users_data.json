@@ -1,0 +1,747 @@
+{
+  "overview": {
+    "total_unique_sessions": "548",
+    "active_sessions_in_logs": "548",
+    "total_action_events": "65035",
+    "earliest_session": "2026-07-19T08:36:45.502Z",
+    "latest_session": "2026-09-19T09:29:44.806Z",
+    "earliest_action": "2026-07-19T08:36:45.613Z",
+    "latest_action": "2026-09-19T12:45:34.885Z"
+  },
+  "identified_users_count": 291,
+  "anonymous_sessions_count": 257,
+  "demographics": {
+    "by_age": {
+      "60-69": 59,
+      "other": 88,
+      "70-79": 35,
+      "50-59": 99,
+      "80+": 10
+    },
+    "by_province": {
+      "เชียงใหม่": 93,
+      "น่าน": 69,
+      "แพร่": 83,
+      "อื่น ๆ": 46
+    },
+    "by_district": {
+      "เมืองเชียงใหม่ (เชียงใหม่)": 17,
+      "เวียงสา (น่าน)": 12,
+      "ลอง (แพร่)": 17,
+      "ร้องกวาง (แพร่)": 7,
+      "อื่น ๆ (อื่น ๆ)": 46,
+      "ฝาง (เชียงใหม่)": 5,
+      "หนองม่วงไข่ (แพร่)": 18,
+      "สันทราย (เชียงใหม่)": 32,
+      "หางดง (เชียงใหม่)": 8,
+      "นาน้อย (น่าน)": 20,
+      "สันกำแพง (เชียงใหม่)": 7,
+      "ท่าวังผา (น่าน)": 14,
+      "เมืองแพร่ (แพร่)": 25,
+      "สะเมิง (เชียงใหม่)": 2,
+      "แม่แตง (เชียงใหม่)": 1,
+      "เชียงดาว (เชียงใหม่)": 2,
+      "สารภี (เชียงใหม่)": 4,
+      "สูงเม่น (แพร่)": 9,
+      "แม่อาย (เชียงใหม่)": 2,
+      "เชียงกลาง (น่าน)": 8,
+      "สันป่าตอง (เชียงใหม่)": 2,
+      "อมก๋อย (เชียงใหม่)": 2,
+      "เมืองน่าน (น่าน)": 8,
+      "สองแคว (น่าน)": 1,
+      "ภูเพียง (น่าน)": 1,
+      "ดอยเต่า (เชียงใหม่)": 3,
+      "สอง (แพร่)": 4,
+      "ฮอด (เชียงใหม่)": 1,
+      "แม่ออน (เชียงใหม่)": 1,
+      "ปัว (น่าน)": 1,
+      "สันติสุข (น่าน)": 3,
+      "ดอยสะเก็ด (เชียงใหม่)": 3,
+      "บ่อเกลือ (น่าน)": 1,
+      "วังชิ้น (แพร่)": 2,
+      "แม่ริม (เชียงใหม่)": 1,
+      "เด่นชัย (แพร่)": 1
+    },
+    "age_by_province": {
+      "เชียงใหม่": {
+        "60-69": 26,
+        "other": 20,
+        "50-59": 28,
+        "70-79": 17,
+        "80+": 2
+      },
+      "น่าน": {
+        "other": 19,
+        "50-59": 34,
+        "70-79": 6,
+        "60-69": 9,
+        "80+": 1
+      },
+      "แพร่": {
+        "70-79": 11,
+        "50-59": 37,
+        "60-69": 23,
+        "other": 12
+      },
+      "อื่น ๆ": {
+        "other": 37,
+        "60-69": 1,
+        "80+": 7,
+        "70-79": 1
+      }
+    }
+  },
+  "daily_usage": [
+    {
+      "date": "2026-07-19",
+      "active_users": "4",
+      "actions": "385"
+    },
+    {
+      "date": "2026-07-21",
+      "active_users": "3",
+      "actions": "8"
+    },
+    {
+      "date": "2026-07-30",
+      "active_users": "1",
+      "actions": "944"
+    },
+    {
+      "date": "2026-08-04",
+      "active_users": "1",
+      "actions": "8"
+    },
+    {
+      "date": "2026-08-07",
+      "active_users": "14",
+      "actions": "1690"
+    },
+    {
+      "date": "2026-08-08",
+      "active_users": "16",
+      "actions": "756"
+    },
+    {
+      "date": "2026-08-09",
+      "active_users": "5",
+      "actions": "375"
+    },
+    {
+      "date": "2026-08-10",
+      "active_users": "56",
+      "actions": "10405"
+    },
+    {
+      "date": "2026-08-11",
+      "active_users": "22",
+      "actions": "928"
+    },
+    {
+      "date": "2026-08-12",
+      "active_users": "16",
+      "actions": "1024"
+    },
+    {
+      "date": "2026-08-13",
+      "active_users": "25",
+      "actions": "3230"
+    },
+    {
+      "date": "2026-08-14",
+      "active_users": "36",
+      "actions": "4126"
+    },
+    {
+      "date": "2026-08-15",
+      "active_users": "5",
+      "actions": "30"
+    },
+    {
+      "date": "2026-08-16",
+      "active_users": "6",
+      "actions": "185"
+    },
+    {
+      "date": "2026-08-17",
+      "active_users": "25",
+      "actions": "3398"
+    },
+    {
+      "date": "2026-08-18",
+      "active_users": "48",
+      "actions": "2417"
+    },
+    {
+      "date": "2026-08-19",
+      "active_users": "73",
+      "actions": "17184"
+    },
+    {
+      "date": "2026-08-20",
+      "active_users": "59",
+      "actions": "1462"
+    },
+    {
+      "date": "2026-08-21",
+      "active_users": "44",
+      "actions": "857"
+    },
+    {
+      "date": "2026-08-22",
+      "active_users": "12",
+      "actions": "689"
+    },
+    {
+      "date": "2026-08-23",
+      "active_users": "1",
+      "actions": "2"
+    },
+    {
+      "date": "2026-08-24",
+      "active_users": "11",
+      "actions": "223"
+    },
+    {
+      "date": "2026-08-25",
+      "active_users": "6",
+      "actions": "120"
+    },
+    {
+      "date": "2026-08-26",
+      "active_users": "9",
+      "actions": "97"
+    },
+    {
+      "date": "2026-08-27",
+      "active_users": "15",
+      "actions": "496"
+    },
+    {
+      "date": "2026-08-28",
+      "active_users": "13",
+      "actions": "49"
+    },
+    {
+      "date": "2026-08-29",
+      "active_users": "1",
+      "actions": "2"
+    },
+    {
+      "date": "2026-08-30",
+      "active_users": "5",
+      "actions": "41"
+    },
+    {
+      "date": "2026-08-31",
+      "active_users": "8",
+      "actions": "251"
+    },
+    {
+      "date": "2026-09-01",
+      "active_users": "9",
+      "actions": "122"
+    },
+    {
+      "date": "2026-09-02",
+      "active_users": "3",
+      "actions": "4"
+    },
+    {
+      "date": "2026-09-03",
+      "active_users": "6",
+      "actions": "47"
+    },
+    {
+      "date": "2026-09-04",
+      "active_users": "4",
+      "actions": "146"
+    },
+    {
+      "date": "2026-09-05",
+      "active_users": "5",
+      "actions": "215"
+    },
+    {
+      "date": "2026-09-06",
+      "active_users": "2",
+      "actions": "11"
+    },
+    {
+      "date": "2026-09-07",
+      "active_users": "1",
+      "actions": "5"
+    },
+    {
+      "date": "2026-09-08",
+      "active_users": "6",
+      "actions": "184"
+    },
+    {
+      "date": "2026-09-09",
+      "active_users": "10",
+      "actions": "427"
+    },
+    {
+      "date": "2026-09-10",
+      "active_users": "3",
+      "actions": "12"
+    },
+    {
+      "date": "2026-09-11",
+      "active_users": "5",
+      "actions": "9"
+    },
+    {
+      "date": "2026-09-12",
+      "active_users": "5",
+      "actions": "112"
+    },
+    {
+      "date": "2026-09-13",
+      "active_users": "1",
+      "actions": "6"
+    },
+    {
+      "date": "2026-09-14",
+      "active_users": "3",
+      "actions": "10"
+    },
+    {
+      "date": "2026-09-15",
+      "active_users": "3",
+      "actions": "4"
+    },
+    {
+      "date": "2026-09-16",
+      "active_users": "4",
+      "actions": "404"
+    },
+    {
+      "date": "2026-09-17",
+      "active_users": "2",
+      "actions": "4"
+    },
+    {
+      "date": "2026-09-18",
+      "active_users": "76",
+      "actions": "11741"
+    },
+    {
+      "date": "2026-09-19",
+      "active_users": "6",
+      "actions": "190"
+    }
+  ],
+  "monthly_usage": [
+    {
+      "month": "2026-07",
+      "active_users": "4",
+      "actions": "1337"
+    },
+    {
+      "month": "2026-08",
+      "active_users": "425",
+      "actions": "50045"
+    },
+    {
+      "month": "2026-09",
+      "active_users": "139",
+      "actions": "13653"
+    }
+  ],
+  "engagement_intensity": {
+    "total_users": "548",
+    "avg_actions": "118.68",
+    "median_actions": 13,
+    "min_actions": "1",
+    "max_actions": "11391",
+    "tier_bounce_1_to_5": "215",
+    "tier_low_6_to_30": "96",
+    "tier_medium_31_to_100": "59",
+    "tier_high_101_to_300": "145",
+    "tier_power_over_300": "33"
+  },
+  "top_events": [
+    {
+      "event_name": "scoop_catch",
+      "total_count": "27724",
+      "unique_users": "176"
+    },
+    {
+      "event_name": "bomb_dodge",
+      "total_count": "7644",
+      "unique_users": "175"
+    },
+    {
+      "event_name": "answer_question",
+      "total_count": "3200",
+      "unique_users": "235"
+    },
+    {
+      "event_name": "enter_question",
+      "total_count": "2626",
+      "unique_users": "233"
+    },
+    {
+      "event_name": "game_complete",
+      "total_count": "2516",
+      "unique_users": "233"
+    },
+    {
+      "event_name": "game_start",
+      "total_count": "2424",
+      "unique_users": "270"
+    },
+    {
+      "event_name": "game_finish",
+      "total_count": "2395",
+      "unique_users": "231"
+    },
+    {
+      "event_name": "double_catch",
+      "total_count": "2196",
+      "unique_users": "170"
+    },
+    {
+      "event_name": "play_video",
+      "total_count": "1445",
+      "unique_users": "266"
+    },
+    {
+      "event_name": "enter_video",
+      "total_count": "1277",
+      "unique_users": "290"
+    },
+    {
+      "event_name": "lessons_dashboard_view",
+      "total_count": "1096",
+      "unique_users": "312"
+    },
+    {
+      "event_name": "landing_page_view",
+      "total_count": "1030",
+      "unique_users": "453"
+    },
+    {
+      "event_name": "scoop_miss",
+      "total_count": "961",
+      "unique_users": "116"
+    },
+    {
+      "event_name": "game_intro_start",
+      "total_count": "933",
+      "unique_users": "238"
+    },
+    {
+      "event_name": "bomb_hit",
+      "total_count": "924",
+      "unique_users": "148"
+    },
+    {
+      "event_name": "select_response",
+      "total_count": "831",
+      "unique_users": "202"
+    },
+    {
+      "event_name": "select_lesson",
+      "total_count": "775",
+      "unique_users": "299"
+    },
+    {
+      "event_name": "video_complete",
+      "total_count": "721",
+      "unique_users": "231"
+    },
+    {
+      "event_name": "consent_page_view",
+      "total_count": "573",
+      "unique_users": "398"
+    },
+    {
+      "event_name": "enter_scenario",
+      "total_count": "562",
+      "unique_users": "203"
+    },
+    {
+      "event_name": "consent_submitted",
+      "total_count": "423",
+      "unique_users": "291"
+    },
+    {
+      "event_name": "leaderboard_page_view",
+      "total_count": "323",
+      "unique_users": "92"
+    },
+    {
+      "event_name": "clip_intro_start",
+      "total_count": "288",
+      "unique_users": "194"
+    },
+    {
+      "event_name": "video_complete_skipped",
+      "total_count": "255",
+      "unique_users": "85"
+    },
+    {
+      "event_name": "video_auto_advance",
+      "total_count": "201",
+      "unique_users": "129"
+    },
+    {
+      "event_name": "course_completion_view",
+      "total_count": "137",
+      "unique_users": "89"
+    },
+    {
+      "event_name": "reset_application_state",
+      "total_count": "117",
+      "unique_users": "78"
+    },
+    {
+      "event_name": "course_completion_back_home",
+      "total_count": "113",
+      "unique_users": "79"
+    },
+    {
+      "event_name": "video_skip_slow_load",
+      "total_count": "106",
+      "unique_users": "30"
+    },
+    {
+      "event_name": "reward_view",
+      "total_count": "84",
+      "unique_users": "5"
+    },
+    {
+      "event_name": "unmute_video",
+      "total_count": "82",
+      "unique_users": "50"
+    },
+    {
+      "event_name": "leaderboard_browse_open",
+      "total_count": "82",
+      "unique_users": "17"
+    },
+    {
+      "event_name": "leaderboard_score_saved",
+      "total_count": "81",
+      "unique_users": "54"
+    },
+    {
+      "event_name": "skip_video",
+      "total_count": "75",
+      "unique_users": "4"
+    },
+    {
+      "event_name": "video_slow_load_shown",
+      "total_count": "73",
+      "unique_users": "59"
+    },
+    {
+      "event_name": "leaderboard_name_saved",
+      "total_count": "72",
+      "unique_users": "59"
+    },
+    {
+      "event_name": "nav_home_from_drawer",
+      "total_count": "64",
+      "unique_users": "39"
+    },
+    {
+      "event_name": "double_miss",
+      "total_count": "56",
+      "unique_users": "37"
+    },
+    {
+      "event_name": "open_fullscreen_image",
+      "total_count": "51",
+      "unique_users": "20"
+    },
+    {
+      "event_name": "nav_leaderboard_from_drawer",
+      "total_count": "50",
+      "unique_users": "21"
+    },
+    {
+      "event_name": "video_slow_load_resolved",
+      "total_count": "48",
+      "unique_users": "36"
+    },
+    {
+      "event_name": "gps_location_requested",
+      "total_count": "40",
+      "unique_users": "27"
+    },
+    {
+      "event_name": "resume_flow",
+      "total_count": "36",
+      "unique_users": "21"
+    },
+    {
+      "event_name": "tap_hotspot",
+      "total_count": "33",
+      "unique_users": "2"
+    },
+    {
+      "event_name": "click_scam_element",
+      "total_count": "32",
+      "unique_users": "14"
+    },
+    {
+      "event_name": "reward_goto_dashboard",
+      "total_count": "30",
+      "unique_users": "3"
+    },
+    {
+      "event_name": "leaderboard_name_skipped",
+      "total_count": "27",
+      "unique_users": "12"
+    },
+    {
+      "event_name": "change_font_size",
+      "total_count": "26",
+      "unique_users": "3"
+    },
+    {
+      "event_name": "game_g5_block",
+      "total_count": "26",
+      "unique_users": "3"
+    },
+    {
+      "event_name": "gps_location_success",
+      "total_count": "21",
+      "unique_users": "18"
+    },
+    {
+      "event_name": "g13_dev_skip_timer",
+      "total_count": "20",
+      "unique_users": "3"
+    },
+    {
+      "event_name": "gps_location_failed",
+      "total_count": "19",
+      "unique_users": "9"
+    },
+    {
+      "event_name": "facilitator_lesson_view",
+      "total_count": "18",
+      "unique_users": "18"
+    },
+    {
+      "event_name": "video_skip_stutter",
+      "total_count": "15",
+      "unique_users": "9"
+    },
+    {
+      "event_name": "check_scenario",
+      "total_count": "11",
+      "unique_users": "2"
+    },
+    {
+      "event_name": "game_g5_miss",
+      "total_count": "9",
+      "unique_users": "2"
+    },
+    {
+      "event_name": "submit_quiz_answer",
+      "total_count": "9",
+      "unique_users": "2"
+    },
+    {
+      "event_name": "replay_video",
+      "total_count": "8",
+      "unique_users": "6"
+    },
+    {
+      "event_name": "pretest_completed_screen_transition",
+      "total_count": "5",
+      "unique_users": "3"
+    },
+    {
+      "event_name": "click_locked_lesson",
+      "total_count": "4",
+      "unique_users": "1"
+    },
+    {
+      "event_name": "start_quiz",
+      "total_count": "4",
+      "unique_users": "2"
+    },
+    {
+      "event_name": "toggle_audio",
+      "total_count": "2",
+      "unique_users": "1"
+    },
+    {
+      "event_name": "certificate_page_view",
+      "total_count": "2",
+      "unique_users": "1"
+    },
+    {
+      "event_name": "click_hotline",
+      "total_count": "1",
+      "unique_users": "1"
+    },
+    {
+      "event_name": "generate_certificate",
+      "total_count": "1",
+      "unique_users": "1"
+    },
+    {
+      "event_name": "posttest_completed_screen_transition",
+      "total_count": "1",
+      "unique_users": "1"
+    },
+    {
+      "event_name": "certificate_back_to_dashboard",
+      "total_count": "1",
+      "unique_users": "1"
+    }
+  ],
+  "funnel": {
+    "landing_page_views": "453",
+    "consent_page_views": "398",
+    "consent_submitted": "291",
+    "lessons_dashboard_views": "312",
+    "started_any_content": "315",
+    "topic1_video_completed": "221",
+    "topic1_game_completed": "206",
+    "topic1_both_completed": "188",
+    "topic3_video_completed": "178",
+    "topic3_game_completed": "172",
+    "topic3_both_completed": "167",
+    "topic6_video_completed": "194",
+    "topic6_game_completed": "190",
+    "topic6_both_completed": "182",
+    "completed_all_3_topics": "153",
+    "course_completion_views": "89",
+    "course_completion_back_home": "79"
+  },
+  "device_os": [
+    {
+      "os_name": "Unknown",
+      "user_count": "281"
+    },
+    {
+      "os_name": "Android",
+      "user_count": "152"
+    },
+    {
+      "os_name": "iOS",
+      "user_count": "61"
+    },
+    {
+      "os_name": "Windows",
+      "user_count": "41"
+    },
+    {
+      "os_name": "Linux",
+      "user_count": "11"
+    },
+    {
+      "os_name": "macOS",
+      "user_count": "2"
+    }
+  ]
+}

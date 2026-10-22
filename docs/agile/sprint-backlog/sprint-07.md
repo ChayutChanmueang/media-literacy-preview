@@ -2,10 +2,10 @@
 
 **Goal:** สร้าง prototype โลก 2D top-down (Canvas 2D) มาห่อมินิเกม G1–G10 ที่มีอยู่แล้ว ให้เกมรู้สึกเป็น "เรื่องราวในชุมชน" แทนที่จะดูเป็นแอปทำแบบทดสอบ — พิสูจน์ว่าการเดินสำรวจ + บทสนทนา + เหตุการณ์ใกล้ตัว ช่วยลดความรู้สึกน่าเบื่อ/เหมือนสอบได้จริง
 **Scope reference:** [05 — Mini Prototype GDD "รู้ทันกลางสายหมอก"](../../wiki/design/05-mini-prototype-gdd.docx.md) + [04 — Requirements Specification](../../wiki/design/04-requirements-specification.md)
-**Timeline:** 2026-10-12 → 2026-11-14 (Planned — R&D / Production-Transition prototype)
-**Version:** 1.0 | **Last Updated:** 2026-07-21
+**Timeline:** 2026-10-12 → 2026-10-30 (Planned — R&D / Production-Transition prototype; บีบจากเดิม 2026-11-14 ให้จบภายใน deadline ส่งมอบงวดที่ 2 วันที่ 30 ต.ค. 2569)
+**Version:** 1.1 | **Last Updated:** 2026-10-01
 
-> **หมายเหตุสถานะ:** Sprint นี้เป็นงานสำรวจ (R&D) ล่วงหน้า **ไม่ใช่ Current Sprint** (Current Sprint ยังเป็น Sprint 03 polishing) — จัดทำ backlog ไว้ก่อนเพื่อให้เห็นภาพงานทั้งก้อนของ mini prototype
+> **หมายเหตุสถานะ:** Sprint นี้เป็นงานสำรวจ (R&D) **ไม่ใช่ Current Sprint** (Current Sprint คือ [Sprint 06](./sprint-06.md)) — เวลาลดจาก 34 วันเหลือ 19 วัน จึงอาจต้องลด scope เหลือ prototype ขั้นต่ำที่เล่นได้บน A10s ดูหัวข้อ Risks ใน [Sprint Planning](../02-sprint-planning.md)
 
 ## 🧭 Key Decision — ใช้ Canvas 2D ไม่ใช่ Phaser
 
@@ -19,17 +19,19 @@ gantt
     title Sprint 07 Tasks
     dateFormat  YYYY-MM-DD
     section Foundation
-    US-WORLD-01 Canvas World+Movement   :a1, 2026-10-12, 6d
-    US-WORLD-02 NPC & Interaction        :a2, 2026-10-16, 4d
-    US-WORLD-03 Event Bus + Result       :a3, 2026-10-19, 5d
+    US-WORLD-01 Canvas World+Movement   :a1, 2026-10-12, 4d
+    US-WORLD-02 NPC & Interaction        :a2, 2026-10-14, 3d
+    US-WORLD-03 Event Bus + Result       :a3, 2026-10-15, 3d
     section Narrative
-    US-WORLD-04 Dialogue                 :a4, 2026-10-24, 4d
-    US-WORLD-05 Quest/Incident/Day       :a5, 2026-10-28, 6d
-    US-WORLD-06 Wire 10 Minigames        :a6, 2026-11-02, 6d
+    US-WORLD-04 Dialogue                 :a4, 2026-10-18, 3d
+    US-WORLD-05 Quest/Incident/Day       :a5, 2026-10-20, 4d
+    US-WORLD-06 Wire 10 Minigames        :a6, 2026-10-23, 4d
     section Systems & Polish
-    US-WORLD-07 Stats & Endings          :a7, 2026-11-07, 3d
-    US-WORLD-08 Save + Break Points      :a8, 2026-11-09, 3d
-    US-WORLD-09 Low-end Perf + A11y      :a9, 2026-11-11, 4d
+    US-WORLD-07 Stats & Endings          :a7, 2026-10-26, 2d
+    US-WORLD-08 Save + Break Points      :a8, 2026-10-27, 2d
+    US-WORLD-09 Low-end Perf + A11y      :a9, 2026-10-28, 3d
+    section Delivery
+    ส่งมอบงวดที่ 2 (deadline)            :milestone, d2, 2026-10-30, 1d
 ```
 
 ## 📋 Committed Stories & Tasks

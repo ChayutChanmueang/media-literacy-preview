@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Play, ArrowRight, ExternalLink, Presentation, ChevronLeft, ChevronRight, MessageSquareQuote } from "lucide-react";
 import { loggingService } from "@/services/loggingService";
 import { getOrderedLessonIds, getVideoByLessonId } from "@/lib/videos";
+import type { YTPlayer, YTPlayerEvent } from "@/types/youtube";
 
 const ORDERED_LESSONS = getOrderedLessonIds();
 
@@ -14,7 +15,7 @@ export default function FacilitatorView() {
   const lessonId = (params.id as string) || "topic-1";
 
   const [playerReady, setPlayerReady] = useState(false);
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
 
   const videoDetails = getVideoByLessonId(lessonId);
   const videoId = videoDetails.youtubeId || "";
@@ -29,7 +30,7 @@ export default function FacilitatorView() {
     }
 
     // Check if script already loaded
-    let sdkLoaded = typeof window !== "undefined" && window.YT !== undefined;
+    const sdkLoaded = typeof window !== "undefined" && window.YT !== undefined;
 
     if (!sdkLoaded && typeof document !== "undefined") {
       const tag = document.createElement("script");
@@ -61,7 +62,7 @@ export default function FacilitatorView() {
           onReady: () => {
             setPlayerReady(true);
           },
-          onStateChange: (event: any) => {
+          onStateChange: (event: YTPlayerEvent) => {
             if (event.data === 1) {
               loggingService.logEvent("facilitator_play_video", { lesson_id: lessonId });
             }
@@ -177,7 +178,7 @@ export default function FacilitatorView() {
             </div>
 
             <p className="text-xl leading-relaxed text-slate-200 text-left whitespace-pre-line font-medium">
-              "{videoDetails.script}"
+              &quot;{videoDetails.script}&quot;
             </p>
           </div>
 

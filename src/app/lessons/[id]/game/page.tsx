@@ -128,10 +128,11 @@ export default function GameShellPage() {
       stars: { ...progress.stars, [lessonId]: TEMP_AWARDED_STARS },
     };
 
-    // G18–G20: กระดานคะแนนในเครื่อง (ยังไม่ต่อ DB) — ข้ามหน้าคะแนนกลางแบบ G13 เพราะตัวเกมมีหน้าสรุปคะแนนของตัวเองแล้ว
+    // เกมที่มีกระดานคะแนนและส่ง score มา (ตอนนี้ G18–G20K) — ข้ามหน้าคะแนนกลางแบบ G13 เพราะตัวเกมมีหน้าสรุปคะแนนของตัวเองแล้ว
     // ถามเก็บคะแนนแล้วไปกระดานคะแนน; ปุ่มจบบนกระดานพากลับหน้าหมวดหมู่ (เกมพวกนี้มีเฉพาะโหมดอิสระ)
+    // ⚠️ เกมในสาย Flow ที่จะเริ่มส่ง score ต้องดูข้อ 4.3 ใน docs/software/08-leaderboard-add-game.md ก่อน
     const leaderboardGame = getLeaderboardGame(lessonId);
-    if (leaderboardGame?.localOnly && typeof score === "number") {
+    if (leaderboardGame && typeof score === "number") {
       leaderboardScoreService.savePendingScore(leaderboardGame.gid, score);
       progressService.saveProgress({ ...withStars, currentStep: "leaderboard", currentLessonId: lessonId });
       setScorePrompt({ gid: leaderboardGame.gid, score });

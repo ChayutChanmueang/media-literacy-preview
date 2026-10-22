@@ -51,7 +51,8 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [round, setRound] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [deck, setDeck] = useState<FingerItem[]>([]);
+  // Shuffled once per mount (component is loaded with ssr: false, so no hydration mismatch)
+  const [deck] = useState<FingerItem[]>(() => shuffle(POOL).slice(0, TOTAL_ROUNDS));
   
   const currentItem = deck[round];
   
@@ -82,9 +83,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
     action: "stopped" | "pressed";
   } | null>(null);
 
-  // Initialize deck on mount
   useEffect(() => {
-    setDeck(shuffle(POOL).slice(0, TOTAL_ROUNDS));
     logEvent("game_start", { game_id: "g11" });
   }, [logEvent]);
 
@@ -137,7 +136,8 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
     showFeedback("pressed", isCorrect);
   }, [showFeedback]);
 
-  const animateHand = useCallback((time: number) => {
+  // Named so the rAF loop can schedule itself (a const can't be referenced before its declaration)
+  const animateHand = useCallback(function step(time: number) {
     if (!startTimeRef.current) {
       startTimeRef.current = time;
       // Calculate target Y once at the start of the animation
@@ -157,7 +157,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
     setHandY(currentY);
 
     if (progress < 1) {
-      requestRef.current = requestAnimationFrame(animateHand);
+      requestRef.current = requestAnimationFrame(step);
     } else {
       // Hand reached the button!
       handleAutoPress();

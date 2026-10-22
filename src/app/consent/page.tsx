@@ -29,7 +29,7 @@ export default function ConsentAgePage() {
   const goToLocation = (value: AgeGroup) => {
     const session = progressService.getOrCreateSession();
     // consentGiven stays false until step 2, so nothing syncs to the backend yet
-    progressService.saveSession({ ...session, ageGroup: value });
+    progressService.saveSession({ ...session!, ageGroup: value });
     loggingService.logEvent("consent_age_selected", { age_range: value });
     router.push("/consent/location");
   };

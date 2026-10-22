@@ -8,10 +8,18 @@ import { Award, Share2, RefreshCw, ChevronLeft } from "lucide-react";
 import { loggingService } from "@/services/loggingService";
 import { progressService } from "@/services/progressService";
 import { certificateNameSchema, type CertificateNameInput } from "@/lib/validations";
+import { useIsClient } from "@/lib/useIsClient";
+
+function canViewCertificate() {
+  const session = progressService.getOrCreateSession();
+  if (!session?.consentGiven || !session?.ageGroup) return false;
+  return !!progressService.getProgress().posttest_completed;
+}
 
 export default function CertificatePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  // Spinner until mounted on the client and the guard passes (the effect below redirects otherwise)
+  const loading = !(useIsClient() && canViewCertificate());
   const [submittedName, setSubmittedName] = useState("");
 
   const {
@@ -41,7 +49,6 @@ export default function CertificatePage() {
     }
 
     loggingService.logEvent("certificate_page_view");
-    setLoading(false);
   }, [router]);
 
   const onSubmitName = (data: CertificateNameInput) => {

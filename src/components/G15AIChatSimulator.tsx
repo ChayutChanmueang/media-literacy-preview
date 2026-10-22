@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Bot, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import FullscreenImageViewer from "@/components/FullscreenImageViewer";
 import GameIntro from "@/components/GameIntro";
 import ITEMS from "@/data/g15-chat-items.json";
@@ -94,7 +94,7 @@ export default function G15AIChatSimulator(props: Props) {
         title="ลองถาม AI"
         objective="เลือกคำถามที่อยากรู้ แล้วดูว่า AI ตอบอย่างไร เรียนรู้ว่า AI ช่วยอะไรได้ และต้องระวังอะไรบ้าง"
         choices="เลือกถาม 3 เรื่อง"
-        icon={Bot}
+        imageSrc="/assets/icons/g15-ask-ai.png"
         onStart={() => {
           setShowHowTo(false);
           props.logEvent("game_intro_start", { game_id: "G15" });
