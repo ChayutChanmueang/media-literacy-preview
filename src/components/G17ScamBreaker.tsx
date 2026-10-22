@@ -8,6 +8,7 @@ import GameIntro from "@/components/GameIntro";
 import GameStageHeader from "@/components/GameStageHeader";
 import DATA from "@/data/g17-levels.json";
 import G3_DATA from "@/data/g3-questions.json";
+import { hashString, mulberry32, todaySeed, type Rng } from "@/lib/seededRandom";
 
 /**
  * G17 — โล่กันโกง (Scam breaker)
@@ -22,9 +23,11 @@ import G3_DATA from "@/data/g3-questions.json";
  * - no countdown and no game over — a lost ball respawns on the shield with a
  *   gentle message; misses only affect stars
  * - canvas is drawn at real CSS px (not a scaled 540×960)
- * - only helpful power-ups (split / bigger ball / slower ball); ⚡ faster and
+ * - only helpful power-ups (split / bigger ball / slower ball / wider bar); ⚡ faster and
  *   🧊 smaller were dropped
  * - the ball waits on the shield until the player taps, instead of launching at once
+ * - a broken brick breaks apart into pieces of its picture that fly off, fall and fade (breakBrick);
+ *   the level-clear screen waits for the last brick's pieces
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
 
@@ -44,14 +47,33 @@ type Props = {
 };
 
 type Phase = "intro" | "playing" | "levelClear";
-type ItemType = "split" | "grow" | "slow";
+type ItemType = "split" | "grow" | "slow" | "wide";
 
-type Ball = { x: number; y: number; vx: number; vy: number };
+// trail = where the shield was over the last TRAIL_SECS (t = world.clock then), drawn as its speed tail
+type Ball = { x: number; y: number; vx: number; vy: number; trail?: { x: number; y: number; t: number }[] };
 // Positions are in grid cells, so the layout survives a resize.
 // Each brick shows the part of the stage picture that sits under it.
-type Brick = { col: number; row: number; alive: boolean };
+type Brick = { col: number; row: number; alive: boolean; item?: ItemType }; // item: dropped when broken (placeItems)
 type Item = { x: number; y: number; type: ItemType };
 type Rect = { x: number; y: number; w: number; h: number };
+type Point = { x: number; y: number };
+// Break VFX: one piece of a broken brick. `poly` is the piece's outline where it sat in the wall, `origin` its
+// centre there and `bounds` its bounding box (so it keeps its cut of the picture); x/y is where that centre is
+// now, moving with vx/vy under gravity while it spins and fades over its life.
+type Shard = {
+  poly: Point[];
+  origin: Point;
+  bounds: Rect;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  angle: number;
+  spin: number;
+  age: number;
+  life: number; // seconds in all — the last `fade` of them fading out
+  fade: number;
+};
 
 type World = {
   levelIdx: number;
@@ -64,18 +86,31 @@ type World = {
   layoutPending: boolean;
   bricks: Brick[];
   items: Item[];
+  shards: Shard[];
+  // last brick broken: seconds left before the level-clear screen, so its pieces can fall and fade first
+  clearDelay: number | null;
   attached: boolean; // ball resting on the shield, waiting for a tap
   radius: number;
+  // 🍄 item: the shield flickers between its old size (`from`) and the new one, `elapsed` s into GROW_FLICKER_SECS
+  growFlicker: { from: number; elapsed: number } | null;
+  paddleScale: number; // ↔️ item: bar width × this, for the rest of the stage
+  // Items: which bricks hold one is fixed when the wall is built (placeItems), from a seed of the day + stage
+  seed: string; // "DD-MM-YYYY-LV-X", X = stage number
+  rng: Rng; // seeded by `seed` — places the items, then picks any swaps (dropItem)
+  lastItem: ItemType | null; // type of the last item dropped — never drops twice in a row
+  itemDrops: Record<ItemType, number>; // items of each type dropped this stage — at most the level's amount
   speedFactor: number; // 🐢 item
   boost: number; // grows a little with every paddle bounce, back to 1 after a miss or 🐢
   lastTimestamp: number | null;
+  clock: number; // seconds of play, for the shield trails
   ended: boolean; // level cleared — stops a late animation frame from finishing it twice
 };
 
 // one picture per stage, from the G3 "AI or not" pool (AI, edited and real photos alike)
 const PICTURES = G3_DATA.pool as Picture[];
 // Each level is a grid sketch: "o" = cells breakable bricks are packed into, any other character = empty.
-const LEVELS = DATA.levels as { grid: string[] }[];
+// `items` = how many of each item the stage hides in its bricks (placeItems)
+const LEVELS = DATA.levels as { grid: string[]; items?: Partial<Record<ItemType, number>> }[];
 
 // Sizes follow the Figma design (Scammer Game Prototype, node 3028:13103) on a 400px-wide frame
 const GRID_TOP = 24; // gap between the header card and the first row
@@ -92,7 +127,17 @@ const BALL_RADIUS = 12; // collision circle; the shield sprite (drawShield) is d
 const BALL_RADIUS_MAX = 20;
 // no cap on shields from 🪄 (each split adds 2) — set a number (was 6) to bring the limit back
 const MAX_BALLS = Infinity;
-const ITEM_DROP_CHANCE = 0.25;
+const GROW_STEP = 6; // 🍄: shield radius + this (× small-phone scale), up to BALL_RADIUS_MAX
+// 🍄: the shield flicks between its old and new size every GROW_FLICKER_STEP s for GROW_FLICKER_SECS, ending big
+// (drawing only — collisions use the new size at once)
+const GROW_FLICKER_SECS = 0.6;
+const GROW_FLICKER_STEP = 0.08;
+// Speed tail behind each moving shield: its path over the last TRAIL_SECS, so a faster shield leaves a longer
+// tail. Kept faint and narrower than the shield on purpose — a hint of speed, not an effect to look at.
+const TRAIL_SECS = 0.1;
+const TRAIL_WIDTH = 1.1; // × shield radius at the shield end, tapering to nothing
+const TRAIL_ALPHA = 0.3; // at the shield end, fading to nothing
+const TRAIL_COLOR = "125, 211, 252"; // #7DD3FC, the shield face's light blue (as r, g, b)
 const ITEM_SIZE = 32;
 
 // Small-phone scaling (.gp-compact in globals.css): the canvas can't use the gp-* classes,
@@ -109,9 +154,30 @@ const itemSize = () => px(ITEM_SIZE, 24);
 const MAX_BOUNCE_ANGLE = (60 * Math.PI) / 180;
 const TAP_SLOP_PX = 10;
 
+// Break VFX: a broken brick shatters like glass — cracks run from a point near the hit out to random spots on
+// its edge, so it splits into SHARD_MIN–SHARD_MAX wedge-shaped pieces (triangles, 4- and 5-sided) that burst away
+// from the shield, spin, fall and fade out. Speeds are in brick heights / play-area heights so every screen looks alike.
+const SHARD_MIN = 5;
+const SHARD_MAX = 8;
+const SHARD_CRACK_INSET = 0.25; // crack centre stays this share of the brick away from its edges
+// each piece stays fully visible for a random SHARD_HOLD_MIN–MAX seconds, then fades out over SHARD_FADE_MIN–MAX
+const SHARD_HOLD_MIN = 0.25;
+const SHARD_HOLD_MAX = 0.4;
+const SHARD_FADE_MIN = 0.1;
+const SHARD_FADE_MAX = 0.25;
+const between = (min: number, max: number) => min + Math.random() * (max - min);
+const SHARD_GRAVITY = 1.6; // × play-area height per s²
+const SHARD_BURST = 4; // × brick height per s, away from the shield
+const SHARD_POP = 3; // × brick height per s, extra upward kick so pieces arc before falling
+const SHARD_SPIN = 7; // max rad/s either way
+const SHARD_SHRINK = 0.35; // pieces end at 65% size
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 const ITEM_INFO: Record<ItemType, { emoji: string; toast: string }> = {
   split: { emoji: "🪄", toast: "🪄 โล่แยกเป็น 3 อัน!" },
   grow: { emoji: "🍄", toast: "🍄 โล่ใหญ่ขึ้น!" },
+  wide: { emoji: "↔️", toast: "↔️ แถบรับยาวขึ้น!" },
   slow: { emoji: "🐢", toast: "🐢 โล่ช้าลง เล่นสบายขึ้น" },
 };
 const ITEM_TYPES = Object.keys(ITEM_INFO) as ItemType[];
@@ -125,10 +191,10 @@ const VERDICTS = {
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-const shuffle = <T,>(arr: T[]): T[] => {
+const shuffle = <T,>(arr: T[], rand: Rng = Math.random): T[] => {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
@@ -142,7 +208,72 @@ const MAX_BOOST = 1.5;
 const SLOW_MULTIPLIER = 0.75; // 🐢: −25% of the current speed
 const SLOW_FLOOR = 0.5; // several 🐢 in a row can't take it below half the start speed
 const currentSpeed = (world: World) => baseSpeed(world.height) * world.speedFactor * world.boost;
-const paddleWidth = (width: number) => Math.min(width * 0.45, Math.max(110, px(PADDLE_WIDTH)));
+// ↔️ item: each one widens the bar by PADDLE_WIDE_STEP, up to PADDLE_WIDE_MAX × and never past PADDLE_WIDE_CAP of the screen
+const PADDLE_WIDE_STEP = 1.3;
+const PADDLE_WIDE_MAX = 2;
+const PADDLE_WIDE_CAP = 0.5;
+const paddleWidth = (world: World, scale = world.paddleScale) =>
+  Math.min(world.width * PADDLE_WIDE_CAP, Math.min(world.width * 0.45, Math.max(110, px(PADDLE_WIDTH))) * scale);
+
+// Item drops: the bricks holding items are fixed when the wall is built (placeItems). On break, the brick's item
+// only drops if catching it would really do something — judged as if every item already falling were caught
+// first — isn't the same type as the last drop, and its type hasn't used up the level's amount; otherwise it is
+// swapped for a type that passes (dropItem), or nothing drops.
+const EFFECT_EPSILON = 0.01; // "already at the limit" despite float rounding
+const itemWouldWork = (world: World, type: ItemType): boolean => {
+  const falling = world.items.filter((it) => it.type === type).length;
+  switch (type) {
+    case "split":
+      // applyItem adds 2 while under MAX_BALLS
+      return world.balls.length + 2 * falling < MAX_BALLS;
+    case "grow": {
+      let r = world.radius;
+      for (let i = 0; i < falling; i++) r = Math.min(r + px(GROW_STEP), px(BALL_RADIUS_MAX));
+      return r < px(BALL_RADIUS_MAX) - EFFECT_EPSILON;
+    }
+    case "slow": {
+      // bar bounces before the catch would leave more to slow down — judged on the speed right now, to be safe
+      let m = world.speedFactor * world.boost;
+      for (let i = 0; i < falling; i++) m = Math.max(SLOW_FLOOR, m * SLOW_MULTIPLIER);
+      return m > SLOW_FLOOR + EFFECT_EPSILON;
+    }
+    case "wide": {
+      let s = world.paddleScale;
+      for (let i = 0; i < falling; i++) s = Math.min(PADDLE_WIDE_MAX, s * PADDLE_WIDE_STEP);
+      const next = Math.min(PADDLE_WIDE_MAX, s * PADDLE_WIDE_STEP);
+      return paddleWidth(world, next) > paddleWidth(world, s) + EFFECT_EPSILON;
+    }
+  }
+};
+
+const itemAmount = (world: World, type: ItemType) => LEVELS[world.levelIdx].items?.[type] ?? 0;
+
+const itemAllowed = (world: World, type: ItemType) =>
+  type !== world.lastItem && world.itemDrops[type] < itemAmount(world, type) && itemWouldWork(world, type);
+
+/** What a broken brick holding `planned` drops: that item if it passes every rule, else a seeded pick among
+ *  the types that do, else nothing. */
+const dropItem = (world: World, planned: ItemType): ItemType | null => {
+  if (itemAllowed(world, planned)) return planned;
+  const allowed = ITEM_TYPES.filter((type) => itemAllowed(world, type));
+  return allowed.length ? allowed[Math.floor(world.rng() * allowed.length)] : null;
+};
+
+/** Item seed of the day + stage, e.g. "22-10-2026-LV-1" — `date` is todaySeed()'s "YYYY-MM-DD" (Thai time). */
+const itemSeed = (date: string, levelIdx: number) => {
+  const [y, m, d] = date.split("-");
+  return `${d}-${m}-${y}-LV-${levelIdx + 1}`;
+};
+
+/** Hide the level's items (its amount of each type) in random bricks, one per brick, using the seeded rng —
+ *  so every player gets the same item bricks on the same day. */
+const placeItems = (world: World) => {
+  const planned = ITEM_TYPES.flatMap((type) => Array<ItemType>(itemAmount(world, type)).fill(type));
+  const items = shuffle(planned, world.rng);
+  shuffle(world.bricks, world.rng)
+    .slice(0, items.length)
+    .forEach((brick, i) => (brick.item = items[i]));
+};
 const paddleTop = (height: number) => height - px(PADDLE_BOTTOM) - paddleHeight();
 
 const gridCols = (world: World) => LEVELS[world.levelIdx].grid[0].length;
@@ -182,6 +313,7 @@ const buildBricks = (grid: string[]): Brick[] => {
 const layoutLevel = (world: World) => {
   const grid = LEVELS[world.levelIdx].grid;
   world.bricks = buildBricks(grid);
+  placeItems(world);
   world.radius = px(BALL_RADIUS, 12);
   world.paddleX = world.width / 2;
   world.layoutPending = false;
@@ -298,6 +430,129 @@ const drawShield = (ctx: CanvasRenderingContext2D, x: number, y: number, r: numb
   ctx.restore();
 };
 
+/** Split a broken brick into uneven pieces flying away from (hitX, hitY) — where the shield struck it. */
+const breakBrick = (world: World, rect: Rect, hitX: number, hitY: number) => {
+  const still = prefersReducedMotion(); // reduced motion: pieces just fade in place
+  const { x: bx, y: by, w, h } = rect;
+  // crack centre: the hit point pulled inside the brick, nudged a little so no two breaks look the same
+  const jitter = () => (Math.random() - 0.5) * 0.2;
+  const centre = {
+    x: bx + w * clamp((hitX - bx) / w + jitter(), SHARD_CRACK_INSET, 1 - SHARD_CRACK_INSET),
+    y: by + h * clamp((hitY - by) / h + jitter(), SHARD_CRACK_INSET, 1 - SHARD_CRACK_INSET),
+  };
+  // points on the edge by distance along it, clockwise from the top-left corner (wraps past the perimeter)
+  const perimeter = 2 * (w + h);
+  const corners = [0, w, w + h, 2 * w + h];
+  const edgePoint = (t: number): Point => {
+    const d = ((t % perimeter) + perimeter) % perimeter;
+    if (d < w) return { x: bx + d, y: by };
+    if (d < w + h) return { x: bx + w, y: by + d - w };
+    if (d < 2 * w + h) return { x: bx + w - (d - w - h), y: by + h };
+    return { x: bx, y: by + h - (d - 2 * w - h) };
+  };
+  // where the cracks meet the edge: evenly spread with jitter, so pieces vary without becoming slivers
+  const count = SHARD_MIN + Math.floor(Math.random() * (SHARD_MAX - SHARD_MIN + 1));
+  const step = perimeter / count;
+  const start = Math.random() * perimeter;
+  const cracks = Array.from({ length: count }, (_, i) => start + (i + (Math.random() - 0.5) * 0.7) * step);
+  const unit = h;
+  for (let i = 0; i < count; i++) {
+    const a = cracks[i];
+    const b = i + 1 < count ? cracks[i + 1] : cracks[0] + perimeter;
+    // wedge: crack centre → edge at a → any corners passed on the way → edge at b
+    const poly: Point[] = [centre, edgePoint(a)];
+    for (let lap = Math.floor(a / perimeter) * perimeter; lap < b; lap += perimeter) {
+      for (const c of corners) if (lap + c > a && lap + c < b) poly.push(edgePoint(c));
+    }
+    poly.push(edgePoint(b));
+    const xs = poly.map((p) => p.x);
+    const ys = poly.map((p) => p.y);
+    const bounds = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+    const origin = { x: xs.reduce((s, v) => s + v, 0) / poly.length, y: ys.reduce((s, v) => s + v, 0) / poly.length };
+    // fly out from the crack centre (≈ the hit), so pieces burst away from the shield
+    const dx = origin.x - centre.x;
+    const dy = origin.y - centre.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const burst = unit * SHARD_BURST * (0.6 + Math.random() * 0.6);
+    const fade = between(SHARD_FADE_MIN, SHARD_FADE_MAX);
+    world.shards.push({
+      poly,
+      origin,
+      bounds,
+      x: origin.x,
+      y: origin.y,
+      vx: still ? 0 : (dx / dist) * burst + (Math.random() - 0.5) * unit,
+      vy: still ? 0 : (dy / dist) * burst - unit * SHARD_POP * Math.random(),
+      angle: 0,
+      spin: still ? 0 : (Math.random() * 2 - 1) * SHARD_SPIN,
+      age: 0,
+      life: between(SHARD_HOLD_MIN, SHARD_HOLD_MAX) + fade,
+      fade,
+    });
+  }
+};
+
+const updateShards = (world: World, dt: number) => {
+  const gravity = prefersReducedMotion() ? 0 : world.height * SHARD_GRAVITY;
+  for (let i = world.shards.length - 1; i >= 0; i--) {
+    const s = world.shards[i];
+    s.age += dt;
+    if (s.age >= s.life || s.y - s.bounds.h > world.height) {
+      world.shards.splice(i, 1);
+      continue;
+    }
+    s.vy += gravity * dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    s.angle += s.spin * dt;
+  }
+};
+
+const drawShards = (ctx: CanvasRenderingContext2D, world: World, picture: HTMLImageElement | null, area: Rect) => {
+  for (const s of world.shards) {
+    const alpha = Math.min(1, (s.life - s.age) / s.fade);
+    const scale = 1 - SHARD_SHRINK * (s.age / s.life);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, alpha);
+    // move the piece's wall position onto its current centre, turned and shrunk — so drawing its outline where
+    // it sat in the wall keeps the same cut of the picture it had there
+    ctx.translate(s.x, s.y);
+    ctx.rotate(s.angle);
+    ctx.scale(scale, scale);
+    ctx.translate(-s.origin.x, -s.origin.y);
+    ctx.beginPath();
+    s.poly.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+    ctx.closePath();
+    // no white edge on the pieces (unlike the bricks) — just the picture
+    if (picture) {
+      ctx.clip();
+      drawPictureCut(ctx, picture, area, s.bounds);
+    } else {
+      ctx.fillStyle = BRICK_FALLBACK;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+};
+
+/** Faint tapered tail along the shield's recent path — wide and most visible at the shield, gone at the end. */
+const drawTrail = (ctx: CanvasRenderingContext2D, ball: Ball, r: number) => {
+  const pts = ball.trail;
+  if (!pts || pts.length < 2) return;
+  ctx.save();
+  ctx.lineCap = "round";
+  for (let i = 1; i < pts.length; i++) {
+    const f = i / (pts.length - 1); // 0 at the oldest point, 1 at the shield
+    ctx.beginPath();
+    ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
+    ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.lineWidth = r * TRAIL_WIDTH * f;
+    ctx.strokeStyle = `rgba(${TRAIL_COLOR}, ${TRAIL_ALPHA * f})`;
+    ctx.stroke();
+  }
+  ctx.restore();
+};
+
 const pictureReady = (img: HTMLImageElement | undefined): img is HTMLImageElement =>
   !!img && img.complete && img.naturalWidth > 0;
 
@@ -332,9 +587,11 @@ const bounceOffRect = (ball: Ball, r: number, rect: Rect): boolean => {
   return true;
 };
 
-const createWorld = (levelIdx: number): World => {
+const createWorld = (levelIdx: number, seed = ""): World => {
   return {
     levelIdx,
+    seed,
+    rng: mulberry32(hashString(seed)),
     width: 1,
     height: 1,
     paddleX: 0.5,
@@ -342,11 +599,18 @@ const createWorld = (levelIdx: number): World => {
     layoutPending: true,
     bricks: [],
     items: [],
+    shards: [],
+    clearDelay: null,
     attached: true,
     radius: BALL_RADIUS,
+    growFlicker: null,
+    paddleScale: 1,
+    lastItem: null,
+    itemDrops: { split: 0, grow: 0, slow: 0, wide: 0 },
     speedFactor: 1,
     boost: 1,
     lastTimestamp: null,
+    clock: 0,
     ended: false,
   };
 };
@@ -371,6 +635,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
   const levelMissesRef = useRef(0);
   // the picture of each stage — picked once per game, all preloaded when the game starts
   const picturesRef = useRef<Picture[] | null>(null);
+  // the day the game was started ("YYYY-MM-DD", Thai time) — fixed for the whole game, even past midnight
+  const playDateRef = useRef<string | null>(null);
   const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const dragRef = useRef<{ pointerId: number; startX: number; moved: boolean } | null>(null);
   const logRef = useRef(logEvent);
@@ -408,7 +674,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
   const startLevel = (idx: number) => {
     // bricks are laid out (and enter_level logged) on the canvas's first resize — see onLayout
     preloadPictures();
-    worldRef.current = createWorld(idx);
+    worldRef.current = createWorld(idx, itemSeed((playDateRef.current ??= todaySeed()), idx));
     levelMissesRef.current = 0;
     dragRef.current = null;
     setLevelIdx(idx);
@@ -424,6 +690,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       game_id: "G17",
       level: world.levelIdx + 1,
       bricks: world.bricks.length,
+      items: world.bricks.filter((b) => b.item).length,
+      seed: world.seed,
       picture_id: pictureOf(world.levelIdx).id,
     });
   };
@@ -451,7 +719,15 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         }
       }
     } else if (type === "grow") {
-      world.radius = Math.min(world.radius + px(6), px(BALL_RADIUS_MAX));
+      const from = world.radius;
+      world.radius = Math.min(world.radius + px(GROW_STEP), px(BALL_RADIUS_MAX));
+      // already at the biggest size: nothing to flicker between
+      if (world.radius > from) world.growFlicker = { from, elapsed: 0 };
+    } else if (type === "wide") {
+      world.paddleScale = Math.min(PADDLE_WIDE_MAX, world.paddleScale * PADDLE_WIDE_STEP);
+      // widens around its centre — keep it on screen near the edges
+      const half = paddleWidth(world) / 2;
+      world.paddleX = clamp(world.paddleX, half, world.width - half);
     } else if (type === "slow") {
       // 25% off the speed right now (bounce speed-up included), never below SLOW_FLOOR of the start speed;
       // the bounce speed-up keeps building from the new, slower speed
@@ -493,13 +769,30 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     const world = worldRef.current;
     const { width, height } = world;
     const r = world.radius;
-    const pw = paddleWidth(width);
+    const pw = paddleWidth(world);
     const py = paddleTop(height);
 
     if (world.ended || world.layoutPending) return;
+    updateShards(world, dt);
+    // tails: drop path points older than TRAIL_SECS (also while frozen at level clear, so they shrink away)
+    world.clock += dt;
+    for (const b of world.balls) {
+      while (b.trail?.length && world.clock - b.trail[0].t > TRAIL_SECS) b.trail.shift();
+    }
+    if (world.growFlicker) {
+      world.growFlicker.elapsed += dt;
+      if (world.growFlicker.elapsed >= GROW_FLICKER_SECS) world.growFlicker = null;
+    }
+    // last brick gone: shields hold still while its pieces fall and fade, then the level-clear screen
+    if (world.clearDelay !== null) {
+      world.clearDelay -= dt;
+      if (world.clearDelay <= 0 || world.shards.length === 0) finishLevel();
+      return;
+    }
     if (world.attached) {
       world.balls[0].x = world.paddleX;
       world.balls[0].y = py - r;
+      world.balls[0].trail = undefined; // resting on the bar: no tail
       return;
     }
 
@@ -542,10 +835,15 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         if (!bounceOffRect(ball, r, rect)) continue;
 
         brick.alive = false;
+        breakBrick(world, rect, ball.x, ball.y);
 
-        if (Math.random() < ITEM_DROP_CHANCE) {
-          const type = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
-          world.items.push({ x: rect.x + rect.w / 2, y: rect.y + rect.h / 2, type });
+        if (brick.item) {
+          const type = dropItem(world, brick.item);
+          if (type) {
+            world.items.push({ x: rect.x + rect.w / 2, y: rect.y + rect.h / 2, type });
+            world.lastItem = type;
+            world.itemDrops[type] += 1;
+          }
         }
         const left = bricksAlive(world);
         setBricksLeft(left);
@@ -553,6 +851,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         break;
       }
 
+      (ball.trail ??= []).push({ x: ball.x, y: ball.y, t: world.clock });
       if (ball.y - r > height) world.balls.splice(i, 1);
     }
 
@@ -569,9 +868,10 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       }
     }
 
-    // stage cleared when every box is gone
+    // stage cleared when every box is gone — after the last one's break VFX has played out
     if (bricksAlive(world) === 0) {
-      finishLevel();
+      world.items = [];
+      world.clearDelay = SHARD_HOLD_MAX + SHARD_FADE_MAX;
       return;
     }
 
@@ -622,17 +922,24 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       ctx.strokeRect(rect.x + BRICK_BORDER / 2, rect.y + BRICK_BORDER / 2, rect.w - BRICK_BORDER, rect.h - BRICK_BORDER);
     }
 
+    drawShards(ctx, world, picture, area);
+
     ctx.font = `${itemSize()}px sans-serif`;
     for (const item of world.items) ctx.fillText(ITEM_INFO[item.type].emoji, item.x, item.y);
 
-    const pw = paddleWidth(width);
+    const pw = paddleWidth(world);
     const py = paddleTop(height);
     ctx.beginPath();
     ctx.roundRect(world.paddleX - pw / 2, py, pw, paddleHeight(), paddleHeight() / 2);
     ctx.fillStyle = PADDLE_COLOR;
     ctx.fill();
 
-    for (const ball of world.balls) drawShield(ctx, ball.x, ball.y, world.radius);
+    // 🍄 just taken: flick old size ↔ new size (odd steps show the old one), settling on the new size
+    const flicker = world.growFlicker;
+    const shieldR =
+      flicker && Math.floor(flicker.elapsed / GROW_FLICKER_STEP) % 2 === 1 ? flicker.from : world.radius;
+    for (const ball of world.balls) drawTrail(ctx, ball, shieldR); // under every shield
+    for (const ball of world.balls) drawShield(ctx, ball.x, ball.y, shieldR);
 
     if (world.attached) {
       const label = "แตะจอเพื่อปล่อยโล่";
@@ -681,6 +988,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       world.balls.forEach((b) => {
         b.x *= sx;
         b.y *= sy;
+        b.trail = undefined; // old path is in the old size — just start a new tail
       });
       world.items.forEach((it) => {
         it.x *= sx;
@@ -688,6 +996,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       });
       world.width = width;
       world.height = height;
+      // pieces carry their old wall position (their picture cut), which a resize moves — just drop them
+      world.shards = [];
       if (world.layoutPending) {
         layoutLevel(world);
         onLayoutRef.current();
@@ -726,7 +1036,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     if (!canvas) return;
     const bounds = canvas.getBoundingClientRect();
     const world = worldRef.current;
-    const half = paddleWidth(world.width) / 2;
+    const half = paddleWidth(world) / 2;
     world.paddleX = clamp(clientX - bounds.left, half, world.width - half);
   };
 
@@ -781,7 +1091,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         containerClassName="bg-white gp-compact"
         title="โล่กันโกง"
         objective="ลากแถบด้านล่างไปซ้าย-ขวา รับโล่ให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริง ภาพ AI หรือภาพตัดต่อ"
-        choices="ของช่วย: 🪄 โล่แยกเป็น 3 อัน · 🍄 โล่ใหญ่ขึ้น · 🐢 โล่ช้าลง"
+        choices="ของช่วย: 🪄 โล่แยกเป็น 3 อัน · 🍄 โล่ใหญ่ขึ้น · 🐢 โล่ช้าลง · ↔️ แถบรับยาวขึ้น"
         icon={Shield}
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G17" });

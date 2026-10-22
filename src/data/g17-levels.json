@@ -8,7 +8,13 @@
         "oooooooooo",
         "oooooooooo",
         "oooooooooo"
-      ]
+      ],
+      "items": {
+        "split": 4,
+        "grow": 2,
+        "slow": 3,
+        "wide": 1
+      }
     },
     {
       "grid": [
@@ -18,7 +24,13 @@
         "oooooooooo",
         "oooooooooo",
         "oooooooooo"
-      ]
+      ],
+      "items": {
+        "split": 3,
+        "grow": 1,
+        "slow": 2,
+        "wide": 1
+      }
     },
     {
       "grid": [
@@ -28,7 +40,13 @@
         "oooooooooo",
         "oooooooooo",
         "oooooooooo"
-      ]
+      ],
+      "items": {
+        "split": 4,
+        "grow": 1,
+        "slow": 1,
+        "wide": 1
+      }
     }
   ]
 }

@@ -1024,8 +1024,8 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="เรียงผลไม้"
-        objective="ลากผลไม้สลับกับช่องข้าง ๆ ให้ผลไม้ชนิดเดียวกันเรียงติดกัน 3 ผลขึ้นไป แนวนอนหรือแนวตั้งก็ได้ ผลไม้จะหายไปและได้คะแนน"
-        choices={`สลับได้ ${MOVES_PER_RUN} ครั้ง ไม่จับเวลา ค่อย ๆ เล่นได้เลย`}
+        objective="ลากผลไม้สลับกับช่องข้างๆ ให้ผลไม้ชนิดเดียวกันติดกัน 3 ผลขึ้นไป"
+        choices={`สลับได้ ${MOVES_PER_RUN} ครั้ง ไม่จับเวลา`}
         imageSrc="/assets/icons/g19-fruit-match.png"
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G19" });

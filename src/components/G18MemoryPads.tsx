@@ -81,8 +81,14 @@ const RESULT_PAUSE_MS = SHOW_TURN_POPUP ? 2000 : 1600; // let the "wrong" turn r
 const TURN_POPUP_IN_MS = 350;const TURN_POPUP_OUT_MS = 300;
 // "ดูอีกครั้ง" (replay the sequence) — off to match the Figma design; flip back on if the final design has it
 const SHOW_REPLAY_BUTTON = false;
-// pad face sits this far above its darker base; a lit/pressed pad drops onto it (× --gp-s, like GameAnswerButton)
-const PAD_LIFT = "calc(8px * var(--gp-s, 1))";
+// Board size (Figma: 352px). Fitted to the screen by height first, then width (see the board-size effect);
+// everything inside scales with it from these Figma values, so the pads always sit inside the board.
+const BOARD_PX = 352;
+const BOARD_MIN_PX = 200; // shorter screens than this scroll instead (AGENT.md) — pads stay well over 48px
+const BOARD_PAD_PX = 16; // board padding and gap between pads
+const BOARD_RADIUS_PX = 20; // board and pad corners
+// pad face sits this far above its darker base; a lit/pressed pad drops onto it (like GameAnswerButton)
+const PAD_LIFT_PX = 8;
 const PAD_PRESS_MS = 90; // face slide time — same as GameAnswerButton/Button3D
 // Guided tutorial, as in the mock: hole padding/radius around the pad to press
 const TUTORIAL_HOLE_PAD_PX = 8;
@@ -143,9 +149,13 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const tutorialDoneRef = useRef(false);
   const timersRef = useRef<number[]>([]);
   const audioRef = useRef<AudioContext | null>(null);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const boardWrapRef = useRef<HTMLDivElement | null>(null);
+  const boardRef = useRef<HTMLDivElement | null>(null);
   const padRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [tutorialRect, setTutorialRect] = useState<TutorialRect | null>(null);
+  const [boardPx, setBoardPx] = useState(BOARD_PX);
 
   const inTutorial = !tutorialDone && level <= TUTORIAL_LEVELS;
   // Dimmed screen + 👆 on the pad to press next, on the player's turn in the guided levels.
@@ -167,7 +177,50 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     const ro = new ResizeObserver(measure);
     ro.observe(stage);
     return () => ro.disconnect();
-  }, [showTutorial, step]);
+  }, [showTutorial, step, boardPx]);
+
+  // Board size: the board is square, so one number sets both sides. Allowed height = the visible play area
+  // minus everything else stacked with the board (tutorial box, status pill, gaps, padding); allowed width =
+  // the stage's inner width. Height is checked first: too tall → scale down until the height fits; then if
+  // it is still too wide → scale down until the width fits (min of the two = the same thing). Below
+  // BOARD_MIN_PX in height the page scrolls instead, but the width always fits (no sideways overflow).
+  const playing = phase !== "intro" && phase !== "result";
+  useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
+    const stage = stageRef.current;
+    const wrap = boardWrapRef.current;
+    const board = boardRef.current;
+    if (!playing || !scroller || !stage || !wrap || !board) return;
+    const inFlow = (el: Element) => {
+      const cs = getComputedStyle(el);
+      return cs.position !== "absolute" && cs.position !== "fixed" && cs.display !== "none";
+    };
+    const stageKids = Array.from(stage.children).filter(inFlow);
+    const wrapKids = Array.from(wrap.children).filter(inFlow);
+    const measure = () => {
+      const st = getComputedStyle(stage);
+      const num = (v: string) => parseFloat(v) || 0;
+      const allowedW = stage.clientWidth - num(st.paddingLeft) - num(st.paddingRight);
+      let others =
+        num(st.paddingTop) +
+        num(st.paddingBottom) +
+        num(st.rowGap) * Math.max(0, stageKids.length - 1) +
+        num(getComputedStyle(wrap).rowGap) * Math.max(0, wrapKids.length - 1);
+      for (const el of [...stageKids, ...wrapKids]) {
+        if (el !== wrap && el !== board) others += el.getBoundingClientRect().height;
+      }
+      const allowedH = scroller.clientHeight - others;
+      const size = Math.floor(Math.min(allowedW, Math.max(BOARD_MIN_PX, Math.min(BOARD_PX, allowedH))));
+      if (size > 0) setBoardPx(size);
+    };
+    measure();
+    // the board itself isn't observed (its size is the output), so this can't loop
+    const ro = new ResizeObserver(measure);
+    ro.observe(scroller);
+    ro.observe(stage);
+    for (const el of [...stageKids, ...wrapKids]) if (el !== wrap && el !== board) ro.observe(el);
+    return () => ro.disconnect();
+  }, [playing, inTutorial]);
 
   const goPhase = (next: Phase) => {
     phaseRef.current = next;
@@ -420,6 +473,11 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
 
   const length = level;
   const isInput = phase === "input";
+  // everything inside the board scales with it (Figma values are for the 352px board)
+  const boardScale = boardPx / BOARD_PX;
+  const boardPad = `${BOARD_PAD_PX * boardScale}px`;
+  const boardRadius = `${BOARD_RADIUS_PX * boardScale}px`;
+  const padLift = `${PAD_LIFT_PX * boardScale}px`;
 
   // Tutorial instruction (own box above the board, null = nothing to add this phase). Praise gets its ✓ from the box.
   const tutorialTip = ((): TutorialTip | null => {
@@ -502,13 +560,13 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
         )}
       </GameStageHeader>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
         <div
           ref={stageRef}
           className="relative flex min-h-full flex-col items-center justify-center gp-gap-56 gp-px-24 gp-py-24"
         >
           {/* tutorial box + board: the box sits just above the board, closer than the status pill below */}
-          <div className="flex w-full flex-col items-center gp-gap-16">
+          <div ref={boardWrapRef} className="flex w-full flex-col items-center gp-gap-16">
             {/* Tutorial instruction box (like G13's), above the dimmed layer. Its slot keeps two lines of room for
                 the whole tutorial, so the board doesn't jump between steps; it goes once the real game starts. */}
             {inTutorial && (
@@ -532,13 +590,14 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
 
             {/* Board + pads: Figma — 352px dark board, 2×2 raised pads, centre circle */}
             <div
-              className={`relative aspect-square w-full rounded-[20px] gp-p-16 transition-[background-color,box-shadow] duration-150 ${
+              ref={boardRef}
+              className={`relative shrink-0 transition-[background-color,box-shadow] duration-150 ${
                 phase === "correct" ? "bg-white shadow-[0_0_40px_rgba(255,255,255,1)]" : "bg-[#23233A]"
               }`}
-              // keep the whole board on screen on most phones; very short screens scroll instead
-              style={{ maxWidth: "min(352px, 58dvh)" }}
+              // explicit square size from the board-size effect, so flex can never squash it out of shape
+              style={{ width: boardPx, height: boardPx, padding: boardPad, borderRadius: boardRadius }}
             >
-              <div className="grid h-full w-full grid-cols-2 grid-rows-2 gp-gap-16">
+              <div className="grid h-full w-full grid-cols-2 grid-rows-2" style={{ gap: boardPad }}>
                 {PADS.map((pad, i) => {
                   const isLit = lit === i;
                   const isDown = isLit || held === i;
@@ -566,18 +625,20 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
                       onClick={(e) => {
                         if (e.detail === 0) press(i);
                       }}
-                      className={`relative touch-manipulation rounded-[20px] border-0 bg-transparent p-0 ${
+                      className={`relative touch-manipulation border-0 bg-transparent p-0 ${
                         isInput ? "cursor-pointer" : "cursor-default"
                       } ${isDown ? "z-10" : ""}`}
+                      style={{ borderRadius: boardRadius }}
                     >
                       {/* Built like GameAnswerButton: the darker base is its own layer at the bottom and the face
                           sits PAD_LIFT above it. Pressed, the face slides down over the base and the base hides
                           only once fully covered (no dark sliver at the rounded corners); on release it comes back at once. */}
                       <span
                         aria-hidden="true"
-                        className="absolute inset-x-0 bottom-0 rounded-[20px] transition-opacity duration-0"
+                        className="absolute inset-x-0 bottom-0 transition-opacity duration-0"
                         style={{
-                          height: `calc(100% - ${PAD_LIFT})`,
+                          height: `calc(100% - ${padLift})`,
+                          borderRadius: boardRadius,
                           backgroundColor: pad.shadow,
                           opacity: isDown ? 0 : 1,
                           transitionDelay: isDown ? `${PAD_PRESS_MS}ms` : "0ms",
@@ -587,14 +648,15 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
                         aria-hidden="true"
                         // the glow is on the face, not the button, so it moves with it — on the button it framed
                         // the empty strip the face leaves at the top when pressed, showing a dark shape behind
-                        className="absolute inset-x-0 top-0 rounded-[20px] transition-[transform,filter,box-shadow] ease-out"
+                        className="absolute inset-x-0 top-0 transition-[transform,filter,box-shadow] ease-out"
                         style={{
-                          height: `calc(100% - ${PAD_LIFT})`,
+                          height: `calc(100% - ${padLift})`,
+                          borderRadius: boardRadius,
                           backgroundColor: pad.color,
                           transitionDuration: `${PAD_PRESS_MS}ms`,
-                          transform: isDown ? `translateY(${PAD_LIFT})` : "translateY(0)",
+                          transform: isDown ? `translateY(${padLift})` : "translateY(0)",
                           filter: isDown ? "brightness(1.3)" : undefined,
-                          boxShadow: isDown ? `0 0 40px 10px ${pad.glow}` : undefined,
+                          boxShadow: isDown ? `0 0 ${40 * boardScale}px ${10 * boardScale}px ${pad.glow}` : undefined,
                         }}
                       />
                     </button>
@@ -641,11 +703,11 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
               <div
                 className="absolute"
                 style={{
-                  left: tutorialRect.x - TUTORIAL_HOLE_PAD_PX,
-                  top: tutorialRect.y - TUTORIAL_HOLE_PAD_PX,
-                  width: tutorialRect.w + TUTORIAL_HOLE_PAD_PX * 2,
-                  height: tutorialRect.h + TUTORIAL_HOLE_PAD_PX * 2,
-                  borderRadius: TUTORIAL_HOLE_RADIUS_PX,
+                  left: tutorialRect.x - TUTORIAL_HOLE_PAD_PX * boardScale,
+                  top: tutorialRect.y - TUTORIAL_HOLE_PAD_PX * boardScale,
+                  width: tutorialRect.w + TUTORIAL_HOLE_PAD_PX * 2 * boardScale,
+                  height: tutorialRect.h + TUTORIAL_HOLE_PAD_PX * 2 * boardScale,
+                  borderRadius: TUTORIAL_HOLE_RADIUS_PX * boardScale,
                   boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75)",
                 }}
               />
