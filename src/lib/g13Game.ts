@@ -62,6 +62,13 @@ export const isCaughtAtTarget = ({
   Math.abs(objectX - targetX) <= catchWidth;
 
 /**
+ * One frame of the catch zone's bottom edge (y grows downward) following its target: it eases up
+ * (exponentially, `rate` per second) when the tower grows, and snaps straight down when it shrinks.
+ */
+export const stepCatchBottom = (current: number, target: number, delta: number, rate: number) =>
+  target >= current ? target : target + (current - target) * Math.exp(-rate * delta);
+
+/**
  * Calculates the index range of scoops to render, capping the total visible
  * stack height to maxVisiblePx (excluding cone).
  * Only the topmost scoops that fit within the pixel budget are shown.

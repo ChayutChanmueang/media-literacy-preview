@@ -420,7 +420,14 @@ function LeaderboardPageInner() {
           {/* gap = the bar's mt: the game name sits midway between the title and the purple bar */}
           <header className="flex shrink-0 flex-col items-center gap-[8px] text-center">
             <h1 className="text-[24px] font-semibold leading-[32px] text-black">กระดานคะแนน</h1>
-            <p className="text-[20px] font-normal leading-[30px] text-black">{gameName || localName}</p>
+            {/* icon + name centred as one unit; the icon is sized in em so it stays about the text's size */}
+            <p className="flex items-center justify-center gap-[8px] text-[20px] font-normal leading-[30px] text-black">
+              {game?.icon && (gameName || localName) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={game.icon} alt="" aria-hidden="true" className="h-[1.2em] w-[1.2em] shrink-0 object-contain" />
+              )}
+              <span>{gameName || localName}</span>
+            </p>
             {!isBrowse && (skipped || !player) && (
               <p className="text-[20px] font-normal leading-[30px] text-[#4B4B4B]">ดูอันดับโดยไม่เก็บคะแนน</p>
             )}

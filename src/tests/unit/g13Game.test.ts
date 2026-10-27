@@ -8,9 +8,21 @@ import {
   getTowerCameraTarget,
   getVisibleScoopRange,
   isCaughtAtTarget,
+  stepCatchBottom,
 } from "@/lib/g13Game";
 
 describe("G13 Canvas remake game rules", () => {
+  it("eases the catch zone's bottom up after a catch and snaps it down when the tower shrinks", () => {
+    // tower grew: bottom moves part of the way up, never past the new target
+    const eased = stepCatchBottom(-10, -60, 0.1, 4);
+    expect(eased).toBeLessThan(-10);
+    expect(eased).toBeGreaterThan(-60);
+    expect(stepCatchBottom(-10, -60, 10, 4)).toBeCloseTo(-60);
+    // tower shrank (a bomb hit): straight down to the new top scoop's middle
+    expect(stepCatchBottom(-60, -10, 0.016, 4)).toBe(-10);
+    expect(stepCatchBottom(-60, -60, 0.016, 4)).toBe(-60);
+  });
+
   it("stacks the first scoop on the cone and later scoops on the current top", () => {
     expect(getStackTargetY(500, 0, 25, 35, 9)).toBe(509);
     expect(getStackTargetY(500, 1, 25, 35, 9)).toBe(484);

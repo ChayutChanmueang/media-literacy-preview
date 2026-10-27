@@ -16,11 +16,13 @@ import {
   getTowerCameraTarget,
   getVisibleScoopRange,
   isCaughtAtTarget,
+  stepCatchBottom,
 } from "@/lib/g13Game";
 import GameIntro from "./GameIntro";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 import { stageScale } from "@/lib/gameViewport";
 import { useStageScale } from "@/lib/useStageScale";
+import { DEV_SKIP_ENABLED } from "@/lib/devSkip";
 
 type Props = {
   onFinish: (score: number) => void;
@@ -100,6 +102,7 @@ type GameWorld = {
   dragPointerId: number | null;
   roundStartedAt: number; // world.elapsed when the timed round began (the tutorial isn't timed)
   tutorial: Tutorial | null;
+  catchBottom: number; // catch zone's bottom edge, below the cone's rim (so the camera doesn't move it)
 };
 
 const SESSION_TIME_SECONDS = 120;
@@ -131,6 +134,9 @@ const SCOOP_CATCH_REACH = SCOOP_RADIUS * 1.55;
 const BOMB_HIT_REACH = CONE_WIDTH * 0.62;
 // With no scoop yet, a drop counts while its bottom is within this far below the cone's rim
 const EMPTY_CONE_CATCH_DEPTH = SCOOP_RADIUS * 0.5;
+// After a catch, how fast (per second) the zone's bottom eases up from the old top scoop's middle
+// to the new one's (~0.6 s to get 90% of the way)
+const CATCH_BOTTOM_EASE_RATE = 4;
 
 // US-CF-17: Visible ice cream height cap in pixels (excluding cone)
 const MAX_VISIBLE_STACK_PX = 162 * SPRITE_SCALE; // 2.5 scoops height (used for camera tracking)
@@ -256,6 +262,7 @@ const createWorld = (): GameWorld => ({
   dragPointerId: null,
   roundStartedAt: 0,
   tutorial: null,
+  catchBottom: EMPTY_CONE_CATCH_DEPTH,
 });
 
 const formatTime = (seconds: number) => {
@@ -404,6 +411,89 @@ const getTowerGeometry = (world: GameWorld, reduceMotion: boolean) => {
   return { coneTop, x, wobble, topCenterY, visibleHeight };
 };
 
+type TowerGeometry = ReturnType<typeof getTowerGeometry>;
+
+// Where the zone's bottom settles, below the cone's rim: the middle of the top scoop, or a little
+// under the rim while the cone is empty
+const getCatchBottomTarget = (world: GameWorld, geometry: TowerGeometry) =>
+  world.stack.length > 0 ? geometry.topCenterY - geometry.coneTop : EMPTY_CONE_CATCH_DEPTH;
+
+/**
+ * Where a falling object's bottom point has to be to count as caught (scoops) or hit (bombs).
+ * The zone runs from the top of the top scoop (or the rim when the cone is empty) down to
+ * `world.catchBottom`: the middle of the top scoop. When a scoop lands the top jumps up at once and the
+ * bottom eases up from the previous scoop's middle (see updateWorld); it is never above the current
+ * top scoop's middle, so a bomb that knocks scoops off can't leave the zone upside down.
+ * Shared by the collision check and the hitbox overlay so the two can't drift apart.
+ */
+const getCatchZone = (world: GameWorld, geometry: TowerGeometry, kind: FallingKind) => {
+  const hasStack = world.stack.length > 0;
+  const targetX = geometry.x + geometry.wobble;
+  const targetY = hasStack ? geometry.topCenterY - SCOOP_RADIUS : geometry.coneTop;
+  const catchWidth = kind === "bomb" ? BOMB_HIT_REACH : SCOOP_CATCH_REACH;
+  const verticalTolerance = hasStack ? 0 : 2;
+  const bottom = geometry.coneTop + Math.max(world.catchBottom, getCatchBottomTarget(world, geometry));
+  const catchDepth = bottom - targetY;
+  return { targetX, targetY, catchWidth, verticalTolerance, catchDepth };
+};
+
+// Dev-only collision overlay (dev builds, or builds with the dev hub unlocked): the "กล่องชน" button
+// in the play area toggles it; ?hitbox=1 in the URL starts with it on
+const hitboxDebugEnabled = () => {
+  if (!DEV_SKIP_ENABLED) return false;
+  try {
+    return new URLSearchParams(window.location.search).get("hitbox") === "1";
+  } catch {
+    return false;
+  }
+};
+
+const HITBOX_SCOOP_COLOR = "#16A34A";
+const HITBOX_BOMB_COLOR = "#DC2626";
+
+/**
+ * Draws the catch zones (green = scoops, red = bombs) and, for each falling object, its drawn
+ * radius plus the bottom point the collision check actually tests — filled when it is inside its zone.
+ */
+const drawHitboxes = (context: CanvasRenderingContext2D, world: GameWorld, geometry: TowerGeometry) => {
+  context.save();
+  context.lineWidth = 2;
+  context.font = "bold 14px monospace";
+  context.textBaseline = "bottom";
+
+  (["bomb", "scoop"] as const).forEach((kind) => {
+    const zone = getCatchZone(world, geometry, kind);
+    const color = kind === "bomb" ? HITBOX_BOMB_COLOR : HITBOX_SCOOP_COLOR;
+    const top = zone.targetY - zone.verticalTolerance;
+    const height = zone.targetY + zone.catchDepth - top;
+    context.setLineDash(kind === "bomb" ? [8, 5] : []);
+    context.strokeStyle = color;
+    context.fillStyle = `${color}22`;
+    context.fillRect(zone.targetX - zone.catchWidth, top, zone.catchWidth * 2, height);
+    context.strokeRect(zone.targetX - zone.catchWidth, top, zone.catchWidth * 2, height);
+    context.fillStyle = color;
+    context.fillText(kind, zone.targetX - zone.catchWidth + 2, kind === "bomb" ? top - 14 : top - 2);
+  });
+  context.setLineDash([]);
+
+  world.falling.forEach((item) => {
+    const zone = getCatchZone(world, geometry, item.kind);
+    const color = item.kind === "bomb" ? HITBOX_BOMB_COLOR : HITBOX_SCOOP_COLOR;
+    const bottomY = item.y + item.radius;
+    const inside = isCaughtAtTarget({ objectX: item.x, objectBottomY: bottomY, ...zone });
+    context.strokeStyle = color;
+    context.beginPath();
+    context.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+    context.stroke();
+    context.beginPath();
+    context.arc(item.x, bottomY, 5, 0, Math.PI * 2);
+    context.fillStyle = inside ? color : "#FFFFFF";
+    context.fill();
+    context.stroke();
+  });
+  context.restore();
+};
+
 /**
  * The sky (day gradient → night, stars, clouds) for the band y ∈ [top, bottom) in game-canvas
  * coordinates (0 = top of the game canvas). Negative y = above the canvas (behind the header card):
@@ -474,6 +564,12 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   const logRef = useRef(logEvent);
   const phaseRef = useRef<GamePhase>(phase);
   const reduceMotionRef = useRef(false);
+  // the component only renders on the client (dynamic, ssr: false), so the URL can be read up front
+  const [showHitboxes, setShowHitboxes] = useState(hitboxDebugEnabled);
+  const hitboxDebugRef = useRef(showHitboxes);
+  useEffect(() => {
+    hitboxDebugRef.current = showHitboxes;
+  }, [showHitboxes]);
   const spawnRngsRef = useRef<SpawnRngs>(makeSpawnRngs(""));
   // the hand tutorial plays on the first start each time the game is opened (not on "เล่นอีกรอบ")
   const tutorialPendingRef = useRef(true);
@@ -1119,6 +1215,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         drawScoop(context, piece.x, piece.y, piece.radius, piece.flavor, piece.rotation);
       });
       if (handPose) drawTutorialHand(context, handPose);
+      if (hitboxDebugRef.current) drawHitboxes(context, world, geometry);
       context.restore();
 
       // score popups: fade in → drift up → fade out (no drift with reduced motion)
@@ -1226,26 +1323,23 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         }
       }
 
+      const towerGeometry = getTowerGeometry(world, reduceMotionRef.current);
+      world.catchBottom = stepCatchBottom(
+        world.catchBottom,
+        getCatchBottomTarget(world, towerGeometry),
+        delta,
+        CATCH_BOTTOM_EASE_RATE
+      );
+
       [...world.falling].forEach((falling) => {
         falling.y += falling.vy * delta;
         falling.rotation += (falling.kind === "bomb" ? 2.2 : 0.65) * delta;
 
         const geometry = getTowerGeometry(world, reduceMotionRef.current);
-        const catchWidth = falling.kind === "bomb" ? BOMB_HIT_REACH : SCOOP_CATCH_REACH;
-        // The catch zone keeps a fixed bottom (just under the cone's rim) and its top follows the
-        // top of the top scoop (or the rim when the cone is empty), so it grows with the tower
-        // instead of moving up with it
-        const hasStack = world.stack.length > 0;
-        const catchTop = hasStack ? geometry.topCenterY - SCOOP_RADIUS : geometry.coneTop;
-        const catchBottom = geometry.coneTop + EMPTY_CONE_CATCH_DEPTH;
         const caught = isCaughtAtTarget({
           objectX: falling.x,
           objectBottomY: falling.y + falling.radius,
-          targetX: geometry.x + geometry.wobble,
-          targetY: catchTop,
-          catchWidth,
-          verticalTolerance: hasStack ? 0 : 2,
-          catchDepth: catchBottom - catchTop,
+          ...getCatchZone(world, geometry, falling.kind),
         });
 
         const resolve = falling.scripted ? resolveTutorialObject : resolveFallingObject;
@@ -1512,6 +1606,18 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
             <p role="status" className="sr-only">
               {finishPopup ? `เก่งมาก เล่นครบ ${SESSION_TIME_SECONDS / 60} นาทีแล้ว` : ""}
             </p>
+            {DEV_SKIP_ENABLED && (
+              <button
+                type="button"
+                onClick={() => setShowHitboxes((on) => !on)}
+                aria-pressed={showHitboxes}
+                className={`${HUD_DEV_BUTTON_CLASS} absolute bottom-[36%] left-2 z-20`}
+                aria-label="แสดงกล่องชนสำหรับทดสอบเกม"
+                data-dev-only="g13-hitbox"
+              >
+                {showHitboxes ? "ซ่อนกล่องชน" : "กล่องชน"}
+              </button>
+            )}
             {/* Tutorial instruction — the 👆 hand itself is drawn on the canvas */}
             <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-4">
               {tutorialBanner && (
