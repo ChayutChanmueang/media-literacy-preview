@@ -93,6 +93,7 @@ export default function G3AIOrNot({ onFinish, logEvent }) {
   if (showIntro) {
     return (
       <GameIntro
+        containerClassName="bg-white gp-compact"
         title="เอไอ หรือ ของจริง"
         objective="ดูภาพแล้วช่วยกันสังเกตว่าเป็นภาพถ่ายจริง หรือภาพที่ AI สร้างขึ้น"
         choices="จริง · ปลอม · ไม่แน่ใจ"

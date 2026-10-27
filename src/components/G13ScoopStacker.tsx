@@ -1418,11 +1418,12 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-amber-50 font-sans select-none">
       {phase === "intro" && (
         <GameIntro
+          containerClassName="bg-white gp-compact"
           title="ต่อไอติมฝึกสมอง"
-          objective="เกมฝึกสมองแสนสนุก! ลากกรวยไอติมเพื่อรับลูกไอติมให้ได้สูงที่สุดและหลบลูกระเบิดภายในเวลาที่กำหนด!"
-          onStart={startGame}
-          containerClassName="bg-gradient-to-b from-sky-100 to-orange-100"
+          objective="ลากกรวยไอติมเพื่อรับลูกไอติมให้ได้สูงที่สุด"
+          choices="หลบลูกระเบิด ภายในเวลาที่กำหนด"
           imageSrc="/assets/icons/g13-ice-cream.jpg"
+          onStart={startGame}
         />
       )}
 

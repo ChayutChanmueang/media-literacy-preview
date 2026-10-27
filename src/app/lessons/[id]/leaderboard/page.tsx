@@ -26,7 +26,7 @@ import { progressService } from "@/services/progressService";
 
 type ViewState = "loading" | "name-entry" | "leaderboard";
 type BoardStatus = "loading" | "ready" | "error";
-// Figma "Leaderboard" (Scammer Game Prototype, node 3157:15491): trophy + title + game name, a purple
+// Figma "Leaderboard" (Scammer Game Prototype, node 3157:15491): title + game name (trophy dropped), a purple
 // column bar, white rows (rank badge · name · score pill), and the player's own row pinned in yellow under
 // the list. Ranks 1–3 show a medal instead of the number badge (🥇🥈🥉, as in the design's rows).
 const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
@@ -417,18 +417,17 @@ function LeaderboardPageInner() {
     return (
       <main className={`${notoLoopedThai.className} gp-compact flex h-full min-h-0 flex-col bg-white`}>
         <div className="mx-auto flex min-h-0 w-full max-w-[400px] flex-1 flex-col gp-px-24 pt-[24px]">
-          <header className="flex shrink-0 flex-col items-center text-center">
-            {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
-            <img src="/assets/icons/leaderboard-trophy.svg" alt="" aria-hidden="true" width={60} height={64} className="block shrink-0" />
+          {/* gap = the bar's mt: the game name sits midway between the title and the purple bar */}
+          <header className="flex shrink-0 flex-col items-center gap-[8px] text-center">
             <h1 className="text-[24px] font-semibold leading-[32px] text-black">กระดานคะแนน</h1>
-            <p className="mt-[4px] text-[20px] font-normal leading-[30px] text-black">{gameName || localName}</p>
+            <p className="text-[20px] font-normal leading-[30px] text-black">{gameName || localName}</p>
             {!isBrowse && (skipped || !player) && (
               <p className="text-[20px] font-normal leading-[30px] text-[#4B4B4B]">ดูอันดับโดยไม่เก็บคะแนน</p>
             )}
           </header>
 
           <div
-            className="mt-[6px] flex h-[60px] shrink-0 items-center rounded-[12px] px-[16px] text-[20px] font-normal leading-[30px] text-white"
+            className="mt-[8px] flex h-[60px] shrink-0 items-center rounded-[12px] px-[16px] text-[20px] font-normal leading-[30px] text-white"
             style={{ backgroundColor: BOARD_BAR }}
           >
             <span className="w-[72px]">อันดับ</span>

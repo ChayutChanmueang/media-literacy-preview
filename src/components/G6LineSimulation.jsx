@@ -492,6 +492,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
   if (showHowTo) {
     return (
       <GameIntro
+        containerClassName="bg-white gp-compact"
         title="เกมจำลองแชทไลน์"
         objective="ลองอยู่ในสถานการณ์แชทไลน์ที่มีคนทักเข้ามา ฝึกจับสัญญาณเตือนภัยมิจฉาชีพให้ทัน"
         choices="กดตอบทันที · หยุดคิด"

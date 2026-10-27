@@ -174,6 +174,7 @@ export default function G1FactCheck({ onFinish, logEvent }) {
   if (showIntro) {
     return (
       <GameIntro
+        containerClassName="bg-white gp-compact"
         title="เกมจริงหรือมั่ว"
         objective="อ่านข้อความต่อไปนี้ และพิจารณาคำตอบให้เหมาะสม"
         choices="จริง · ปลอม · ไม่แน่ใจ"

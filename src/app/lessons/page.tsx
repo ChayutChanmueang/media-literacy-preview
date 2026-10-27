@@ -66,9 +66,8 @@ function ModeCard({
   onClick,
 }: {
   name: string;
-  /** ขึ้นบรรทัดตามที่ Figma ตั้งใจตัดไว้เอง — ภาษาไทยไม่มีเว้นวรรคระหว่างคำ เบราว์เซอร์บางตัว
-   * (โดยเฉพาะเบราว์เซอร์ในแอป LINE ที่กลุ่มผู้ใช้หลักเข้าเว็บผ่าน) ตัดคำผิดกลางคำได้ถ้าปล่อยให้ wrap เอง */
-  body: string[];
+  /** ขึ้นบรรทัดใหม่เองตามความกว้างคอลัมน์ข้อความ (148px) */
+  body: string;
   art: {
     src: string;
     /** source image size (px) — for next/image */
@@ -106,13 +105,7 @@ function ModeCard({
         </div>
         <div className="w-[148px] shrink-0 text-[#4B4B4B]">
           <p className="text-[28px] font-bold leading-[36px]">{name}</p>
-          <p className="text-[20px] font-normal leading-[30px]">
-            {body.map((line, i) => (
-              <span key={i} className="block">
-                {line}
-              </span>
-            ))}
-          </p>
+          <p className="text-[20px] font-normal leading-[30px]">{body}</p>
         </div>
         {/* decorative: the whole card is the button */}
         {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
@@ -352,16 +345,14 @@ function LessonSelector() {
       <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center gap-[36px] px-[24px] py-[36px]">
-            <p className="text-center text-[28px] font-bold leading-[36px]">
-              โปรดเลือกรูปแบบการเรียนรู้
-              <br />
-              ของคุณ
+            <p className="w-full max-w-[352px] text-center text-[28px] font-bold leading-[36px]">
+              โปรดเลือกรูปแบบการเรียนรู้ของคุณ
             </p>
 
             <div className="flex w-full flex-col items-center gap-[36px]">
               <ModeCard
                 name="เนื้อเรื่อง"
-                body={["การเรียนรู้เรียง", "ต่อไปเรื่อยๆ"]}
+                body="เรียนรู้ตามลำดับขั้นตอนเนื้อหาเข้าใจง่าย"
                 // Figma "image 27": 132×152 slot, image at (−1.5%, 5.2%) sized 103% × 89.6%
                 art={{
                   src: "/images/mode-selection/story_mode_books.png",
@@ -378,7 +369,7 @@ function LessonSelector() {
               />
               <ModeCard
                 name="อิสระ"
-                body={["เลือกหัวข้อที่สนใจ", "เรียนรู้ด้วย", "ตัวเอง"]}
+                body="เลือกหัวข้อที่สนใจเรียนรู้ด้วยตัวเอง"
                 // Figma "image 28": 136×208 slot, image at (−9%, −7.87%) sized 118% × 115.73%
                 art={{
                   src: "/images/mode-selection/free_mode_signpost.png",
