@@ -98,11 +98,13 @@ const BACKGROUND = "#EFE6D8"; // warm, close to the kitchen wall — only seen f
 // the pan is part of this scene (G20 hides its pan)
 const TOUCH_HINT = "แตะที่กระทะ";
 
-// Veggie: a tied bunch of ผักบุ้ง (replaced Figma's broccoli icon) in the same 80px box on the 400px-wide design
-// = 108 stage units. The SVG is drawn to fill its square box, so no inset.
-const VEGGIE_SRC = "/assets/g20/morning-glory.svg";
-const VEGGIE_SIZE = 108;
-const VEGGIE_INSET = { left: 0, top: 0, right: 0, bottom: 0 };
+// Veggie: a heap of stir-fried ผักบุ้ง (replaced Figma's broccoli icon), fitted inside a 120px box on the
+// 400px-wide design = 162 stage units. The PNG is wider than tall (1200×784), so it keeps its aspect ratio.
+const VEGGIE_SRC = "/images/games/veggie.png";
+const VEGGIE_SIZE = 162; // 1.5× the original 80px box, so the wide PNG reads at the right size
+// The sprite is drawn this far below the veggie's physics point: the PNG has a transparent margin under the
+// leaves, so without it the heap floats above the pan rim. Visual only — throws/landing are unchanged.
+const VEGGIE_DRAW_DY = 16;
 // "เหลือ n ต้น" on the stove front, under the pan (the veggie's spot) — between the two knobs
 const LEFT_COUNT_Y = STOVE_TOP + 18;
 
@@ -487,6 +489,19 @@ function drawBowlBack(ctx: CanvasRenderingContext2D, x: number) {
   ctx.restore();
 }
 
+// Clip region for a served veggie: straight up from the rim's ends, then the bowl's body below the rim —
+// so whatever is wider than the bowl is hidden, but a heap sticking up out of the opening still shows.
+function clipToBowl(ctx: CanvasRenderingContext2D, x: number) {
+  ctx.beginPath();
+  ctx.moveTo(x - BOWL_RX, PLATE_Y);
+  ctx.lineTo(x - BOWL_RX, 0);
+  ctx.lineTo(x + BOWL_RX, 0);
+  ctx.lineTo(x + BOWL_RX, PLATE_Y);
+  ctx.ellipse(x, PLATE_Y, BOWL_RX, BOWL_DEPTH, 0, 0, Math.PI, false);
+  ctx.closePath();
+  ctx.clip();
+}
+
 function drawBowlFront(ctx: CanvasRenderingContext2D, x: number) {
   ctx.save();
   // foot
@@ -722,9 +737,10 @@ function drawAimArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: n
 
 function drawVeggie(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number) {
   if (img && img.complete && img.naturalWidth > 0) {
-    const { left, top, right, bottom } = VEGGIE_INSET;
-    const box = VEGGIE_SIZE;
-    ctx.drawImage(img, x - box / 2 + box * left, y - box / 2 + box * top, box * (1 - left - right), box * (1 - top - bottom));
+    const scale = VEGGIE_SIZE / Math.max(img.naturalWidth, img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    ctx.drawImage(img, x - w / 2, y - h / 2 + VEGGIE_DRAW_DY, w, h);
     return;
   }
   ctx.font = `80px ${EMOJI_FONT}`;
@@ -897,7 +913,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     v.state = "served";
     v.vx = 0;
     v.vy = 0;
-    v.y = PLATE_Y + 8; // lower half hidden by the bowl's front, so it reads as "in the bowl"
+    v.y = PLATE_Y + 8 - VEGGIE_DRAW_DY; // lower half hidden by the bowl's front, so it reads as "in the bowl"
     v.plateOffset = Math.max(-16, Math.min(16, v.x - world.plate.x)); // keep the ผักบุ้ง inside the bowl's opening
 
     const tStep = tutorialStepRef.current;
@@ -1025,7 +1041,13 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     drawShopBackground(ctx);
     drawTable(ctx, plate.x);
     drawBowlBack(ctx, plate.x);
-    if (veggie.state === "served") drawVeggie(ctx, veggieImg, veggie.x, veggie.y); // tucked between the bowl layers
+    if (veggie.state === "served") {
+      // tucked between the bowl layers, and clipped to the bowl so the sprite's sides don't poke out past it
+      ctx.save();
+      clipToBowl(ctx, plate.x);
+      drawVeggie(ctx, veggieImg, veggie.x, veggie.y);
+      ctx.restore();
+    }
     drawBowlFront(ctx, plate.x);
 
     drawStove(ctx);
