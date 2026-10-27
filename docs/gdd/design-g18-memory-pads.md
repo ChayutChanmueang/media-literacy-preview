@@ -53,6 +53,10 @@
 
 `game_intro_start`, `tutorial_start {seed}`, `run_start {run, seed}`, `enter_level {run, level, tutorial}`, `wrong_press {run, level, step, expected, pressed, tutorial}`, `tutorial_complete`, `replay_request {run, level, step}` (ยิงเฉพาะตอนเปิดปุ่ม "ดูอีกครั้ง"), `level_complete {run, level, tutorial}` (ช่วงบทฝึก `run` = 0), `run_end {run, score, best_score}`, `game_complete {runs, best_score, stars}`, `g18_dev_skip_level {run, level}` (ปุ่ม "ข้ามด่าน" แสดงเฉพาะตอน `npm run dev` สำหรับ QA)
 
+## การปรับขนาดตามจอ
+
+ดู [แผนระบบปรับขนาดเกมสนุกตามขนาดจอ](../implementation_plan/fun-game-viewport-scaling-plan.md) — กระดานวัดพื้นที่ที่เหลือจริงอยู่แล้ว (200–352px) ส่วนหัวการ์ด ข้อความ และปุ่ม ย่อแบบต่อเนื่องตาม `s` (`useStageScale` ตั้ง `--gp-s` / `--gp-t` บน root) แทน 3 ขั้นของ `.gp-compact` — ตัวอักษรไม่ต่ำกว่า 18px ปุ่มไม่ต่ำกว่า 48px
+
 ## เรื่องที่ยังเปิดอยู่
 
 - ยังไม่ได้ทดสอบกับผู้สูงอายุจริง — ความเร็วไฟ (650/300 ms), เกณฑ์ดาว (4 / 7 ด่าน) และกติกา 1 ชีวิต (ผิดครั้งเดียวจบ) อาจต้องปรับ

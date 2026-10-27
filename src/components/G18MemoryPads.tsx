@@ -10,6 +10,7 @@ import GameIntro from "@/components/GameIntro";
 import StagePopup, { type StagePopupStage } from "@/components/StagePopup";
 import DATA from "@/data/g18-simon-pads.json";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
+import { useStageScale } from "@/lib/useStageScale";
 
 /**
  * G18 — จำให้ขึ้นใจ (Simon memory game)
@@ -149,6 +150,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const tutorialDoneRef = useRef(false);
   const timersRef = useRef<number[]>([]);
   const audioRef = useRef<AudioContext | null>(null);
+  const { ref: stageRootRef } = useStageScale({ gameId: "G18", logEvent });
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const boardWrapRef = useRef<HTMLDivElement | null>(null);
@@ -443,7 +445,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   if (phase === "result") {
     const newBest = runs > 1 && score > 0 && score === bestScore;
     return (
-      <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+      <div ref={stageRootRef} className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
             <Trophy size={88} className="shrink-0 text-[#CA8A04]" aria-hidden="true" />
@@ -530,6 +532,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
 
   return (
     <div
+      ref={stageRootRef}
       className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
       style={{ backgroundImage: "linear-gradient(155.36deg, #E6F6FC 0%, #C4CFE1 100%)" }}
     >

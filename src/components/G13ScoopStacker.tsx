@@ -19,6 +19,8 @@ import {
 } from "@/lib/g13Game";
 import GameIntro from "./GameIntro";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
+import { stageScale } from "@/lib/gameViewport";
+import { useStageScale } from "@/lib/useStageScale";
 
 type Props = {
   onFinish: (score: number) => void;
@@ -72,10 +74,13 @@ type Debris = {
 // "+1" / "+2" / "-2" over the tower top when its height changes — screen position, fixed at the moment it changes
 type ScorePopup = { x: number; y: number; amount: number; age: number };
 
+// The world is in stage units: screen px ÷ scale (gameViewport.ts). On the reference phone scale = 1,
+// so every size below is what it looks like there; smaller screens see the same scene, shrunk.
 type GameWorld = {
   width: number;
   height: number;
   dpr: number;
+  scale: number; // screen px per stage unit
   coneX: number;
   cameraOffset: number;
   elapsed: number;
@@ -105,6 +110,8 @@ const POPUP_FADE_IN_S = 0.15;
 const POPUP_FADE_OUT_S = 0.4;
 const POPUP_RISE_PX = 36;
 const POPUP_FONT_PX = 24;
+const MIN_TEXT_SCREEN_PX = 20; // the popup is shrunk with the stage, but never below this on screen
+const popupFontSize = (world: GameWorld) => Math.max(POPUP_FONT_PX, MIN_TEXT_SCREEN_PX / world.scale);
 // US-CF-14: sprites scaled 1.85× from original values; then × SPRITE_SCALE so about 5 scoops
 // fit across a phone screen. Scoops, bombs (same radius), the cone and the stack spacing all
 // scale together, and the catch reaches / camera heights below follow.
@@ -229,6 +236,7 @@ const createWorld = (): GameWorld => ({
   width: 1,
   height: 1,
   dpr: 1,
+  scale: 1,
   coneX: 0.5,
   cameraOffset: 0,
   elapsed: 0,
@@ -337,13 +345,14 @@ const drawGuideArrow = (
   if (!bufferContext) return;
 
   const bandHeight = (GUIDE_HEAD_HALF_WIDTH + GUIDE_OUTLINE_WIDTH + 2) * 2;
-  const pixelWidth = Math.ceil(world.width * world.dpr);
-  const pixelHeight = Math.ceil(bandHeight * world.dpr);
+  const pixelRatio = world.dpr * world.scale;
+  const pixelWidth = Math.ceil(world.width * pixelRatio);
+  const pixelHeight = Math.ceil(bandHeight * pixelRatio);
   if (buffer.width !== pixelWidth || buffer.height !== pixelHeight) {
     buffer.width = pixelWidth;
     buffer.height = pixelHeight;
   }
-  bufferContext.setTransform(world.dpr, 0, 0, world.dpr, 0, 0);
+  bufferContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   bufferContext.clearRect(0, 0, world.width, bandHeight);
 
   // corners laid out along the path (0 = start, length = tip), offset above/below its centre line
@@ -473,6 +482,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   // "เก่งมาก!" over the play area when the clock runs out (as G19/G20), before the summary
   const [finishPopup, setFinishPopup] = useState<StagePopupStage | null>(null);
   const popupTimersRef = useRef<number[]>([]);
+  const { ref: stageRootRef, nodeRef: stageNodeRef } = useStageScale({ gameId: "g13", logEvent });
 
   useEffect(() => {
     logRef.current = logEvent;
@@ -600,9 +610,10 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     const world = worldRef.current;
     const geometry = getTowerGeometry(world, reduceMotionRef.current);
     const top = world.stack.length > 0 ? geometry.topCenterY - SCOOP_RADIUS : geometry.coneTop;
+    const minY = popupFontSize(world) + POPUP_RISE_PX;
     world.popups.push({
       x: clampToRange(geometry.x + geometry.wobble, 36, Math.max(36, world.width - 36)),
-      y: clampToRange(top - 36, POPUP_FONT_PX + POPUP_RISE_PX, Math.max(POPUP_FONT_PX + POPUP_RISE_PX, world.height - 20)),
+      y: clampToRange(top - 36, minY, Math.max(minY, world.height - 20)),
       amount,
       age: 0,
     });
@@ -1036,16 +1047,17 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   const drawScene = useCallback(
     (context: CanvasRenderingContext2D) => {
       const world = worldRef.current;
-      context.setTransform(world.dpr, 0, 0, world.dpr, 0, 0);
+      const pixelRatio = world.dpr * world.scale;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       context.clearRect(0, 0, world.width, world.height);
 
       drawSky(context, world, 0, world.height, backdropInsetRef.current);
 
       // same sky, the band above the game canvas, on the strip behind the header card
       const backdrop = backdropRef.current?.getContext("2d");
-      const inset = backdropInsetRef.current;
+      const inset = backdropInsetRef.current; // stage units
       if (backdrop && inset > 0) {
-        backdrop.setTransform(world.dpr, 0, 0, world.dpr, 0, inset * world.dpr);
+        backdrop.setTransform(pixelRatio, 0, 0, pixelRatio, 0, inset * pixelRatio);
         backdrop.clearRect(0, -inset, world.width, inset);
         drawSky(backdrop, world, -inset, 0, inset);
       }
@@ -1112,7 +1124,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       // score popups: fade in → drift up → fade out (no drift with reduced motion)
       if (world.popups.length > 0) {
         context.save();
-        context.font = `700 ${POPUP_FONT_PX}px ${notoLoopedThai.style.fontFamily}`;
+        context.font = `700 ${popupFontSize(world)}px ${notoLoopedThai.style.fontFamily}`;
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.lineJoin = "round";
@@ -1220,18 +1232,20 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
 
         const geometry = getTowerGeometry(world, reduceMotionRef.current);
         const catchWidth = falling.kind === "bomb" ? BOMB_HIT_REACH : SCOOP_CATCH_REACH;
-        // Only the upper half of the top scoop catches (or the cone's rim when it's empty):
-        // a drop that has already fallen past it, beside the tower, can't be scooped up from the
-        // side by sliding the cone under it
+        // The catch zone keeps a fixed bottom (just under the cone's rim) and its top follows the
+        // top of the top scoop (or the rim when the cone is empty), so it grows with the tower
+        // instead of moving up with it
         const hasStack = world.stack.length > 0;
+        const catchTop = hasStack ? geometry.topCenterY - SCOOP_RADIUS : geometry.coneTop;
+        const catchBottom = geometry.coneTop + EMPTY_CONE_CATCH_DEPTH;
         const caught = isCaughtAtTarget({
           objectX: falling.x,
           objectBottomY: falling.y + falling.radius,
           targetX: geometry.x + geometry.wobble,
-          targetY: hasStack ? geometry.topCenterY - SCOOP_RADIUS : geometry.coneTop,
+          targetY: catchTop,
           catchWidth,
           verticalTolerance: hasStack ? 0 : 2,
-          catchDepth: hasStack ? SCOOP_RADIUS : EMPTY_CONE_CATCH_DEPTH,
+          catchDepth: catchBottom - catchTop,
         });
 
         const resolve = falling.scripted ? resolveTutorialObject : resolveFallingObject;
@@ -1285,20 +1299,25 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       const previousWidth = world.width;
       const previousHeight = world.height;
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      // same factor the header gets from useStageScale (computed here too, so the order the two
+      // ResizeObservers fire in doesn't matter)
+      const root = stageNodeRef.current;
+      const scale = root ? stageScale(root.clientWidth, root.clientHeight) : 1;
 
-      world.width = Math.max(1, bounds.width);
-      world.height = Math.max(1, bounds.height);
+      world.width = Math.max(1, bounds.width / scale);
+      world.height = Math.max(1, bounds.height / scale);
       world.dpr = dpr;
-      canvas.width = Math.round(world.width * dpr);
-      canvas.height = Math.round(world.height * dpr);
+      world.scale = scale;
+      canvas.width = Math.round(bounds.width * dpr);
+      canvas.height = Math.round(bounds.height * dpr);
 
       const backdrop = backdropRef.current;
       const playArea = playAreaRef.current;
       if (backdrop && playArea) {
-        const inset = Math.max(0, bounds.top - playArea.getBoundingClientRect().top);
-        backdropInsetRef.current = inset;
+        const inset = Math.max(0, bounds.top - playArea.getBoundingClientRect().top); // screen px
+        backdropInsetRef.current = inset / scale;
         backdrop.style.height = `${inset}px`;
-        backdrop.width = Math.round(world.width * dpr);
+        backdrop.width = Math.round(bounds.width * dpr);
         backdrop.height = Math.max(1, Math.round(inset * dpr));
       }
 
@@ -1319,6 +1338,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
 
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
+    if (stageNodeRef.current) observer.observe(stageNodeRef.current);
     resize();
 
     const tick = (timestamp: number) => {
@@ -1341,7 +1361,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       frameRef.current = null;
       worldRef.current.lastTimestamp = null;
     };
-  }, [drawScene, phase, updateWorld]);
+  }, [drawScene, phase, stageNodeRef, updateWorld]);
 
   const startGame = () => {
     popupTimersRef.current.forEach((t) => window.clearTimeout(t));
@@ -1395,8 +1415,9 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     const canvas = canvasRef.current;
     if (!canvas || phaseRef.current !== "playing") return;
 
+    // screen px here (the drag offset is too); coneX is a share of the width, the same in both units
     const bounds = canvas.getBoundingClientRect();
-    const halfCone = CONE_WIDTH / 2 + 4;
+    const halfCone = (CONE_WIDTH / 2 + 4) * world.scale;
     const localX = event.clientX - bounds.left;
     const targetScreenX = localX - world.dragOffset;
     const clampedX = clampToRange(targetScreenX, halfCone, bounds.width - halfCone);
@@ -1415,7 +1436,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-amber-50 font-sans select-none">
+    // gp-compact + useStageScale: the header card and summary shrink with the screen like the scene
+    <div ref={stageRootRef} className="gp-compact flex flex-col flex-1 min-h-0 overflow-hidden bg-amber-50 font-sans select-none">
       {phase === "intro" && (
         <GameIntro
           containerClassName="bg-white gp-compact"
@@ -1523,7 +1545,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
 
       {/* same end screen as G18 / G19 / G20: trophy, title, one score line, best-score lines, Button3D + finish */}
       {phase === "summary" && (
-        <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+        // no gp-compact of its own: it takes the scale the root sets
+        <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white`}>
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
               <Trophy size={88} className="shrink-0 text-[#CA8A04]" aria-hidden="true" />

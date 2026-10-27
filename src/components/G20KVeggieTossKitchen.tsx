@@ -7,6 +7,8 @@ import { mali, notoLoopedThai } from "@/lib/fonts";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
+import { fitStage, toStage } from "@/lib/gameViewport";
+import { useStageScale } from "@/lib/useStageScale";
 
 /**
  * G20K — ผักบุ้งลอยฟ้า (ทดลอง: ไม่มีลูกศร) — EXPERIMENTAL copy of G20VeggieToss
@@ -284,13 +286,10 @@ const view = { left: 0, right: GAME_W, top: 0 };
 const UNDER_HEADER_PX = 24;
 
 /**
- * Stage layout for a play area of w×h css px: the whole 540×960 stage fits (as large as it can,
- * not stretched), bottom on the bottom edge, centred; spare space above or at the sides shows more scene.
+ * The 540×960 stage in a play area of w×h css px (fitStage in gameViewport.ts): as large as it fits,
+ * not stretched, bottom on the bottom edge, centred; spare space above or at the sides shows more scene.
  */
-function fitStage(w: number, h: number) {
-  const s = Math.max(0.01, Math.min(w / GAME_W, h / GAME_H));
-  return { s, ox: (w - GAME_W * s) / 2, oy: h - GAME_H * s };
-}
+const STAGE = { w: GAME_W, h: GAME_H };
 
 function drawShopBackground(ctx: CanvasRenderingContext2D) {
   ctx.save();
@@ -748,6 +747,8 @@ function drawVeggie(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null,
 }
 
 export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
+  // header card / result screen shrink with the screen (the scene already fits itself, see fitStage)
+  const { ref: stageRootRef } = useStageScale({ gameId: "G20K", logEvent });
   const [phase, setPhase] = useState<Phase>("intro");
   const [level, setLevel] = useState(1);
   const [throwsLeft, setThrowsLeft] = useState(THROWS_PER_RUN);
@@ -1115,7 +1116,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
       setHeaderH(header.offsetHeight);
       const w = Math.max(1, Math.floor(el.clientWidth));
       const h = Math.max(1, Math.floor(el.clientHeight));
-      const next = { w, h, dpr: Math.min(window.devicePixelRatio || 1, 2), ...fitStage(w, h) };
+      const next = { w, h, dpr: Math.min(window.devicePixelRatio || 1, 2), ...fitStage(w, h, STAGE) };
       stageRef.current = next;
       setStage(next);
     };
@@ -1129,8 +1130,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
   // screen → stage units, through the same scale/offset as the drawing
   const toGame = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const { s, ox, oy } = stageRef.current ?? { s: 1, ox: 0, oy: 0 };
-    return { x: (e.clientX - rect.left - ox) / s, y: (e.clientY - rect.top - oy) / s };
+    return toStage(e.clientX - rect.left, e.clientY - rect.top, stageRef.current ?? { s: 1, ox: 0, oy: 0 });
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1271,7 +1271,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     // same end screen as G18 / G19: trophy, title, one score line, best-score lines, Button3D + "จบเกม"
     const newBest = runs > 1 && served > 0 && served === bestServed;
     return (
-      <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+      <div ref={stageRootRef} className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
             <Trophy size={88} className="shrink-0 text-[#CA8A04]" aria-hidden="true" />
@@ -1301,6 +1301,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
 
   return (
     <div
+      ref={stageRootRef}
       className={`${notoLoopedThai.className} gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
       style={{ background: BACKGROUND }}
     >

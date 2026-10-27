@@ -8,6 +8,7 @@ import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
+import { useStageScale } from "@/lib/useStageScale";
 
 /**
  * G19 — เรียงผลไม้ (match-3)
@@ -87,6 +88,8 @@ const GAP_X_PX = 8;
 const GAP_Y_PX = 12;
 const BOARD_W_PX = SIZE * TILE_PX + (SIZE - 1) * GAP_X_PX; // 352
 const BOARD_H_PX = SIZE * TILE_PX + (SIZE - 1) * GAP_Y_PX; // 368
+// Narrowest board: tiles stay ≥ 48px to tap (AGENT.md) — shorter screens than that scroll instead
+const BOARD_MIN_W_PX = Math.ceil((48 / TILE_PX) * BOARD_W_PX); // 264
 const TILE_W_PCT = (TILE_PX / BOARD_W_PX) * 100;
 const TILE_H_PCT = (TILE_PX / BOARD_H_PX) * 100;
 const STEP_X_PCT = ((TILE_PX + GAP_X_PX) / BOARD_W_PX) * 100;
@@ -566,6 +569,18 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const boardRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const boardAreaRef = useRef<HTMLDivElement>(null);
+  const boardWrapRef = useRef<HTMLDivElement>(null);
+  const [boardW, setBoardW] = useState(BOARD_W_PX);
+  const { ref: stageRootRef } = useStageScale({ gameId: "G19", logEvent });
+  const setPlayRoot = useCallback(
+    (el: HTMLDivElement | null) => {
+      rootRef.current = el;
+      stageRootRef(el);
+    },
+    [stageRootRef]
+  );
   const timersRef = useRef<number[]>([]);
   const hintTimerRef = useRef<number | null>(null);
   // first run since the game was opened: the start guide is a tutorial — it stays up (taps, wrong
@@ -586,6 +601,33 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     },
     []
   );
+
+  // Board size from the room actually left under the header (as G18): as large as fits up to the
+  // Figma 352px, never below BOARD_MIN_W_PX. The board itself isn't observed (its size is the output).
+  useLayoutEffect(() => {
+    if (phase !== "play") return;
+    const scroller = scrollerRef.current;
+    const area = boardAreaRef.current;
+    const wrap = boardWrapRef.current;
+    if (!scroller || !area || !wrap) return;
+    const others = Array.from(area.children).filter((el) => el !== wrap);
+    const measure = () => {
+      const st = getComputedStyle(area);
+      const num = (v: string) => parseFloat(v) || 0;
+      const allowedW = area.clientWidth - num(st.paddingLeft) - num(st.paddingRight);
+      let used = num(st.paddingTop) + num(st.paddingBottom);
+      for (const el of others) used += el.getBoundingClientRect().height + num(st.rowGap);
+      const fromH = ((scroller.clientHeight - used) * BOARD_W_PX) / BOARD_H_PX;
+      const w = Math.floor(Math.min(allowedW, Math.max(BOARD_MIN_W_PX, Math.min(BOARD_W_PX, fromH))));
+      if (w > 0) setBoardW(w);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(scroller);
+    ro.observe(area);
+    for (const el of others) ro.observe(el);
+    return () => ro.disconnect();
+  }, [phase]);
 
   // Measure the board (and tooltip) while the tutorial spotlight is up: the ResizeObserver fires on
   // observe (before paint), then again on resize; scrolling a short screen moves the board too.
@@ -1038,7 +1080,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   if (phase === "result") {
     const newBest = runs > 1 && score > 0 && score === bestScore;
     return (
-      <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+      <div ref={stageRootRef} className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
             <Trophy size={88} className="shrink-0 text-[#CA8A04]" aria-hidden="true" />
@@ -1079,7 +1121,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
 
   return (
     <div
-      ref={rootRef}
+      ref={setPlayRoot}
       className={`${notoLoopedThai.className} gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
       style={{ backgroundImage: "linear-gradient(155.36deg, #EEFEE9 0%, #DCF4D4 100%)" }}
     >
@@ -1106,10 +1148,10 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
         )}
       </GameStageHeader>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex min-h-full flex-col items-center justify-center gp-gap-16 gp-px-24 gp-py-24">
-          {/* keep the whole board on screen on most phones; very short screens scroll instead */}
-          <div className="relative w-full" style={{ maxWidth: `min(${BOARD_W_PX}px, 56dvh)` }}>
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div ref={boardAreaRef} className="flex min-h-full flex-col items-center justify-center gp-gap-16 gp-px-24 gp-py-24">
+          {/* keep the whole board on screen (boardW, measured above); very short screens scroll instead */}
+          <div ref={boardWrapRef} className="relative w-full" style={{ maxWidth: boardW }}>
             {/* board + hint hand share this box so the hand's % positions match the tiles */}
             <div className="relative">
               <div

@@ -60,6 +60,10 @@
 
 `game_intro_start`, `run_start {run}`, `tutorial_start`, `tutorial_step {step}`, `tutorial_dismiss {step}`, `tutorial_throw {step, vx, vy}`, `tutorial_serve {step}`, `tutorial_miss {step}`, `tutorial_complete {skipped}` (ปุ่ม "ข้ามฝึก" เฉพาะ `npm run dev`), `throw {run, throw, level, vx, vy}`, `serve {run, level, throws_left}`, `miss {run, level, throws_left}`, `run_end {run, served, level, best_served}`, `game_complete {runs, best_served, stars}`, `g20_dev_end_run {run, throws_left}` (ปุ่ม "จบรอบ" แสดงเฉพาะตอน `npm run dev` สำหรับ QA)
 
+## การปรับขนาดตามจอ (G20 และ G20K)
+
+ดู [แผนระบบปรับขนาดเกมสนุกตามขนาดจอ](../implementation_plan/fun-game-viewport-scaling-plan.md) — สนาม 540×960 ย่อให้พอดีพื้นที่เล่นอยู่แล้ว (ตอนนี้ใช้ `fitStage` / `toStage` กลางใน `src/lib/gameViewport.ts` แทนโค้ดที่ซ้ำกันสองไฟล์ ผลลัพธ์เท่าเดิม); หัวการ์ด/หน้าสรุปย่อแบบต่อเนื่องตาม `s` (`useStageScale`) — การ์ดเตี้ยลงบนจอเล็ก สนามจึงได้พื้นที่มากขึ้นเล็กน้อย
+
 ## เรื่องที่ยังเปิดอยู่
 
 - ยังไม่ได้ทดสอบกับผู้สูงอายุจริง — จำนวนครั้ง (15), ความเร็วจานสูงสุด (6) และเกณฑ์ดาว (4 / 8 จาน) เป็นค่าประมาณ อาจต้องปรับ

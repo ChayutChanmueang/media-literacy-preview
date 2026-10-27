@@ -82,6 +82,12 @@ Animation ที่ช้าลงจากต้นแบบ (ต้นแบ�
 
 `game_intro_start`, `run_start {run, seed}`, `swap {run, from, to, moves_left}`, `invalid_swap {run, from, to}`, `match_clear {run, move, chain, fruits, points}`, `special_made {run, special, group}`, `special_blast {run, move, pieces, cleared, points}`, `hint_shown {run, moves_left, at_start, tutorial}`, `tutorial_done {run}`, `reshuffle {run, moves_left}`, `no_moves {run, moves_left}` (เฉพาะเมื่อ `RULES.onNoMoves = "end"`), `run_end {run, score, best_score, reason}` (`reason` = `moves_used` / `no_moves` / `dev_skip`), `game_complete {runs, best_score, stars}`, `g19_dev_end_run {run, moves_left}` (ปุ่ม "จบรอบ" แสดงเฉพาะตอน `npm run dev` สำหรับ QA)
 
+## การปรับขนาดตามจอ
+
+ดู [แผนระบบปรับขนาดเกมสนุกตามขนาดจอ](../implementation_plan/fun-game-viewport-scaling-plan.md)
+- กระดานกว้างเท่าที่พื้นที่ใต้หัวการ์ดมีจริง (วัดด้วย `ResizeObserver` แบบ G18) สูงสุด 352px ตาม Figma ต่ำสุด 264px (ช่องผลไม้ ≥ 48px) — จอที่เตี้ยกว่านั้นเลื่อนดูได้ (แทน `min(352px, 56dvh)` เดิมที่อิงความสูงทั้งจอ)
+- หัวการ์ด/หน้าสรุปย่อแบบต่อเนื่องตาม `s` (`useStageScale`)
+
 ## เรื่องที่ยังเปิดอยู่
 
 - ยังไม่ได้ทดสอบกับผู้สูงอายุจริง — จำนวนครั้ง (20), เวลาก่อนขึ้นคำใบ้ (7 วิ) และเกณฑ์ดาว (500 / 900) เป็นค่าประมาณ อาจต้องปรับ
