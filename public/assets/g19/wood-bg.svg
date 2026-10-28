@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" preserveAspectRatio="none">
+  <!-- G19 play-screen background tile: 8 horizontal wood planks (50px each), each a slightly different brown,
+       with a dark seam + light bevel between them and faint stretched grain. Repeats top to bottom. -->
+  <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.004 0.18" numOctaves="3" seed="5" stitchTiles="stitch" />
+    <feColorMatrix type="matrix" values="0 0 0 0 0.25  0 0 0 0 0.14  0 0 0 0 0.06  1.6 0 0 0 -0.62" />
+  </filter>
+  <rect y="0" width="400" height="50" fill="#A87A52" />
+  <rect y="50" width="400" height="50" fill="#9A6B44" />
+  <rect y="100" width="400" height="50" fill="#B0835A" />
+  <rect y="150" width="400" height="50" fill="#A2734B" />
+  <rect y="200" width="400" height="50" fill="#AA7C53" />
+  <rect y="250" width="400" height="50" fill="#976842" />
+  <rect y="300" width="400" height="50" fill="#A97B52" />
+  <rect y="350" width="400" height="50" fill="#A0714A" />
+  <rect width="400" height="400" filter="url(#grain)" opacity="0.25" />
+  <!-- seams: dark gap with a thin highlight just below (the next plank's top edge catching light) -->
+  <g fill="#6E4A2E" opacity="0.55">
+    <rect y="0" width="400" height="1.5" />
+    <rect y="50" width="400" height="1.5" />
+    <rect y="100" width="400" height="1.5" />
+    <rect y="150" width="400" height="1.5" />
+    <rect y="200" width="400" height="1.5" />
+    <rect y="250" width="400" height="1.5" />
+    <rect y="300" width="400" height="1.5" />
+    <rect y="350" width="400" height="1.5" />
+  </g>
+  <g fill="#FFFFFF" opacity="0.12">
+    <rect y="1.5" width="400" height="1" />
+    <rect y="51.5" width="400" height="1" />
+    <rect y="101.5" width="400" height="1" />
+    <rect y="151.5" width="400" height="1" />
+    <rect y="201.5" width="400" height="1" />
+    <rect y="251.5" width="400" height="1" />
+    <rect y="301.5" width="400" height="1" />
+    <rect y="351.5" width="400" height="1" />
+  </g>
+</svg>

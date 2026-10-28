@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">
+  <!-- G19 table decoration: a wooden cutting board seen from straight above. Board = rect (10,10) 300×180;
+       its top-right corner (310,10) is the pivot the page rotates it around. -->
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E2B57A" />
+      <stop offset="1" stop-color="#C9925A" />
+    </linearGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.12" numOctaves="3" seed="8" />
+      <feColorMatrix type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.26  0 0 0 0 0.1  1.8 0 0 0 -0.75" />
+    </filter>
+    <clipPath id="board"><rect x="10" y="10" width="300" height="180" rx="18" /></clipPath>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#3C230F" flood-opacity="0.45" />
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="10" y="10" width="300" height="180" rx="18" fill="url(#wood)" stroke="#9A6532" stroke-width="2.5" />
+  </g>
+  <g clip-path="url(#board)">
+    <rect x="10" y="10" width="300" height="180" filter="url(#grain)" opacity="0.6" />
+    <!-- a few long grain lines -->
+    <g fill="none" stroke="#9A6532" stroke-width="1.5" opacity="0.35">
+      <path d="M10 48 C80 42 140 56 210 48 S290 40 310 46" />
+      <path d="M10 92 C70 98 150 84 220 94 S290 100 310 92" />
+      <path d="M10 138 C90 132 160 146 230 136 S290 130 310 140" />
+    </g>
+  </g>
+  <!-- juice groove around the edge -->
+  <rect x="24" y="24" width="272" height="152" rx="10" fill="none" stroke="#A86F3A" stroke-width="3" opacity="0.55" />
+  <rect x="25.5" y="26" width="269" height="149" rx="9" fill="none" stroke="#F3D3A4" stroke-width="1" opacity="0.6" />
+  <!-- light catching the top edge -->
+  <path d="M28 12.5 H292" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.35" />
+</svg>

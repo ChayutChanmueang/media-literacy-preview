@@ -55,13 +55,15 @@ type Grid = (Tile | null)[][];
 type TypeGrid = (number | null)[][];
 type FinishPopup = "enter" | "show" | "leave" | null;
 
-// tile colours from the Figma design: light fill + darker border and 2px bottom edge
+// Figma tile (node 3416:15496): every piece sits on the same white tile with a grey border + 2px bottom edge
+const TILE_BG = "#FFFFFF";
+const TILE_EDGE = "#D9D9D9";
 const FRUITS = [
-  { icon: "/assets/g19/apple.svg", name: "แอปเปิล", bg: "#FEE2E2", edge: "#F87171" },
-  { icon: "/assets/g19/watermelon.svg", name: "แตงโม", bg: "#DCFCE7", edge: "#4ADE80" },
-  { icon: "/assets/g19/grape.svg", name: "องุ่น", bg: "#F3E8FF", edge: "#C084FC" },
-  { icon: "/assets/g19/banana.svg", name: "กล้วย", bg: "#FEF9C3", edge: "#FACC15" },
-  { icon: "/assets/g19/orange.svg", name: "ส้ม", bg: "#FFEDD5", edge: "#FB923C" },
+  { icon: "/assets/g19/apple.png", name: "แอปเปิล" },
+  { icon: "/assets/g19/watermelon.png", name: "แตงโม" },
+  { icon: "/assets/g19/grape.png", name: "องุ่น" },
+  { icon: "/assets/g19/banana.png", name: "กล้วย" },
+  { icon: "/assets/g19/orange.png", name: "ส้ม" },
 ];
 
 // Special pieces (candy crush10 mock), made by matching 4 / 5+ — type numbers after the fruit:
@@ -70,15 +72,14 @@ const FRUITS = [
 const SMOOTHIE = FRUITS.length;
 const STAR = FRUITS.length + 1;
 const SPECIALS = {
-  [SMOOTHIE]: { emoji: "🥤", name: "น้ำปั่น", bg: "#E0F2FE", edge: "#38BDF8" },
-  [STAR]: { emoji: "🌟", name: "มะเฟือง", bg: "#FEF08A", edge: "#FBBF24" },
-} as Record<number, { emoji: string; name: string; bg: string; edge: string }>;
+  [SMOOTHIE]: { icon: "/assets/g19/soda.png", name: "น้ำปั่น" },
+  [STAR]: { icon: "/assets/g19/star.png", name: "มะเฟือง" },
+} as Record<number, { icon: string; name: string }>;
 const isSpecial = (t: number | null | undefined): t is number => t != null && t >= FRUITS.length;
 const isFruit = (t: number | null | undefined): t is number => t != null && t < FRUITS.length;
 const POINTS_PER_BLAST = 20; // per piece cleared by a special (mock: 20, a normal match is 10)
 const SPECIAL_GROW_MS = 250; // a new special swells a little when it appears
 const COMBO_PAUSE_MS = 600; // 🌟 + 🥤: the chosen colour turns into 🥤 first, then everything goes off
-const EMOJI_FONT = `"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
 
 const SIZE = 5; // rows = cols, same as the mock
 // Board geometry from the Figma design (352px wide): 64px tiles, 8px between columns, 12px between rows.
@@ -90,6 +91,18 @@ const BOARD_W_PX = SIZE * TILE_PX + (SIZE - 1) * GAP_X_PX; // 352
 const BOARD_H_PX = SIZE * TILE_PX + (SIZE - 1) * GAP_Y_PX; // 368
 // Narrowest board: tiles stay ≥ 48px to tap (AGENT.md) — shorter screens than that scroll instead
 const BOARD_MIN_W_PX = Math.ceil((48 / TILE_PX) * BOARD_W_PX); // 264
+// Woven basket under the tiles, seen from above (candy_crush12 mock): drawn behind the board, scaled with it.
+// Woven rim + a gap of dark woven floor around the tiles, and a handle loop sticking out past each side.
+const BASKET_RIM_PX = 12;
+const BASKET_FLOOR_PX = 8; // floor showing between the rim and the outer tiles
+const BASKET_OUTSET_PX = BASKET_RIM_PX + BASKET_FLOOR_PX;
+const BASKET_RADIUS_PX = 26;
+const HANDLE_OUT_PX = 14; // how far each handle reaches past the basket's side
+const HANDLE_H_PX = 108;
+const HANDLE_RING_PX = 8;
+// The basket + handles reach this far past each side of the board; they may use the board area's side padding,
+// the rest comes off the board width (see the board-size effect) so nothing runs off-screen.
+const BASKET_SIDE_PX = BASKET_OUTSET_PX + HANDLE_OUT_PX;
 const TILE_W_PCT = (TILE_PX / BOARD_W_PX) * 100;
 const TILE_H_PCT = (TILE_PX / BOARD_H_PX) * 100;
 const STEP_X_PCT = ((TILE_PX + GAP_X_PX) / BOARD_W_PX) * 100;
@@ -614,7 +627,9 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     const measure = () => {
       const st = getComputedStyle(area);
       const num = (v: string) => parseFloat(v) || 0;
-      const allowedW = area.clientWidth - num(st.paddingLeft) - num(st.paddingRight);
+      const innerW = area.clientWidth - num(st.paddingLeft) - num(st.paddingRight);
+      // board + basket/handles (BASKET_SIDE_PX per side, scaled with the board) may use the side padding, no more
+      const allowedW = Math.min(innerW, area.clientWidth / (1 + (2 * BASKET_SIDE_PX) / BOARD_W_PX));
       let used = num(st.paddingTop) + num(st.paddingBottom);
       for (const el of others) used += el.getBoundingClientRect().height + num(st.rowGap);
       const fromH = ((scroller.clientHeight - used) * BOARD_W_PX) / BOARD_H_PX;
@@ -1119,12 +1134,41 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     tipTop = Math.max(8, Math.min(want, stage.rootH - stage.tipH - 8));
   }
 
+  const basketScale = boardW / BOARD_W_PX; // basket sizes are for the 352px board
+
   return (
     <div
       ref={setPlayRoot}
       className={`${notoLoopedThai.className} gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
-      style={{ backgroundImage: "linear-gradient(155.36deg, #EEFEE9 0%, #DCF4D4 100%)" }}
+      // wood planks (repeating tile, stretched to the full width) with darker left/right edges
+      style={{
+        backgroundColor: "#A57650",
+        backgroundImage:
+          "linear-gradient(90deg, rgba(60,35,15,0.28) 0%, rgba(60,35,15,0) 12%, rgba(60,35,15,0) 88%, rgba(60,35,15,0.28) 100%), url(/assets/g19/wood-bg.svg)",
+        backgroundSize: "auto, 100% 400px",
+        backgroundRepeat: "no-repeat, repeat-y",
+      }}
     >
+      {/* Table decoration along the bottom (reference sketch), top-down like the board: an empty plate in the
+          bottom-right corner and a cutting board tilted in from the bottom-left, both partly off-screen. Own clipping
+          layer so they never cause scrolling; drawn first, so the board area (positioned, later) paints over them. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG */}
+        <img
+          src="/assets/g19/plate.svg"
+          alt=""
+          draggable={false}
+          className="absolute right-[-67px] bottom-[-47px] block w-[240px] max-w-none"
+        />
+        {/* rotated about the board's top-right corner (310,10 in the SVG), which sits 185px in / 122px up */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG */}
+        <img
+          src="/assets/g19/cutting-board.svg"
+          alt=""
+          draggable={false}
+          className="absolute left-[-125px] bottom-[-68px] block w-[320px] max-w-none origin-[310px_10px] -rotate-[27deg]"
+        />
+      </div>
       {/* Header card: same as G17 / G18 (GameStageHeader) — moves left on the left, score right */}
       <GameStageHeader
         left={{ label: "สลับได้อีก", value: movesLeft, ariaLabel: `สลับได้อีก ${movesLeft} ครั้ง` }}
@@ -1148,12 +1192,62 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
         )}
       </GameStageHeader>
 
-      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollerRef} className="relative min-h-0 flex-1 overflow-y-auto">
+        {/* table decoration (reference design): top-down vase of flowers in the top-left corner, behind the board.
+            Outside boardAreaRef so the board-size measuring doesn't count it. The translate (% of its own size, so it
+            holds on any width) puts the vase's centre just inside its left/top point, 45px in from the corner. */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG */}
+        <img
+          // ?v= busts the browser cache when the art changes
+          src="/assets/g19/flower-vase.svg?v=3"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute left-[45px] top-[45px] block w-[min(73%,320px)] max-w-none -translate-x-[39.3%] -translate-y-[40.7%]"
+        />
         <div ref={boardAreaRef} className="flex min-h-full flex-col items-center justify-center gp-gap-16 gp-px-24 gp-py-24">
           {/* keep the whole board on screen (boardW, measured above); very short screens scroll instead */}
           <div ref={boardWrapRef} className="relative w-full" style={{ maxWidth: boardW }}>
             {/* board + hint hand share this box so the hand's % positions match the tiles */}
             <div className="relative">
+              {/* woven basket under the tiles, top view (candy_crush12 mock), behind the board. The handle loop goes
+                  first so the basket covers its middle and only the two side loops show. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-solid border-[#7D4A17]"
+                style={{
+                  width: `calc(100% + ${2 * BASKET_SIDE_PX * basketScale}px)`,
+                  height: HANDLE_H_PX * basketScale,
+                  borderWidth: HANDLE_RING_PX * basketScale,
+                  borderRadius: 9999,
+                  boxShadow: "0 6px 10px rgba(0, 0, 0, 0.35), inset 0 0 0 2px rgba(255, 225, 160, 0.25)",
+                }}
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute border-solid border-transparent"
+                style={{
+                  inset: -BASKET_OUTSET_PX * basketScale,
+                  borderWidth: BASKET_RIM_PX * basketScale,
+                  borderRadius: BASKET_RADIUS_PX * basketScale,
+                  // rim: criss-cross weave over a warm brown (shows through the transparent border)
+                  background:
+                    "repeating-linear-gradient(45deg, rgba(60, 30, 5, 0.38) 0 2px, transparent 2px 9px), repeating-linear-gradient(-45deg, rgba(255, 232, 175, 0.30) 0 2px, transparent 2px 9px), linear-gradient(135deg, #D29A4A 0%, #A6692A 55%, #8A531B 100%)",
+                  boxShadow: "0 14px 26px rgba(0, 0, 0, 0.45), 0 0 0 2px #6B3D12, inset 0 0 0 2px rgba(255, 225, 160, 0.35)",
+                }}
+              >
+                {/* floor inside the rim: dark basket weave, inner shadow so it looks deep */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    borderRadius: (BASKET_RADIUS_PX - BASKET_RIM_PX) * basketScale,
+                    background:
+                      "repeating-linear-gradient(90deg, rgba(30, 14, 2, 0.55) 0 2px, transparent 2px 22px), repeating-linear-gradient(0deg, rgba(30, 14, 2, 0.55) 0 2px, transparent 2px 22px), repeating-linear-gradient(90deg, rgba(255, 220, 160, 0.10) 0 11px, rgba(0, 0, 0, 0.10) 11px 22px), repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.08) 0 11px, rgba(255, 220, 160, 0.06) 11px 22px), #7A4A1E",
+                    boxShadow:
+                      "inset 0 10px 20px rgba(20, 8, 0, 0.75), inset 0 0 0 3px rgba(30, 14, 2, 0.65), inset 0 -3px 8px rgba(255, 220, 160, 0.10)",
+                  }}
+                />
+              </div>
               <div
                 ref={boardRef}
                 aria-label="กระดานผลไม้"
@@ -1189,14 +1283,14 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                       className="absolute flex cursor-pointer border-0 bg-transparent p-0 pb-[2px] transition-[top,left] ease-in-out"
                       style={{ transitionDuration: `${slideMs}ms`, ...tileBox(cell) }}
                     >
-                      {/* tile: Figma fruit tile — tinted fill, 2px border, 2px bottom edge, 48px fruit */}
+                      {/* tile: Figma fruit tile — white fill, 2px grey border, 2px bottom edge, 52px fruit */}
                       <span
                         className={`flex h-full w-full items-center justify-center rounded-[12px] border-2 border-solid ${
                           hinted ? "animate-pulse" : ""
                         }`}
                         style={{
-                          backgroundColor: fruit.bg,
-                          borderColor: fruit.edge,
+                          backgroundColor: TILE_BG,
+                          borderColor: TILE_EDGE,
                           transform: t.popping
                             ? "scale(0)"
                             : t.grow
@@ -1206,7 +1300,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                                 : undefined,
                           opacity: t.popping ? 0 : 1,
                           filter: pressed || isDragTarget ? "brightness(0.95)" : undefined,
-                          boxShadow: pressed ? "none" : `0 2px 0 0 ${fruit.edge}`,
+                          boxShadow: pressed ? "none" : `0 2px 0 0 ${TILE_EDGE}`,
                           transition: t.popping
                             ? // shrink to nothing (a tiny swell first), fading only at the very end
                               `transform ${POP_MS}ms cubic-bezier(0.4, -0.4, 0.7, 0.6), opacity ${POP_MS * 0.35}ms ease ${POP_MS * 0.65}ms`
@@ -1222,19 +1316,14 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                           outlineOffset: picked || isDragTarget || hinted ? "-2px" : undefined,
                         }}
                       >
-                        {special ? (
-                          // specials (not in the Figma design yet): the mock's emoji, sized like the 48px fruit
-                          <span
-                            aria-hidden="true"
-                            className="pointer-events-none block leading-none"
-                            style={{ fontFamily: EMOJI_FONT, fontSize: `${(48 / BOARD_W_PX) * 100 * 0.85}cqw` }}
-                          >
-                            {special.emoji}
-                          </span>
-                        ) : (
-                          // eslint-disable-next-line @next/next/no-img-element -- small static SVGs from the Figma design
-                          <img src={FRUITS[t.type].icon} alt="" draggable={false} className="pointer-events-none block h-[75%] w-[75%]" />
-                        )}
+                        {/* fruit and specials share one sprite set; object-contain keeps the tall soda in proportion */}
+                        {/* eslint-disable-next-line @next/next/no-img-element -- small static sprites */}
+                        <img
+                          src={fruit.icon}
+                          alt=""
+                          draggable={false}
+                          className="pointer-events-none block h-[86.67%] w-[86.67%] object-contain"
+                        />
                       </span>
                     </button>
                   );

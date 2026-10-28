@@ -175,14 +175,13 @@ const FUN_GAMES = [
 // Figma node "เกมเพื่อการเรียนรู้" — mockup มี 3 แถว (แถวสุดท้ายซ้ำข้อความแถวแรกในต้นฉบับ ดูเป็น
 // placeholder พลาด) ใช้ 3 เกมที่มีอยู่จริงในสาย Flow แทน (G2/G5 ยังเล่นได้จาก /dev/games เท่านั้น)
 // + G15–G17 (เดิม prototype GP3/GP4/GP6) เปิดเฉพาะโหมดอิสระ ไม่อยู่ในสาย Flow/โหมดวิจัย
-// G15, G16 มีไอคอนเฉพาะเกมแล้ว — G17 ยังใช้ไอคอนหมวด "เกมเพื่อการเรียนรู้" (edu-game.png) ไปก่อน
 const LEARNING_GAMES = [
   { id: "topic-1", icon: "/assets/icons/g1-right-o-wrong.jpg", label: "เกมจริงหรือมั่ว" },
   { id: "topic-6", icon: "/assets/icons/g6-line-sim.jpg", label: "เกมจำลองแชทไลน์" },
   { id: "topic-3", icon: "/assets/icons/g3-ai-o-fake.jpg", label: "เอไอ หรือ ของจริง" },
   { id: "g15", icon: "/assets/icons/g15-ask-ai.png", label: "ลองถาม AI" },
   { id: "g16", icon: "/assets/icons/g16-posting.png", label: "คิดก่อนโพสต์" },
-  { id: "g17", icon: "/assets/icons/edu-game.png", label: "โล่กันโกง" },
+  { id: "g17", icon: "/assets/icons/g17-breaker.png", label: "โล่กันโกง" },
 ];
 
 // รายการวิดีโอ — ดึงจาก videos.json แหล่งเดียวกับหน้าคลิปจริง ไม่พิมพ์ชื่อซ้ำเอง กันข้อมูลสองที่ไม่ตรงกัน

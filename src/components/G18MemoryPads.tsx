@@ -535,7 +535,14 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     <div
       ref={stageRootRef}
       className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
-      style={{ backgroundImage: "linear-gradient(155.36deg, #E6F6FC 0%, #C4CFE1 100%)" }}
+      // light grey low-poly facets (repeating tile) with a soft brighter glow behind the board
+      style={{
+        backgroundColor: "#E6E8EB",
+        backgroundImage:
+          "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 65%), url(/assets/g18/facet-bg.svg)",
+        backgroundSize: "auto, 450px 600px",
+        backgroundPosition: "center, center top",
+      }}
     >
       {/* Header card: same as G17 (GameStageHeader) — Figma leaves the left slot empty in the real game.
           During the tutorial: "โหมด ฝึกเล่น" on the left + the practice step on the right, like G20 */}

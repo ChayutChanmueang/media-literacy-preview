@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Bot, Camera, CheckCircle2, Scissors, Shield } from "lucide-react";
+import { Bot, Camera, CheckCircle2, Scissors } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
@@ -1092,7 +1092,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         title="โล่กันโกง"
         objective="ลากแถบด้านล่างไปซ้าย-ขวา รับโล่ให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริง ภาพ AI หรือภาพตัดต่อ"
         choices="ของช่วย: 🪄 โล่แยกเป็น 3 อัน · 🍄 โล่ใหญ่ขึ้น · 🐢 โล่ช้าลง · ↔️ แถบรับยาวขึ้น"
-        icon={Shield}
+        imageSrc="/assets/icons/g17-breaker.png"
         onStart={() => {
           logEvent("game_intro_start", { game_id: "G17" });
           startLevel(0);
