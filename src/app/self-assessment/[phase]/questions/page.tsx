@@ -2,10 +2,13 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
+import { selfAssessmentService } from "@/services/selfAssessmentService";
 import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
+import { useSelfAssessmentDoneGuard } from "@/lib/useSelfAssessmentDoneGuard";
 import type { SelfAssessmentPhase } from "@/lib/selfAssessmentPhase";
 import Button3D from "@/components/Button3D";
 import ITEMS from "@/data/self-assessment-items.json";
@@ -38,11 +41,18 @@ export default function SelfAssessmentQuestionsPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   // Order is random per visit; render it only on the client so SSR and hydration never disagree.
   const [statements] = useState(() => shuffle(ITEMS));
+  const [startedAt] = useState(() => new Date().toISOString());
+  // Set on the first submit: blocks a second tap (each submit() is a new submission) and pauses the done-guard.
+  const [submitting, setSubmitting] = useState(false);
   const isClient = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const blocked = useSelfAssessmentDoneGuard(phase, submitting);
 
   useEffect(() => {
     loggingService.logEvent("self_assessment_page_view", { phase });
-  }, [phase]);
+    // Fetch the next page in full now, so submitting still moves on if the signal drops before the tap
+    // (the answers wait in selfAssessmentService's queue; US-DATA-03 acceptance criterion 2).
+    router.prefetch(`/self-assessment/${phase}/complete`, { kind: PrefetchKind.FULL });
+  }, [phase, router]);
 
   // All statements are shown on one scrolling page; submit unlocks once every one is answered.
   const allAnswered = isClient && statements.every((s) => answers[s.id]);
@@ -52,26 +62,36 @@ export default function SelfAssessmentQuestionsPage() {
     loggingService.logEvent("self_assessment_answer", { phase, statement_id: statementId, value });
   };
 
-  const finish = (finalAnswers: Record<string, number>) => {
+  const finish = (finalAnswers: Record<string, number>, isDevSkip = false) => {
+    if (submitting) return;
+    setSubmitting(true);
     const progress = progressService.getProgress();
     progressService.saveProgress({
       ...progress,
       selfAssessment: { ...progress.selfAssessment, [phase]: finalAnswers },
     });
+    // Queued on the device first and sent in the background — never awaited, so there is no waiting screen.
+    const itemOrder = statements.map((s) => s.id);
+    const submission = selfAssessmentService.submit({ phase, answers: finalAnswers, itemOrder, startedAt, isDevSkip });
     loggingService.logEvent("self_assessment_submitted", {
       phase,
       answers: finalAnswers,
-      order: statements.map((s) => s.id),
+      order: itemOrder,
+      submission_uuid: submission.submission_uuid,
+      is_dev_skip: isDevSkip,
     });
     router.push(`/self-assessment/${phase}/complete`);
   };
 
   useDevSkip(() => {
+    if (blocked) return;
     const filled = { ...answers };
     for (const s of statements) filled[s.id] ??= Math.ceil(Math.random() * 5);
     loggingService.logEvent("self_assessment_dev_skip", { phase });
-    finish(filled);
+    finish(filled, true);
   });
+
+  if (blocked) return <div className="flex min-h-0 flex-1 flex-col bg-[#E8EAF3]" />;
 
   return (
     <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-[#E8EAF3] text-black`}>
@@ -139,7 +159,7 @@ export default function SelfAssessmentQuestionsPage() {
       </div>
 
       <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
-        <Button3D onClick={() => finish(answers)} disabled={!allAnswered}>
+        <Button3D onClick={() => finish(answers)} disabled={!allAnswered || submitting}>
           ต่อไป
         </Button3D>
       </div>

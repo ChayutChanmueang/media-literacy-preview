@@ -855,6 +855,108 @@ h2 {
   }
 }
 
+/* Fun-game end screen celebration (G13, G18–G20K) — see ResultCelebration.tsx.
+   Order: trophy drops in (0–0.9s) → title pops (0.7s) → score line rises (1s) → buttons rise (1.3s);
+   the count-up starts at 1.1s. Rays fade in behind the trophy and keep spinning; the trophy then bobs. */
+.result-rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 230%;
+  height: 230%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 200, 60, 0.55) 0 8deg, transparent 8deg 24deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%);
+  mask: radial-gradient(circle, #000 18%, transparent 68%);
+  pointer-events: none;
+  opacity: 0;
+  animation: result-rays-in 0.6s ease-out 0.5s forwards, result-spin 14s linear infinite;
+}
+.result-trophy {
+  position: relative;
+  filter: drop-shadow(0 8px 10px rgba(160, 100, 0, 0.3));
+  opacity: 0;
+  animation: result-drop 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) forwards, result-bob 3s ease-in-out 1s infinite;
+}
+.result-sparkle {
+  position: absolute;
+  background: #fff8d6;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  filter: drop-shadow(0 0 4px #ffd34d);
+  opacity: 0;
+  animation: result-twinkle 2s ease-in-out infinite;
+}
+.result-pop {
+  opacity: 0;
+  transform: scale(0.3);
+  animation: result-pop 0.7s cubic-bezier(0.3, 1.6, 0.5, 1) 0.7s forwards;
+}
+.result-rise {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: result-rise 0.5s ease-out 1s forwards;
+}
+.result-actions {
+  opacity: 0;
+  transform: translateY(40px);
+  animation: result-rise 0.6s cubic-bezier(0.3, 1.3, 0.5, 1) 1.3s forwards;
+}
+.result-num-hit {
+  animation: result-num-pop 0.5s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+@keyframes result-rays-in {
+  to { opacity: 1; }
+}
+@keyframes result-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes result-drop {
+  0% { transform: translateY(-420px) scale(0.6); opacity: 0; }
+  15% { opacity: 1; }
+  60% { transform: translateY(0) scale(1.12, 0.88); opacity: 1; }
+  80% { transform: translateY(-14px) scale(0.96, 1.05); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes result-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); opacity: 1; }
+  50% { transform: translateY(-8px) rotate(1.5deg); opacity: 1; }
+}
+@keyframes result-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.2) rotate(0); }
+  50% { opacity: 1; transform: scale(1.2) rotate(90deg); }
+}
+@keyframes result-pop {
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes result-rise {
+  to { opacity: 1; transform: none; }
+}
+@keyframes result-num-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.5) rotate(-6deg); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .result-rays {
+    animation: none;
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  .result-trophy,
+  .result-pop,
+  .result-rise,
+  .result-actions {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .result-sparkle,
+  .result-num-hit {
+    animation: none;
+  }
+}
+
 /*
  * Compact scaling for the GP prototypes (GP1, GP2, GP5) and the games that grew out of them (G15–G17) on small phones.
  * `.gp-compact` on a game's root sets two factors that shrink on short/narrow screens:

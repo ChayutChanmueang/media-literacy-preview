@@ -65,6 +65,29 @@ export const leaderboardResultSchema = leaderboardPlayerSchema.extend({
   score: z.number().int().min(0),
 });
 
+// Research-mode self-assessment (pre/post) submission — see docs/software/10-research-pre-post-backend.md.
+// Whether answers/item_order cover exactly the item set is checked by findItemSetProblem().
+export const selfAssessmentSubmissionSchema = z.object({
+  submission_uuid: z.string().uuid(),
+  session_id: z.string().uuid(),
+  phase: z.enum(["pre", "post"]),
+  item_set: z.string().min(1),
+  answers: z.record(z.string(), z.number().int().min(1).max(5)),
+  item_order: z.array(z.string().min(1)).min(1),
+  started_at: z.string().datetime({ offset: true }).optional(),
+  submitted_at: z.string().datetime({ offset: true }),
+  app_mode: z.enum(["normal", "research"]),
+  app_version: z.string().max(32).optional(),
+  is_dev_skip: z.boolean(),
+  client_meta: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const selfAssessmentStatusQuerySchema = z.object({
+  session_id: z.string().uuid(),
+});
+
+export type SelfAssessmentSubmissionInput = z.infer<typeof selfAssessmentSubmissionSchema>;
+
 export type LeaderboardNameInput = z.infer<typeof leaderboardNameSchema>;
 export type LeaderboardPlayer = z.infer<typeof leaderboardPlayerSchema>;
 export type LeaderboardResultInput = z.infer<typeof leaderboardResultSchema>;

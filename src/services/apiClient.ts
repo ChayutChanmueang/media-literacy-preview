@@ -2,7 +2,8 @@
  * API Client for interacting with Next.js API Route Handlers.
  */
 import type { LeaderboardResponse } from "@/lib/leaderboard";
-import type { LeaderboardResultInput } from "@/lib/validations";
+import type { DuplicateReason, SavedSubmission, SelfAssessmentStatus } from "@/lib/selfAssessmentStore";
+import type { LeaderboardResultInput, SelfAssessmentSubmissionInput } from "@/lib/validations";
 import type { UserSession } from "./progressService";
 
 /** Row sent to POST /api/action-logs (also queued offline by loggingService). */
@@ -14,6 +15,18 @@ export interface ActionLogInput {
   created_at?: string;
 }
 
+/** Thrown for any non-2xx response; `status` lets callers tell bad input (4xx) from outages (5xx). */
+export class ApiHttpError extends Error {
+  constructor(readonly status: number) {
+    super(`HTTP error! status: ${status}`);
+    this.name = "ApiHttpError";
+  }
+}
+
+export type SaveSelfAssessmentResponse =
+  | { submission: SavedSubmission }
+  | { duplicate: true; reason: DuplicateReason };
+
 export const apiClient = {
   async post(url: string, data: unknown) {
     const response = await fetch(url, {
@@ -24,7 +37,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new ApiHttpError(response.status);
     }
     return await response.json();
   },
@@ -32,7 +45,7 @@ export const apiClient = {
   async get(url: string) {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new ApiHttpError(response.status);
     }
     return await response.json();
   },
@@ -99,6 +112,17 @@ export const apiClient = {
 
   async saveGameResult(result: LeaderboardResultInput) {
     return this.post("/api/game-results", result);
+  },
+
+  /** POST /api/self-assessment — 201 { submission } or 200 { duplicate, reason }; throws ApiHttpError otherwise. */
+  async saveSelfAssessment(submission: SelfAssessmentSubmissionInput): Promise<SaveSelfAssessmentResponse> {
+    return this.post("/api/self-assessment", submission);
+  },
+
+  /** GET /api/self-assessment?session_id= — which phases the server already has for this session. */
+  async getSelfAssessmentStatus(session_id: string): Promise<SelfAssessmentStatus> {
+    const body = await this.get(`/api/self-assessment?session_id=${encodeURIComponent(session_id)}`);
+    return body.status;
   },
 
   async saveQuizAttempt(session_id: string, test_type: "pretest" | "posttest", score: number, completed_at?: string) {

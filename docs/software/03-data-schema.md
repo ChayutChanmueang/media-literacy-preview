@@ -1,6 +1,6 @@
 # รู้ทันสื่อ Interactive — Data Schema
 
-**Version:** 1.8 | **Last Updated:** 2026-08-18
+**Version:** 1.9 | **Last Updated:** 2026-10-28
 **สถานะ:** 🟢 Stack ยืนยันแล้ว — Next.js (TypeScript) + Supabase (PostgreSQL) / เลือกพื้นที่แมนนวลผ่าน UI / เชื่อมต่อฐานข้อมูลผ่าน `pg` Pool ทั้งบน Cloud Supabase และ Docker Container Environments (`DATABASE_URL`)
 
 > ℹ️ **การติดตั้ง Schema บน Docker Container:**
@@ -14,6 +14,29 @@ Requirement ระบุให้เก็บ **อายุ** และ **ต�
 - ❌ ไม่เก็บ: ชื่อจริง-นามสกุล, เบอร์โทร, LINE ID หรือเลขระบุตัวตนทางราชการ
 - ✅ เก็บ: ชื่อเล่นที่ผู้ใช้ยินยอมให้แสดงบน Leaderboard, UUID แบบ local ที่ไม่ผูกกับบัญชี, ช่วงอายุ (ไม่ใช่วันเกิด), ตำแหน่งที่ผู้เรียนเลือกเอง (จังหวัด/อำเภอ/ตำบล), ความคืบหน้าการเล่นแบบ anonymous และบันทึกกิจกรรมการกดใช้งาน
 - ⚠️ **PDPA:** ต้องมีหน้าขอความยินยอมภาษาง่ายก่อนเก็บ; ผู้ปฏิเสธการแชร์ตำแหน่งต้องใช้งานแอปได้ครบทุกฟีเจอร์ โดยระบบจะบันทึกสถานะยินยอมหรือไม่ยินยอมไว้ด้วย
+
+## ข้อมูลส่วนบุคคลเก็บที่ไหนบ้าง (Personal Data Inventory)
+
+> ตรวจจากโค้ด `0.23.1` และ DB self-host `100.75.225.202` / `100.75.146.233` เมื่อ 2026-10-28 — ใช้ประกอบข้อความหน้า consent (ข้อความเดิมยังใช้ได้ ตามคำตัดสินใน [สเปก 09 ข้อ 9.4](./09-research-pre-post-data-collection.md#94-ความยินยอม-pdpa)) เพิ่มช่องทางเก็บข้อมูลใหม่เมื่อไรต้องอัปเดตตารางนี้
+
+ระบบ **ไม่มีบัญชีผู้ใช้** ทุกอย่างผูกกับ `session_id` (UUID สุ่มฝั่ง client) — ข้อมูลที่ใกล้เคียงข้อมูลส่วนบุคคลมีดังนี้:
+
+| ข้อมูล | เซิร์ฟเวอร์ (DB) | เครื่องผู้ใช้ (cookie / localStorage) | หมายเหตุ |
+|---|---|---|---|
+| ช่วงอายุ | `sessions.age_range` | `naplab_ml_session` → `ageGroup` | เป็นช่วง ไม่ใช่วันเกิด; แถวที่ log สร้างไว้ก่อน consent เป็น `'unknown'` |
+| พื้นที่ (จังหวัด/อำเภอ/ตำบล) | `sessions.selected_district`, `selected_sub_district` | `naplab_ml_session` → `location` | ผู้ใช้เลือกเอง; **จังหวัดไม่ถูกส่งขึ้น DB** (อยู่แค่ในเครื่อง) |
+| สถานะยินยอม | `sessions.location_consent` | `naplab_ml_session` → `consentGiven` | |
+| พิกัด GPS | `sessions.gps_latitude`, `gps_longitude` | — | คอลัมน์ยังอยู่แต่ **ไม่มีโค้ดเติมค่า** — ทั้ง 2 DB มี 0 แถวที่ไม่ว่าง |
+| ข้อมูลอุปกรณ์ | `sessions.user_agent`, `sessions.device_metadata` (ยี่ห้อ/รุ่นเครื่อง, OS, browser, ความละเอียดจอ); `action_logs.payload.userAgent` / `screenSize` **ทุก event** | `naplab_ml_session` → `deviceMetadata` | ใช้วิเคราะห์ปัญหาบนมือถือ / LINE in-app browser |
+| ชื่อเล่นบนกระดานคะแนน | `player_info.name` (เฉพาะเมื่อผู้เล่นกดบันทึกคะแนน) | `naplab_ml_leaderboard_player`, `naplab_ml_local_leaderboard` | ไม่ผูกกับ `session_id`; ผูกกับ `player_uuid` ในเครื่อง |
+| ชื่อบนใบประกาศ | `action_logs.payload.name` ของ event `generate_certificate`, `share_certificate_line` | — (อยู่แค่ใน state ของหน้า) | ส่งไปพร้อม log; ทั้ง 2 DB ยังไม่มีแถว ณ 2026-10-28 |
+| คำตอบแบบประเมินตนเอง (ทัศนคติ, Likert 1–5) | `self_assessment_submissions` / `self_assessment_answers` (เฉพาะ DB โหมดวิจัย `100.75.146.233`); `action_logs` event `self_assessment_*` | `naplab_ml_progress` → `selfAssessment` | ไม่มีถูก/ผิด; ใช้วิเคราะห์ก่อน/หลังเรียน |
+| ประวัติการเรียน/การเล่น | `lesson_progress`, `action_logs` | `naplab_ml_progress`, `naplab_ml_offline_logs` (คิว log ที่ยังส่งไม่ได้) | |
+| IP address | **ไม่เก็บลง DB** | — | `POST /api/game-results` อ่าน `x-forwarded-for` เป็น key ของ rate limit ในหน่วยความจำ server ชั่วคราวเท่านั้น; log ของ Kong/Supabase ฝั่ง infra อยู่นอกขอบเขตแอป |
+
+**ไม่เก็บเลย:** ชื่อจริง-นามสกุล, เบอร์โทร, LINE ID, อีเมล, เลขบัตรประชาชน
+
+**การเข้าถึง:** ทุกตารางเปิด RLS โดยไม่มี policy (anon/authenticated ผ่าน PostgREST อ่าน/เขียนแถวไม่ได้) — แอปเข้าถึงผ่าน Route Handler ฝั่ง server ด้วย `DATABASE_URL` เท่านั้น; ตาราง/view `self_assessment_*` REVOKE สิทธิ์ anon/authenticated เพิ่มอีกชั้น
 
 ## Entities
 
@@ -63,7 +86,7 @@ erDiagram
 | event_name | text | เช่น `"click_play_video"`, `"click_next_lesson"`, `"toggle_mute"`, `"open_help"`, `"game_start"`, `"game_hint_clicked"`, `"certificate_download"` |
 | page_url | text | URL ของหน้าที่เกิดเหตุการณ์ (เช่น `/lesson/t1-mil` หรือ `/game/G1`) |
 | payload | jsonb (nullable) | ข้อมูลเสริมเฉพาะเหตุการณ์ (เช่น `{"video_seconds": 12.5}` หรือ `{"hint_id": "h1"}`) |
-| created_at | timestamptz | เวลาที่เกิดการกระทำนั้นๆ (Client Timestamp) |
+| created_at | timestamptz | เวลาที่ **server** รับ log (`NOW()` ใน `POST /api/action-logs`) — log ที่ค้างคิวออฟไลน์จะได้เวลาตอนซิงค์ ไม่ใช่เวลาที่เกิดจริง |
 
 ### `lesson_progress`
 | Field | Type | Notes |
@@ -152,6 +175,17 @@ on conflict (gid) do update set name = excluded.name;
 | selected_option_id | uuid (FK) | อ้างอิงตาราง quiz_options ที่ผู้เล่นเลือกตอบ |
 | is_correct | boolean | คำตอบนั้นถูกต้องหรือไม่ (ช่วยวิเคราะห์รายข้อความเข้าใจผิด) |
 | created_at | timestamptz | วันเวลาที่กดส่งคำตอบ |
+
+### `self_assessment_*` (แบบประเมินตนเองก่อน/หลังเรียน โหมดวิจัย)
+ออกแบบและเหตุผลอยู่ที่ [09 — สเปกการเก็บข้อมูลแบบทดสอบก่อน/หลังเรียน ข้อ 5](./09-research-pre-post-data-collection.md#5-ฐานข้อมูล) — DDL ท้าย [`docs/supabase-schema.sql`](../supabase-schema.sql); มีบน DB `100.75.146.233` เท่านั้น (2026-10-28)
+
+| ตาราง / view | 1 แถว = |
+|---|---|
+| `self_assessment_item_sets` | ชุดคำถาม 1 เวอร์ชัน (`sa-v1`) + `item_count` |
+| `self_assessment_items` | ข้อความคำถาม 1 ข้อในชุด (`item_set`, `item_id`) |
+| `self_assessment_submissions` | การกดส่ง 1 ครั้ง (`submission_uuid`, `session_id` → `sessions`, `phase` pre/post, เวลา client/server, dev skip, ที่มา client/backfill) |
+| `self_assessment_answers` | คำตอบ 1 ข้อ (`value` 1–5, `shown_position`) |
+| view `self_assessment_primary` / `_scores` / `_pairs` | ชุดแรกต่อ phase / คะแนนรวมต่อชุด / คู่ pre↔post ต่อคน |
 
 ### Game content files (JSON, ไม่อยู่ใน DB)
 ```json

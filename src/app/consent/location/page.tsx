@@ -7,6 +7,7 @@ import { AlertCircle, Check } from "lucide-react";
 import locationData from "@/data/thailand-location.json";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
+import { selfAssessmentService } from "@/services/selfAssessmentService";
 import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
 import Button3D from "@/components/Button3D";
@@ -339,7 +340,9 @@ export default function ConsentLocationPage() {
 
     // Research mode: pre-post test (self-assessment survey) gates entry to lessons.
     // Normal mode has no pre-post test — go straight to the mode-selection screen.
-    router.push(progressService.getAppMode() === "research" ? "/self-assessment/pre" : "/lessons");
+    // The pre-test is done once per session, so skip it if it was already submitted.
+    const needsPreTest = progressService.getAppMode() === "research" && !selfAssessmentService.hasCompleted("pre");
+    router.push(needsPreTest ? "/self-assessment/pre" : "/lessons");
   };
 
   useDevSkip(() => {

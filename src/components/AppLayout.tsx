@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, Home, RotateCcw, Trophy, X, SkipForward } from "lucide-react";
 import { progressService, type AppMode } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
+// Imported for its side effect: the pending pre/post queue syncs on load and on "online" from every page.
+import "@/services/selfAssessmentService";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
 import { DEV_SKIP_ENABLED, useDevSkipHandler } from "@/lib/devSkip";
 import pkg from "../../package.json";
@@ -345,16 +347,19 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
                 <span>กระดานคะแนน</span>
               </button>
             )}
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                handleResetAll();
-              }}
-              className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-[17px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-app)] cursor-pointer text-left"
-            >
-              <RotateCcw size={24} className="shrink-0" />
-              <span>รีเซ็ตข้อมูล</span>
-            </button>
+            {/* โหมดวิจัย: ห้ามรีเซ็ต — จะได้ session ใหม่และทำ pre/post ซ้ำได้ ข้อมูลวิจัยจะไม่มีคู่ (US-DATA-03) */}
+            {appMode !== "research" && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleResetAll();
+                }}
+                className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-[17px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-app)] cursor-pointer text-left"
+              >
+                <RotateCcw size={24} className="shrink-0" />
+                <span>รีเซ็ตข้อมูล</span>
+              </button>
+            )}
           </nav>
 
           {/* เลขเวอร์ชันแอป — ล่างสุดของ drawer */}

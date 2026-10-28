@@ -58,8 +58,8 @@ export interface UserProgress {
 // before any page's effects run).
 let configuredAppMode: AppMode = "normal";
 
-// Helper to set cookie
-function setCookie(name: string, value: any, days: number) {
+// Helper to set cookie (also used by selfAssessmentService)
+export function setCookie(name: string, value: any, days: number) {
   const date = new Date();
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
   const expires = "; expires=" + date.toUTCString();
@@ -68,7 +68,7 @@ function setCookie(name: string, value: any, days: number) {
 }
 
 // Helper to get cookie
-function getCookie(name: string) {
+export function getCookie(name: string) {
   const nameEQ = name + "=";
   if (typeof document === "undefined") return null;
   const ca = document.cookie.split(";");
@@ -87,7 +87,7 @@ function getCookie(name: string) {
 }
 
 // Helper to generate a valid RFC4122 v4 UUID
-function generateUUID() {
+export function generateUUID() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }

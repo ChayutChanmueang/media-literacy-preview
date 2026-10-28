@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabasePool } from "@/lib/database";
+import { ensureSessionRow, isUuid } from "@/lib/sessionRows";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,16 +10,8 @@ export async function POST(req: NextRequest) {
     const pool = getDatabasePool();
 
     // Ensure session exists to avoid foreign key violations
-    const isUuid = (str: string) =>
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-
-    if (session_id && isUuid(session_id)) {
-      await pool.query(
-        `INSERT INTO sessions (id, age_range, role, location_consent, created_at)
-         VALUES ($1, $2, $3, $4, NOW())
-         ON CONFLICT (id) DO NOTHING`,
-        [session_id, "unknown", "elder", false]
-      );
+    if (isUuid(session_id)) {
+      await ensureSessionRow(pool, session_id);
     }
 
     const queryText = `
@@ -28,7 +21,7 @@ export async function POST(req: NextRequest) {
     `;
 
     const result = await pool.query(queryText, [
-      session_id && isUuid(session_id) ? session_id : null,
+      isUuid(session_id) ? session_id : null,
       page_path,
       referrer || null,
       duration_seconds || 0,

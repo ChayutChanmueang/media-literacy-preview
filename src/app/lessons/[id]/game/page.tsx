@@ -7,6 +7,7 @@ import { loggingService } from "@/services/loggingService";
 import { progressService } from "@/services/progressService";
 import { apiClient } from "@/services/apiClient";
 import { leaderboardScoreService } from "@/services/leaderboardScoreService";
+import { selfAssessmentService } from "@/services/selfAssessmentService";
 import { FLOW_G13_ID, FLOW_POST_TEST_ID, FLOW_POST_TEST_PATH, nextFlowLessonAfterGame } from "@/lib/flow";
 import { useDevSkip } from "@/lib/devSkip";
 import { TEMP_AWARDED_STARS } from "@/lib/gameScore";
@@ -143,7 +144,11 @@ export default function GameShellPage() {
       // US-CF-32: flow ไม่มีหน้าสรุปคะแนนคั่นแล้ว → จบเกมไป "หน้าชื่อคลิป" ของบทถัดไปเลย (video intro) หรือด่านปิดท้าย
       const nextId = nextFlowLessonAfterGame(lessonId);
       if (nextId === FLOW_POST_TEST_ID) {
-        if (progressService.getAppMode() === "research") {
+        if (progressService.getAppMode() === "research" && selfAssessmentService.hasCompleted("post")) {
+          // โหมดวิจัย เล่น Flow จบซ้ำ: ทำแบบทดสอบหลังเรียนได้ครั้งเดียว → ข้ามไปหน้าจบเลย (US-DATA-03)
+          progressService.saveProgress({ ...withStars, currentStep: "complete", currentLessonId: undefined });
+          goToScore("/lessons/complete");
+        } else if (progressService.getAppMode() === "research") {
           // โหมดวิจัย: ปิดท้ายด้วยแบบทดสอบหลังเรียน
           progressService.saveProgress({ ...withStars, currentStep: "post-test", currentLessonId: undefined });
           goToScore(FLOW_POST_TEST_PATH);

@@ -23,6 +23,7 @@ gantt
 | [US-GAME-04](../user-stories/US-GAME-04.md) | เกม "แชร์ดีไหม?" (G4) | M | [ ] |
 | [US-CORE-05](../01-product-backlog.md#nice-to-have) | ระบบเล่นต่อได้แม้เน็ตหลุด (Queue to Sync) | M | [ ] |
 | Task-06-01 | ปรับปรุงระบบภาพรวม (Polish) และจัดทำคู่มือส่งมอบงาน | S | [ ] |
+| [US-DATA-03](../user-stories/US-DATA-03.md) | เก็บผลแบบทดสอบก่อน/หลังเรียน (โหมดวิจัย) ขึ้นฐานข้อมูล — Task-DATA03-00…20 ตาม [สเปก 09](../../software/09-research-pre-post-data-collection.md) (เพิ่ม 2026-10-28) | L | [ ] |
 
 ## 🛠 Sprint Specifics
 - **Definition of Done:**

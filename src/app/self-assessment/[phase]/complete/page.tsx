@@ -30,8 +30,8 @@ export default function SelfAssessmentCompletePage() {
       return;
     }
 
-    const session = progressService.getOrCreateSession();
-    router.push(session?.isTestingGroup ? "/pretest" : "/lessons");
+    // The legacy multiple-choice /pretest is no longer part of the research flow (US-DATA-03 Task-14).
+    router.push("/lessons");
   };
 
   useDevSkip(handleContinue);

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { loggingService } from "@/services/loggingService";
 import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
+import { useSelfAssessmentDoneGuard } from "@/lib/useSelfAssessmentDoneGuard";
 import { SELF_ASSESSMENT_PHASES, type SelfAssessmentPhase } from "@/lib/selfAssessmentPhase";
 import Button3D from "@/components/Button3D";
 
@@ -12,6 +13,7 @@ import Button3D from "@/components/Button3D";
 export default function SelfAssessmentStartPage() {
   const router = useRouter();
   const { phase } = useParams<{ phase: SelfAssessmentPhase }>();
+  const blocked = useSelfAssessmentDoneGuard(phase);
 
   useEffect(() => {
     loggingService.logEvent("self_assessment_intro_view", { phase });
@@ -22,7 +24,11 @@ export default function SelfAssessmentStartPage() {
     router.push(`/self-assessment/${phase}/questions`);
   };
 
-  useDevSkip(handleStart);
+  useDevSkip(() => {
+    if (!blocked) handleStart();
+  });
+
+  if (blocked) return <div className="flex min-h-0 flex-1 flex-col bg-white" />;
 
   return (
     <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white`}>

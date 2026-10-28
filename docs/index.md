@@ -51,6 +51,8 @@
 - [06 — Session & Identifier Specification](./software/06-session-specification.md) — ข้อกำหนดการจัดการ Session ID สภาพแวดล้อมจัดเก็บข้อมูลคู่ออฟไลน์ และทางเลือกกรณีเปิดข้ามเบราว์เซอร์ [NEW]
 - 07 — Class Diagram — ⏳ ยังไม่สร้าง
 - [08 — คู่มือเพิ่มเกมเข้า Leaderboard](./software/08-leaderboard-add-game.md) — 🟢 checklist ทุกจุดที่ต้องแก้ (DB `game_id`, `src/lib/leaderboard.ts`, หน้าเกม/หน้ากระดาน, เทสต์) + สถานะ Leaderboard รายเกม + วิธีตรวจ
+- [09 — การเก็บข้อมูลแบบทดสอบก่อน/หลังเรียน (โหมดวิจัย)](./software/09-research-pre-post-data-collection.md) — 🏗 In Progress (schema + backend เสร็จ): ตาราง `self_assessment_*`, `POST /api/self-assessment`, คิวส่งใหม่ที่ไม่ทิ้งข้อมูล, backfill จาก `action_logs`, สคริปต์ export + checklist งานที่ต้องทำ [NEW]
+- [10 — Backend แบบทดสอบก่อน/หลังเรียน + คู่มือต่องาน Frontend](./software/10-research-pre-post-backend.md) — 🟢 API `POST/GET /api/self-assessment`, `selfAssessmentService` (คิวไม่ทิ้งข้อมูล), สคริปต์ migrate/backfill/export, test บน PGlite + ขั้นตอนที่ frontend ต้องต่อ [NEW]
 
 ## 🚀 Agile Management
 

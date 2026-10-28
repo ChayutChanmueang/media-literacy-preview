@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getServerAppMode } from "@/lib/appMode";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isResearch = getServerAppMode() === "research";
 
   // Let public pages, APIs, static files, and assets pass through without checks
   if (
@@ -37,7 +39,8 @@ export function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/consent";
     // If they tried to access /pretest, remember it so we can route them back after consent
-    if (pathname === "/pretest") {
+    // (normal mode only: research mode has no multiple-choice test, consent leads to the pre self-assessment)
+    if (pathname === "/pretest" && !isResearch) {
       url.searchParams.set("redirect", "/pretest");
     }
     return NextResponse.redirect(url);
@@ -48,6 +51,18 @@ export function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/lessons";
     return NextResponse.redirect(url);
+  }
+
+  // Research mode: the pre/post self-assessment replaces the multiple-choice /pretest and /posttest
+  // (US-DATA-03 Task-14), so the testing-group guards below never apply — even to a stale isTestingGroup cookie.
+  if (isResearch) {
+    if (pathname === "/pretest" || pathname === "/posttest") {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname === "/pretest" ? "/self-assessment/pre" : "/lessons";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
 
   // Auto-register as testing group if accessing test routes directly

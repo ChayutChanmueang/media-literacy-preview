@@ -1,7 +1,7 @@
 {
   "name": "media-literacy",
   "private": true,
-  "version": "0.23.1",
+  "version": "0.24.0",
   "type": "module",
   "scripts": {
     "dev": "node -e \"console.log('\\x1b[36m  - Dev Game Hub: http://localhost:3000/dev/games\\x1b[0m\\n')\" && next dev --webpack",
@@ -27,6 +27,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^20.17.16",

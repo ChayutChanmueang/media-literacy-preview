@@ -2,10 +2,10 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
-import { Trophy } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
+import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
 import GameIntro from "@/components/GameIntro";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 import { useStageScale } from "@/lib/useStageScale";
@@ -1083,18 +1083,18 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
       <div ref={stageRootRef} className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
-            <Trophy size={88} className="shrink-0 text-[#CA8A04]" aria-hidden="true" />
-            <p className="gp-text-32 font-bold gp-leading-40 text-black">เก่งมาก!</p>
-            <p className="gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
-              ได้คะแนน <span className="font-bold text-[#B45309]">{score}</span> คะแนน
+            <ResultTrophy />
+            <p className="result-pop gp-text-32 font-bold gp-leading-40 text-black">เก่งมาก!</p>
+            <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+              ได้คะแนน <CountUp value={score} className="font-bold text-[#B45309]" /> คะแนน
             </p>
-            {SHOW_RESULT_BEST_SCORE && newBest && <p className="gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
+            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
             {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-              <p className="gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} คะแนน</p>
+              <p className="result-rise gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} คะแนน</p>
             )}
           </div>
         </div>
-        <div className="flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
+        <div className="result-actions flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
           <Button3D variant="secondary" onClick={startRun}>เล่นอีกครั้ง</Button3D>
           <Button3D onClick={finish}>จบเกม</Button3D>
         </div>
