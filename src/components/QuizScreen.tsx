@@ -6,6 +6,7 @@ import { apiClient } from "@/services/apiClient";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import BottomActionButton from "@/components/BottomActionButton";
+import { cancelSpeech, speak } from "@/lib/audio/speech";
 
 interface Option {
   id: string;
@@ -70,7 +71,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
     return () => {
       // Cancel TTS when unmounting
       if (synthRef.current) {
-        synthRef.current.cancel();
+        cancelSpeech();
       }
     };
   }, [testType]);
@@ -79,19 +80,13 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
     if (!synthRef.current) return;
 
     if (speaking) {
-      synthRef.current.cancel();
+      cancelSpeech();
       setSpeaking(false);
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "th-TH";
-    utterance.rate = 0.95; // Slightly slower for elderly comprehension
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-    
     setSpeaking(true);
-    synthRef.current.speak(utterance);
+    speak(text, { rate: 0.95, onEnd: () => setSpeaking(false) }); // Slightly slower for elderly comprehension
   };
 
   const handleNext = () => {
@@ -99,7 +94,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
 
     // TTS Cancel
     if (synthRef.current) {
-      synthRef.current.cancel();
+      cancelSpeech();
       setSpeaking(false);
     }
 

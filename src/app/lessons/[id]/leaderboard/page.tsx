@@ -108,7 +108,7 @@ function LeaderboardPageInner() {
   // US-CF-52: โหมดดูกระดานคะแนนจากเมนู — ไม่ผูกกับผู้เล่น (ไม่มีชื่อ/ไฮไลต์), เหรียญบนเป็น trophy
   const isBrowse = searchParams.get("view") === "browse";
   // From a fun game's "เก็บคะแนนไหม?" popup (game page): step=save → name entry (Figma 3157:15657),
-  // then the board once saved · skipped=1 → straight to the board, score not kept
+  // then the board once saved · skipped=1 → the board without the player's row (old links: "ไม่" now skips this page)
   const isSaveStep = searchParams.get("step") === "save";
   const skipped = searchParams.get("skipped") === "1";
   const lessonId = params.id;

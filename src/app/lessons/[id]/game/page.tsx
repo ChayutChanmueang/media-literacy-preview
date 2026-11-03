@@ -171,7 +171,7 @@ export default function GameShellPage() {
   useDevSkip(() => handleFinishGame(0));
 
   // "ใช่" → หน้ากรอกชื่อเพื่อเก็บคะแนน (Figma 3157:15657) เก็บเสร็จแล้วไปกระดานคะแนน
-  // "ไม่" → ทิ้งคะแนนรอบนี้ แล้วไปดูกระดานคะแนนของเกมนี้เลย
+  // "ไม่" → ทิ้งคะแนนรอบนี้ แล้วข้ามกระดานคะแนน ไปที่เดียวกับปุ่มจบบนกระดาน: โหมดอิสระกลับหน้าหมวดหมู่ / Flow (G13) ไปหน้าจบคอร์ส
   const handleSaveScoreChoice = (save: boolean) => {
     if (!scorePrompt) return;
     loggingService.logEvent(save ? "leaderboard_save_chosen" : "leaderboard_save_declined", {
@@ -183,7 +183,10 @@ export default function GameShellPage() {
       router.push(`/lessons/${lessonId}/leaderboard?step=save`);
     } else {
       leaderboardScoreService.clearPendingScore(scorePrompt.gid);
-      router.push(`/lessons/${lessonId}/leaderboard?skipped=1`);
+      const progress = progressService.getProgress();
+      const manual = progress?.learningMode === "manual";
+      progressService.saveProgress({ ...progress, currentStep: manual ? "lessons" : "complete", currentLessonId: undefined });
+      router.push(manual ? "/lessons" : "/lessons/complete");
     }
   };
 

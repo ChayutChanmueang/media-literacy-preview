@@ -4,6 +4,7 @@ import React from "react";
 import type { LucideIcon } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
+import { GameAudioToggle } from "@/components/AudioToggle";
 
 interface GameIntroProps {
   /** ชื่อเกม */
@@ -45,7 +46,10 @@ export default function GameIntro({
   containerClassName = "bg-white",
 }: GameIntroProps) {
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col ${containerClassName}`}>
+    <div className={`${notoLoopedThai.className} relative flex min-h-0 flex-1 flex-col ${containerClassName}`}>
+      {/* เปิด/ปิดเสียงเกม — หน้าเล่นเกมซ่อน header ของแอป จึงต้องมีปุ่มในเกมเอง (docs/software/11 ข้อ 6.7)
+          มุมซ้าย: มุมขวาบนเป็นที่ของปุ่ม "ข้ามขั้นตอน" (dev) */}
+      <GameAudioToggle className="absolute left-2 top-2 z-10" />
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* ใช้รูปไอคอนเกม: วางชิดบน + ไอคอนใหญ่ ; แบบอื่นจัดกึ่งกลางแนวตั้งเหมือนเดิม */}
         <div

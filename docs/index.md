@@ -53,6 +53,7 @@
 - [08 — คู่มือเพิ่มเกมเข้า Leaderboard](./software/08-leaderboard-add-game.md) — 🟢 checklist ทุกจุดที่ต้องแก้ (DB `game_id`, `src/lib/leaderboard.ts`, หน้าเกม/หน้ากระดาน, เทสต์) + สถานะ Leaderboard รายเกม + วิธีตรวจ
 - [09 — การเก็บข้อมูลแบบทดสอบก่อน/หลังเรียน (โหมดวิจัย)](./software/09-research-pre-post-data-collection.md) — 🏗 In Progress (schema + backend เสร็จ): ตาราง `self_assessment_*`, `POST /api/self-assessment`, คิวส่งใหม่ที่ไม่ทิ้งข้อมูล, backfill จาก `action_logs`, สคริปต์ export + checklist งานที่ต้องทำ [NEW]
 - [10 — Backend แบบทดสอบก่อน/หลังเรียน + คู่มือต่องาน Frontend](./software/10-research-pre-post-backend.md) — 🟢 API `POST/GET /api/self-assessment`, `selfAssessmentService` (คิวไม่ทิ้งข้อมูล), สคริปต์ migrate/backfill/export, test บน PGlite + ขั้นตอนที่ frontend ต้องต่อ [NEW]
+- [11 — ระบบเสียง (Audio System)](./software/11-audio-system.md) — 🔍 In QA: ระบบเสียงกลางระบบเดียว (Howler.js + wrapper `src/lib/audio/`, 2 ช่อง BGM/SFX, crossfade ตาม route, ducking ตอน TTS/วิดีโอ, ปุ่มปิดเสียง, PWA cache) — โค้ดลงแล้ว ผ่าน unit/E2E, ยังไม่มีไฟล์ BGM และยังไม่ได้ทดสอบบนมือถือจริง [NEW]
 
 ## 🚀 Agile Management
 

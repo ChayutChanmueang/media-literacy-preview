@@ -13,6 +13,7 @@ import {
   type Tile,
   type TileHue,
 } from "@/lib/match-ring";
+import { cancelSpeech, speak as speakText } from "@/lib/audio/speech";
 
 /**
  * G12 — อย่ากดลิงก์จี้ ถ้าไม่รีบหยุดกด (PROTOTYPE)
@@ -373,11 +374,9 @@ export default function G12ChuzzleStop({ onFinish, logEvent }: Props) {
 
   const speak = (text: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
+    cancelSpeech();
     if (!audioOn) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "th-TH";
-    window.speechSynthesis.speak(u);
+    speakText(text);
   };
 
   useEffect(() => {

@@ -19,12 +19,15 @@ import { notoLoopedThai } from "@/lib/fonts";
  */
 
 type ChatImage = { src: string; alt: string };
+// a mock SMS the player forwards to the AI (instead of a picture); link is made-up, shown as plain text
+type ChatSms = { sender: string; body: string; link: string };
 
 type ChatItem = {
   id: string;
   chip_label: string;
   question: string;
   image: ChatImage | null;
+  sms?: ChatSms;
   thinking_steps: string[];
   answer: string[];
   takeaway_icon: string;
@@ -478,6 +481,17 @@ function UserBubble({ item, onOpenImage }: { item: ChatItem; onOpenImage: (img: 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.image.src} alt={item.image.alt} className="block w-full gp-max-h-240 object-cover" />
         </button>
+      )}
+      {item.sms && (
+        <div className="max-w-[85%] px-[20px] gp-py-16 rounded-[20px] border-2 border-solid border-[#D9D9D9] bg-[#F2F2F2] gp-text-20 gp-leading-30 text-[#1a1a1a]">
+          <p className="font-semibold text-[#595959]">ข้อความ SMS จำลอง</p>
+          <p className="gp-mt-8 font-semibold">ผู้ส่ง: {item.sms.sender}</p>
+          <p className="gp-mt-8">{item.sms.body}</p>
+          <p className="gp-mt-8 break-all">
+            <span className="underline text-[#0B5CAD]">{item.sms.link}</span>{" "}
+            <span className="text-[#595959]">(ลิงก์สมมติ)</span>
+          </p>
+        </div>
       )}
       {/* Figma 3076:13565 — white pill, grey border */}
       <div className="max-w-[85%] px-[20px] gp-py-16 rounded-[40px] border-2 border-solid border-[#D9D9D9] bg-white gp-text-20 font-semibold gp-leading-30 text-[#595959]">

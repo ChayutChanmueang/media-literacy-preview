@@ -7,6 +7,7 @@ import GameAnswerButton from "@/components/GameAnswerButton";
 import GameIntro from "@/components/GameIntro";
 import GameSolutionCard from "@/components/GameSolutionCard";
 import QUESTION_POOL from "@/data/gp5-video-items.json";
+import { audio } from "@/lib/audio/audioEngine";
 
 /**
  * GP5 — คลิปจริง หรือ คลิปปลอม (Real or fake video) — PROTOTYPE
@@ -103,6 +104,13 @@ export default function GP5RealOrFakeVideo({ onFinish, logEvent }: Props) {
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("flowStepProgress", { detail: currentIdx / questions.length }));
   }, [currentIdx, questions.length]);
+
+  // BGM steps back while a clip plays with sound (docs/software/11 ข้อ 6.5)
+  useEffect(() => {
+    if (muted) return;
+    audio.duck("video");
+    return () => audio.unduck("video");
+  }, [muted]);
 
   const handleAnswer = (choice: Choice) => {
     setSelected(choice);

@@ -11,6 +11,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import ITEMS from "@/data/g10-app-items.json";
+import { cancelSpeech, speak } from "@/lib/audio/speech";
 
 /**
  * G10 — นี้แอปฉัน นั้นแอปใคร? (Spot the Fake App) — PROTOTYPE (design-g10.md)
@@ -125,7 +126,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
   const isLastStage = stageIdx === STAGES.length - 1;
 
   const stopSpeak = () => {
-    synthRef.current?.cancel();
+    cancelSpeech();
     setSpeaking(false);
   };
 
@@ -136,13 +137,8 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
       stopSpeak();
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "th-TH";
-    utterance.rate = 0.9;
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
     setSpeaking(true);
-    synth.speak(utterance);
+    speak(text, { rate: 0.9, onEnd: () => setSpeaking(false) });
   };
 
   const openInspect = (idx: number) => {

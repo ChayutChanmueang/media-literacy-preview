@@ -23,6 +23,10 @@ import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 import { stageScale } from "@/lib/gameViewport";
 import { useStageScale } from "@/lib/useStageScale";
 import { DEV_SKIP_ENABLED } from "@/lib/devSkip";
+import { audio } from "@/lib/audio/audioEngine";
+import { usePreloadSfx } from "@/lib/audio/useAudio";
+
+const G13_SFX = ["g13.scoopCatch", "g13.scoopCatchX2", "g13.bombHit"] as const;
 
 type Props = {
   onFinish: (score: number) => void;
@@ -579,6 +583,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   const [finishPopup, setFinishPopup] = useState<StagePopupStage | null>(null);
   const popupTimersRef = useRef<number[]>([]);
   const { ref: stageRootRef, nodeRef: stageNodeRef } = useStageScale({ gameId: "g13", logEvent });
+  usePreloadSfx(G13_SFX);
 
   useEffect(() => {
     logRef.current = logEvent;
@@ -750,6 +755,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           setHeight(world.stack.length);
           addScorePopup(1);
           setBestHeight((previous) => Math.max(previous, world.stack.length));
+          audio.playSfx("g13.scoopCatch");
           logRef.current("scoop_catch", {
             game_id: "g13",
             tower_height: world.stack.length,
@@ -772,6 +778,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           setBestHeight((previous) => Math.max(previous, world.stack.length));
           world.flash = 0.35;
           world.flashColor = "rgba(234,179,8,"; // Golden flash
+          audio.playSfx("g13.scoopCatchX2");
           logRef.current("double_catch", {
             game_id: "g13",
             tower_height: world.stack.length,
@@ -789,6 +796,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         addScorePopup(-removed);
         world.flash = 0.42;
         world.flashColor = "rgba(249,115,22,"; // Orange flash for bomb
+        audio.playSfx("g13.bombHit");
         logRef.current("bomb_hit", {
           game_id: "g13",
           scoops_dropped: removed,
@@ -920,7 +928,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           advanceTutorial("dodge", "ready");
           return;
         }
-        // same as the real game, so the player sees what a bomb does
+        // same as the real game, so the player sees (and hears) what a bomb does
+        audio.playSfx("g13.bombHit");
         addScorePopup(-removeTopScoops(2));
         world.flash = 0.42;
         world.flashColor = "rgba(249,115,22,";
@@ -931,6 +940,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
 
       logRef.current(caught ? "tutorial_scoop_catch" : "tutorial_scoop_miss", { game_id: "g13" });
       if (caught) {
+        audio.playSfx("g13.scoopCatch");
         world.stack.push(falling.flavor ?? FLAVORS[0]);
         setHeight(world.stack.length);
         addScorePopup(1);

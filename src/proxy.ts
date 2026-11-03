@@ -125,6 +125,6 @@ export const config = {
      * 3. /_next/image (image optimization files)
      * 4. /favicon.ico, manifest.json, sw.js, audio/sprites files
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|.*\\.png$|.*\\.jpg$|.*\\.mp3$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|audio/|.*\\.png$|.*\\.jpg$|.*\\.mp3$).*)",
   ],
 };

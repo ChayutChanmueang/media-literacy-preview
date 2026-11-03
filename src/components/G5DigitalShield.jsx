@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, CheckCircle, HelpCircle, Volume2, VolumeX, AlertTriangle, Play } from 'lucide-react';
+import { cancelSpeech, speak } from '@/lib/audio/speech';
 
 const HAZARDS = [
   {
@@ -66,26 +67,19 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
   const handleSpeak = (text) => {
     if (!synthRef.current) return;
     if (speaking) {
-      synthRef.current.cancel();
+      cancelSpeech();
       setSpeaking(false);
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'th-TH';
-    utterance.rate = 0.9;
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
     setSpeaking(true);
-    synthRef.current.speak(utterance);
+    speak(text, { rate: 0.9, onEnd: () => setSpeaking(false) });
   };
 
   // Speak slogans in sequence
   const speakSlogan = (text) => {
     if (!synthRef.current) return;
-    synthRef.current.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'th-TH';
-    synthRef.current.speak(utterance);
+    cancelSpeech();
+    speak(text);
   };
 
   // Advance to the next hazard (or finish). The bubble is reset to its start position here, in the
@@ -187,7 +181,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
   const handleFinish = () => {
     if (synthRef.current) {
-      synthRef.current.cancel();
+      cancelSpeech();
     }
     onFinish(3); // Complete lesson with 3 stars!
   };

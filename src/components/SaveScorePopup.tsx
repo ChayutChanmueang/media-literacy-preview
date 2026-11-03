@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { notoLoopedThai } from "@/lib/fonts";
 
 // Figma "เลือกเก็บคะแนนหรือไม่1" (Scammer Game Prototype, node 3157:15321) — asked when a fun game ends:
-// save the score (→ name entry) or not (→ the game's leaderboard). No close button / backdrop dismiss on
+// save the score (→ name entry) or not (→ back to the game list, skipping the leaderboard). No close button / backdrop dismiss on
 // purpose: the player has to pick one of the two.
 
 // Built like GameAnswerButton: the darker base is its own layer at the bottom and the face sits above it.

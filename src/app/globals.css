@@ -762,6 +762,58 @@ h2 {
   animation: gp1-glow 2.2s ease-in-out infinite;
 }
 
+/* G18 play-screen background (G18Background.tsx, from the game-background.html mock). The mock sized
+   everything off the window (vw/dvh); here the box itself is the size container, so --u follows the
+   game area instead: 1 unit = 1px of the mock's 1024-wide design, scaled to the box. */
+.g18-bg {
+  container-type: size;
+  background:
+    radial-gradient(60% 40% at 8% 6%, rgba(91, 143, 240, 0.16), transparent 70%),
+    radial-gradient(55% 35% at 95% 96%, rgba(252, 201, 40, 0.14), transparent 70%),
+    radial-gradient(120% 70% at 50% 45%, #f9faff 0%, transparent 70%),
+    linear-gradient(180deg, #f1f3f9, #e3e7f2);
+}
+.g18-bg-scene {
+  --u: clamp(0.3px, min(0.12cqw, 0.08cqh), 0.75px);
+  position: absolute;
+  inset: 0;
+}
+.g18-bg-defs { position: absolute; width: 0; height: 0; }
+.g18-bg-facets { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* gradient colours — set on the <svg>/<use> and inherited by the symbol inside */
+.g18-bg-blue { fill: url(#g18-blue); stroke: url(#g18-blue); }
+.g18-bg-red { fill: url(#g18-red); stroke: url(#g18-red); }
+.g18-bg-green { fill: url(#g18-green); stroke: url(#g18-green); }
+.g18-bg-yellow { fill: url(#g18-yellow); stroke: url(#g18-yellow); }
+.g18-bg-lav { fill: url(#g18-lav); stroke: url(#g18-lav); }
+.g18-bg-shape {
+  position: absolute;
+  width: calc(var(--sz) * var(--u));
+  height: calc(var(--sz) * var(--u));
+  overflow: visible;
+  will-change: translate;
+  filter: drop-shadow(0 calc(5 * var(--u)) calc(6 * var(--u)) rgba(55, 75, 130, 0.28));
+  animation: g18-bg-bob 7s ease-in-out infinite;
+}
+.g18-bg-shape.g18-bg-twinkle { animation: g18-bg-bob 7s ease-in-out infinite, g18-bg-spin 14s linear infinite; }
+@keyframes g18-bg-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@keyframes g18-bg-spin { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .g18-bg-shape, .g18-bg-shape.g18-bg-twinkle { animation: none; }
+}
+.g18-bg-prop {
+  position: absolute;
+  overflow: visible;
+  filter: drop-shadow(0 calc(14 * var(--u)) calc(14 * var(--u)) rgba(45, 65, 125, 0.28));
+}
+.g18-bg-ring { left: calc(-90 * var(--u)); top: calc(-40 * var(--u)); width: calc(300 * var(--u)); }
+.g18-bg-phones { right: calc(-40 * var(--u)); top: calc(120 * var(--u)); width: calc(190 * var(--u)); }
+.g18-bg-cards { left: calc(-40 * var(--u)); bottom: calc(-30 * var(--u)); width: calc(250 * var(--u)); }
+.g18-bg-pad { right: calc(-50 * var(--u)); bottom: calc(-40 * var(--u)); width: calc(230 * var(--u)); }
+@container (orientation: landscape) and (max-height: 500px) {
+  .g18-bg-wide { display: none; }
+}
+
 /* G19 hint hand (HintGuide in G19FruitMatch.tsx). One loop, same % on every track:
    0-12 fades in, released (lifted, bigger) / 12-22 presses down onto the fruit + ring /
    28-62 slides onto the neighbour (--dx/--dy = one cell) still pressed / 70 releases (lifts, ring fades) /

@@ -18,21 +18,26 @@ import ITEMS from "@/data/g16-post-items.json";
  * using the same answer-button pair as G6, then sees which parts of the post
  * leak personal info (real names, children's school, hospital room, trip dates…).
  * Some posts are genuinely safe so "never post" isn't always the answer.
+ * Each session draws TOTAL_ROUNDS posts at random from the enabled pool.
  * Dev-hub only, not wired into GameShell/lesson flow.
  */
 
-type Flag = { quote: string; why: string };
+type Flag = { quote?: string; why: string };
 
 type PostItem = {
   id: string;
+  // ปิดไว้ = ไม่ถูกสุ่มเข้าเกม (เก็บชุดเดิมไว้เผื่อเปิดกลับมา)
+  enabled: boolean;
   kind: "post" | "comment";
+  // null = โพสต์ของผู้เล่นเอง ("บัญชีของท่าน")
+  author: { name: string; avatar: string } | null;
   text: string;
   photo: { src: string; alt: string; ai_disclosure: boolean } | null;
   location: string | null;
   reply_to: { author: string; text: string } | null;
   should_post: boolean;
   flags: Flag[];
-  safe_reason: string | null;
+  safe_reasons: string[];
   tip: string;
 };
 
@@ -43,7 +48,29 @@ type Props = {
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
 };
 
-const POSTS = ITEMS as PostItem[];
+const POOL = (ITEMS as PostItem[]).filter((p) => p.enabled);
+// จำนวนโพสต์ต่อรอบเท่าเดิม (6) — สุ่มจากคลัง แบ่งโพสต์ได้/ไม่ควรโพสต์ครึ่งต่อครึ่ง
+const TOTAL_ROUNDS = 6;
+
+const shuffle = <T,>(list: T[]): T[] => {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
+const buildDeck = (): PostItem[] => {
+  const safeCount = Math.floor(TOTAL_ROUNDS / 2);
+  const safe = shuffle(POOL.filter((p) => p.should_post)).slice(0, safeCount);
+  const risky = shuffle(POOL.filter((p) => !p.should_post)).slice(0, TOTAL_ROUNDS - safe.length);
+  return shuffle([...safe, ...risky]);
+};
+
+// Noto Sans Thai Looped reserves tall space above for Thai marks (ascent 1.25em,
+// descent 0.35em), so digits sit ~0.09em below the line box's centre — lift them.
+const NUMBER_NUDGE = "relative top-[-0.09em]";
 
 const CHOICE_LABEL: Record<Choice, string> = { post: "โพสต์เลย", hold: "ไม่โพสต์" };
 
@@ -62,6 +89,7 @@ const verdict = (item: PostItem, choice: Choice) => {
 };
 
 export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
+  const [deck] = useState<PostItem[]>(buildDeck);
   const [showHowTo, setShowHowTo] = useState(true);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [choice, setChoice] = useState<Choice | null>(null);
@@ -71,12 +99,12 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
 
   const closeViewer = useCallback(() => setViewerOpen(false), []);
 
-  const item = POSTS[currentIdx];
+  const item = deck[currentIdx];
 
   // รายงานความคืบหน้าให้ progress bar (AppLayout ฟัง event นี้) — เหมือน G6
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("flowStepProgress", { detail: currentIdx / POSTS.length }));
-  }, [currentIdx]);
+    window.dispatchEvent(new CustomEvent("flowStepProgress", { detail: currentIdx / deck.length }));
+  }, [currentIdx, deck.length]);
 
   const handleChoose = (next: Choice) => {
     if (choice) return;
@@ -93,17 +121,17 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
   };
 
   const handleNext = () => {
-    if (currentIdx < POSTS.length - 1) {
+    if (currentIdx < deck.length - 1) {
       const nextIdx = currentIdx + 1;
       setCurrentIdx(nextIdx);
       setChoice(null);
       setAutoPaused(false);
       setViewerOpen(false);
-      logEvent("enter_post", { game_id: "G16", post_id: POSTS[nextIdx].id });
+      logEvent("enter_post", { game_id: "G16", post_id: deck[nextIdx].id });
     } else {
-      const ratio = scoreRef.current / POSTS.length;
+      const ratio = scoreRef.current / deck.length;
       const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
-      logEvent("game_complete", { game_id: "G16", best_choices: scoreRef.current, total: POSTS.length, stars });
+      logEvent("game_complete", { game_id: "G16", best_choices: scoreRef.current, total: deck.length, stars });
       onFinish(stars);
     }
   };
@@ -132,7 +160,7 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
       {!choice || !result ? (
         <div className="flex min-h-0 flex-1 flex-col gp-px-24 gp-pt-20">
           <p className={`${notoLoopedThai.className} gp-mb-12 shrink-0 text-center gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]`}>
-            {isComment ? "ความเห็น" : "โพสต์"}ที่ {currentIdx + 1} จาก {POSTS.length} — ควรโพสต์ไหม?
+            {isComment ? "ความเห็น" : "โพสต์"}ที่ {currentIdx + 1} จาก {deck.length} — ควรโพสต์ไหม?
           </p>
 
           {/* กรอบหน้าสร้างโพสต์จำลอง — ไม่มีปุ่มปิด/ย้อนกลับ/ปุ่มโพสต์ กันผู้สูงอายุเข้าใจผิดว่ากดได้จริง
@@ -157,11 +185,11 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
 
                 <div className="flex items-center gp-gap-12">
                   <div aria-hidden="true" className="flex gp-size-52 shrink-0 items-center justify-center rounded-full bg-[#FDE68A] gp-text-30">
-                    👵
+                    {item.author?.avatar ?? "👵"}
                   </div>
                   <div className="min-w-0">
                     <p className="gp-text-20 font-semibold gp-leading-28 text-[#1a1a1a]">
-                      บัญชีของท่าน
+                      {item.author?.name ?? "บัญชีของท่าน"}
                       {item.location && (
                         <span className="font-normal text-[#4B4B4B]"> — อยู่ที่ 📍 {item.location}</span>
                       )}
@@ -209,22 +237,33 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
           <p className="gp-mb-16 font-semibold">ท่านเลือก: {CHOICE_LABEL[choice]}</p>
 
           {item.should_post ? (
-            <p>
-              {item.safe_reason}
-              {choice === "hold" && " การระวังไว้ก่อนเป็นเรื่องดี แต่โพสต์แบบนี้โพสต์ได้เลยค่ะ"}
-            </p>
+            <>
+              <ol className="flex flex-col gp-gap-12">
+                {item.safe_reasons.map((reason, i) => (
+                  <li key={i} className="flex gp-gap-10 rounded-[12px] bg-[#f0fdf4] gp-px-12 gp-py-12">
+                    <span className="flex gp-size-32 shrink-0 items-center justify-center rounded-full bg-[var(--accent-success)] gp-text-20 font-bold text-white">
+                      <span className={NUMBER_NUDGE}>{i + 1}</span>
+                    </span>
+                    <p className="min-w-0">{reason}</p>
+                  </li>
+                ))}
+              </ol>
+              {choice === "hold" && <p className="gp-mt-16">การระวังไว้ก่อนเป็นเรื่องดี แต่โพสต์แบบนี้โพสต์ได้เลยค่ะ</p>}
+            </>
           ) : (
-            <ol className="flex flex-col gp-gap-16">
+            <ol className="flex flex-col gp-gap-12">
               {item.flags.map((flag, i) => (
-                <li key={i} className="flex gp-gap-10">
+                <li key={i} className="flex gp-gap-10 rounded-[12px] bg-[#fef2f2] gp-px-12 gp-py-12">
                   <span className="flex gp-size-32 shrink-0 items-center justify-center rounded-full bg-[var(--accent-error)] gp-text-20 font-bold text-white">
-                    {i + 1}
+                    <span className={NUMBER_NUDGE}>{i + 1}</span>
                   </span>
                   <div className="min-w-0">
-                    <p className="rounded-[8px] bg-[#fef2f2] gp-px-8 gp-py-2 font-semibold text-[var(--accent-error)]">
-                      “{flag.quote}”
-                    </p>
-                    <p className="gp-mt-4">{flag.why}</p>
+                    {flag.quote && (
+                      <p className="gp-mb-4 rounded-[8px] bg-white gp-px-8 gp-py-2 font-semibold text-[var(--accent-error)]">
+                        “{flag.quote}”
+                      </p>
+                    )}
+                    <p>{flag.why}</p>
                   </div>
                 </li>
               ))}

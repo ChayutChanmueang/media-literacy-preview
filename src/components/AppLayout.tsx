@@ -8,6 +8,8 @@ import { loggingService } from "@/services/loggingService";
 // Imported for its side effect: the pending pre/post queue syncs on load and on "online" from every page.
 import "@/services/selfAssessmentService";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
+import { AudioSettingsPanel } from "@/components/AudioToggle";
+import { clearAudioSettings } from "@/lib/audio/audioSettings";
 import { DEV_SKIP_ENABLED, useDevSkipHandler } from "@/lib/devSkip";
 import pkg from "../../package.json";
 
@@ -126,6 +128,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
   const handleResetAll = () => {
     if (window.confirm("คุณต้องการรีเซ็ตข้อมูลและความคืบหน้าทั้งหมดใช่หรือไม่?")) {
       progressService.resetAll();
+      clearAudioSettings();
       loggingService.logEvent("reset_application_state");
 
       // Clear cookie size & theme
@@ -311,7 +314,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
         <div
           role="dialog"
           aria-label="เมนู"
-          className={`absolute left-0 top-0 h-full w-[78%] max-w-[300px] bg-[var(--bg-card)] shadow-[var(--shadow-lg)] flex flex-col transition-transform duration-200 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`absolute left-0 top-0 h-full w-[78%] max-w-[300px] bg-[var(--bg-card)] shadow-[var(--shadow-lg)] flex flex-col overflow-y-auto transition-transform duration-200 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)]">
             <div className="flex items-center gap-2">
@@ -361,6 +364,9 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
               </button>
             )}
           </nav>
+
+          {/* เปิด/ปิดเพลงประกอบและเสียงเอฟเฟกต์ + ความดัง (docs/software/11 ข้อ 6.7) */}
+          <AudioSettingsPanel />
 
           {/* เลขเวอร์ชันแอป — ล่างสุดของ drawer */}
           <div className="mt-auto px-4 py-3 border-t border-[var(--border)] text-[15px] text-[var(--text-secondary)]">

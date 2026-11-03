@@ -9,6 +9,25 @@ import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
 import GameIntro from "@/components/GameIntro";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 import { useStageScale } from "@/lib/useStageScale";
+import { audio } from "@/lib/audio/audioEngine";
+import { usePreloadSfx } from "@/lib/audio/useAudio";
+
+const G19_SFX = ["g19.tileSwap", "g19.tileMatch", "g19.tileFall", "g19.tilePowerUpCreated", "g19.tilePowerUpUsed"] as const;
+
+// The match sound climbs a major scale with each match that comes within COMBO_WINDOW_MS of the last one
+// (cascade steps, or the player's next swap), topping out at the 5th step; a slower match, or a 🥤/🌟
+// made or used in between, starts it again at the bottom.
+const DING_STEPS = [0, 2, 4, 5, 7];
+const COMBO_WINDOW_MS = 3000;
+const matchDingRate = (step: number) => 2 ** (DING_STEPS[Math.min(step, DING_STEPS.length) - 1] / 12);
+/** Counts a match into `combo` and returns its pitch step (1 = the bottom note). */
+const nextComboStep = (combo: { step: number; at: number }) => {
+  const now = performance.now();
+  combo.step = now - combo.at <= COMBO_WINDOW_MS ? combo.step + 1 : 1;
+  combo.at = now;
+  return combo.step;
+};
+const NO_COMBO = { step: 0, at: -Infinity };
 
 /**
  * G19 — เรียงผลไม้ (match-3)
@@ -71,10 +90,11 @@ const FRUITS = [
 // They never count in a normal match; swapping one with any neighbour always works and uses a move.
 const SMOOTHIE = FRUITS.length;
 const STAR = FRUITS.length + 1;
+// bg/edge: specials get a tinted tile (light blue 🥤, light yellow 🌟) instead of the fruit's white one
 const SPECIALS = {
-  [SMOOTHIE]: { icon: "/assets/g19/soda.png", name: "น้ำปั่น" },
-  [STAR]: { icon: "/assets/g19/star.png", name: "มะเฟือง" },
-} as Record<number, { icon: string; name: string }>;
+  [SMOOTHIE]: { icon: "/assets/g19/soda.png", name: "น้ำปั่น", bg: "#DDF2FF", edge: "#9CCFEF" },
+  [STAR]: { icon: "/assets/g19/star.png", name: "มะเฟือง", bg: "#FFF5C2", edge: "#E8C95C" },
+} as Record<number, { icon: string; name: string; bg: string; edge: string }>;
 const isSpecial = (t: number | null | undefined): t is number => t != null && t >= FRUITS.length;
 const isFruit = (t: number | null | undefined): t is number => t != null && t < FRUITS.length;
 const POINTS_PER_BLAST = 20; // per piece cleared by a special (mock: 20, a normal match is 10)
@@ -577,6 +597,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const movesRef = useRef(MOVES_PER_RUN);
   const bestRef = useRef(0);
   const runRef = useRef(0);
+  const comboRef = useRef({ ...NO_COMBO }); // match-sound pitch step + when the last match was
   const selectedRef = useRef<Cell | null>(null);
   const dragRef = useRef<{ x: number; y: number; cell: Cell } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -587,6 +608,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const [boardW, setBoardW] = useState(BOARD_W_PX);
   const { ref: stageRootRef } = useStageScale({ gameId: "G19", logEvent });
+  usePreloadSfx(G19_SFX);
   const setPlayRoot = useCallback(
     (el: HTMLDivElement | null) => {
       rootRef.current = el;
@@ -755,6 +777,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     if (gen !== genRef.current) return;
     spawned.forEach(({ tile, r }) => (tile.r = r));
     sync(FALL_MS);
+    audio.playSfx("g19.tileFall");
     await delay(FALL_MS);
   };
 
@@ -814,6 +837,10 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
         fruits: clear.length,
         points: clear.length * POINTS_PER_FRUIT,
       });
+      if (grown.length) {
+        comboRef.current = { ...NO_COMBO };
+        audio.playSfx("g19.tilePowerUpCreated");
+      } else audio.playSfx("g19.tileMatch", { rate: matchDingRate(nextComboStep(comboRef.current)) });
       await popCells(clear, POINTS_PER_FRUIT, gen, grown);
       if (gen !== genRef.current) return;
       swapped = [];
@@ -846,6 +873,8 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
       cleared: cells.length,
       points: cells.length * POINTS_PER_BLAST,
     });
+    comboRef.current = { ...NO_COMBO };
+    audio.playSfx("g19.tilePowerUpUsed");
     await popCells(cells, POINTS_PER_BLAST, gen);
     if (gen !== genRef.current) return;
     await clearMatches(findMatchGroups(typesOf(gridRef.current)), gen);
@@ -897,6 +926,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
 
     busyRef.current = true;
     clearHint();
+    audio.playSfx("g19.tileSwap");
     const place = (x: Tile, y: Tile, ca: Cell, cb: Cell) => {
       grid[ca.r][ca.c] = y;
       grid[cb.r][cb.c] = x;
@@ -1052,6 +1082,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     playingRef.current = true;
     scoreRef.current = 0;
     movesRef.current = MOVES_PER_RUN;
+    comboRef.current = { ...NO_COMBO };
     runRef.current += 1;
     tutorialRef.current = runRef.current === 1;
     setRuns(runRef.current);
@@ -1263,6 +1294,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                   const cell = { r: t.r, c: t.c };
                   const special = isSpecial(t.type) ? SPECIALS[t.type] : null;
                   const fruit = special ?? FRUITS[t.type];
+                  const tileEdge = special?.edge ?? TILE_EDGE;
                   const isSelected = sameCell(selected, cell);
                   const hinted = isHint(cell);
                   const pressed = pressedId === t.id;
@@ -1289,8 +1321,8 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                           hinted ? "animate-pulse" : ""
                         }`}
                         style={{
-                          backgroundColor: TILE_BG,
-                          borderColor: TILE_EDGE,
+                          backgroundColor: special?.bg ?? TILE_BG,
+                          borderColor: tileEdge,
                           transform: t.popping
                             ? "scale(0)"
                             : t.grow
@@ -1300,7 +1332,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
                                 : undefined,
                           opacity: t.popping ? 0 : 1,
                           filter: pressed || isDragTarget ? "brightness(0.95)" : undefined,
-                          boxShadow: pressed ? "none" : `0 2px 0 0 ${TILE_EDGE}`,
+                          boxShadow: pressed ? "none" : `0 2px 0 0 ${tileEdge}`,
                           transition: t.popping
                             ? // shrink to nothing (a tiny swell first), fading only at the very end
                               `transform ${POP_MS}ms cubic-bezier(0.4, -0.4, 0.7, 0.6), opacity ${POP_MS * 0.35}ms ease ${POP_MS * 0.65}ms`

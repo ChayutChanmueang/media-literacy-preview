@@ -7,8 +7,14 @@ import Button3D from "@/components/Button3D";
 import GameIntro from "@/components/GameIntro";
 import GameStageHeader from "@/components/GameStageHeader";
 import DATA from "@/data/g17-levels.json";
-import G3_DATA from "@/data/g3-questions.json";
 import { hashString, mulberry32, todaySeed, type Rng } from "@/lib/seededRandom";
+import { audio } from "@/lib/audio/audioEngine";
+import { usePreloadSfx } from "@/lib/audio/useAudio";
+
+const G17_SFX = ["g17.paddleBounce", "g17.blockBreak", "g17.powerUp"] as const;
+// walls reuse the bounce sound a little softer than the bar (no wall sound file); module-level so the
+// game loop doesn't allocate an options object per bounce
+const WALL_BOUNCE_SFX = { volume: 0.7 };
 
 /**
  * G17 — โล่กันโกง (Scam breaker)
@@ -16,9 +22,9 @@ import { hashString, mulberry32, todaySeed, type Rng } from "@/lib/seededRandom"
  * Brick-breaker adapted from the team's ballbounce.html mock: drag the paddle
  * left/right to bounce the ball into the bricks. Look follows the Figma design
  * (Scammer Game Prototype, node 3028:13103) — the bricks keep the stage picture.
- * Each stage takes one picture from the G3 pool and cuts it across the bricks,
- * in place, so the grid looks like the picture. After the stage the
- * whole picture is shown with G3's verdict (real / AI / edited) and explanation.
+ * Each stage takes one picture, drawn at random from the G17 pool (g17-levels.json → pictures,
+ * /assets/g17/level/NN.jpg), and cuts it across the bricks, in place, so the grid looks like the picture. After the stage the
+ * whole picture is shown with its verdict (real / AI / edited) and explanation.
  * Differences from the HTML mock, to follow AGENT.md (elderly-first):
  * - no countdown and no game over — a lost ball respawns on the shield with a
  *   gentle message; misses only affect stars
@@ -89,11 +95,14 @@ type World = {
   shards: Shard[];
   // last brick broken: seconds left before the level-clear screen, so its pieces can fall and fade first
   clearDelay: number | null;
+  shake: number; // hit shake strength (addShake), 0 = still
   attached: boolean; // ball resting on the shield, waiting for a tap
   radius: number;
   // 🍄 item: the shield flickers between its old size (`from`) and the new one, `elapsed` s into GROW_FLICKER_SECS
   growFlicker: { from: number; elapsed: number } | null;
   paddleScale: number; // ↔️ item: bar width × this, for the rest of the stage
+  // ↔️ item: the bar is drawn growing from scale `from` to paddleScale, `elapsed` s into WIDE_GROW_SECS
+  wideGrow: { from: number; elapsed: number } | null;
   // Items: which bricks hold one is fixed when the wall is built (placeItems), from a seed of the day + stage
   seed: string; // "DD-MM-YYYY-LV-X", X = stage number
   rng: Rng; // seeded by `seed` — places the items, then picks any swaps (dropItem)
@@ -106,11 +115,11 @@ type World = {
   ended: boolean; // level cleared — stops a late animation frame from finishing it twice
 };
 
-// one picture per stage, from the G3 "AI or not" pool (AI, edited and real photos alike)
-const PICTURES = G3_DATA.pool as Picture[];
 // Each level is a grid sketch: "o" = cells breakable bricks are packed into, any other character = empty.
 // `items` = how many of each item the stage hides in its bricks (placeItems)
 const LEVELS = DATA.levels as { grid: string[]; items?: Partial<Record<ItemType, number>> }[];
+// one picture per stage, drawn from this pool (AI and real photos alike)
+const PICTURES = DATA.pictures as Picture[];
 
 // Sizes follow the Figma design (Scammer Game Prototype, node 3028:13103) on a 400px-wide frame
 const GRID_TOP = 24; // gap between the header card and the first row
@@ -174,6 +183,19 @@ const SHARD_SHRINK = 0.35; // pieces end at 65% size
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
+// Hit shake (from the team's juicy_ball_bounce_game.html): every hit adds to a shake that stacks up to SHAKE_MAX
+// and dies away at SHAKE_DECAY per s; each frame the play area is drawn up to ±shake × SHAKE_SPREAD / 2 px off.
+// Only the canvas shakes — the header and toasts stay still to read. Off with reduced motion.
+const SHAKE_WALL = 1.5;
+const SHAKE_PADDLE = 2;
+const SHAKE_BRICK = 2.5;
+const SHAKE_MAX = 4;
+const SHAKE_DECAY = 18; // the mock's 0.3 per frame at 60fps
+const SHAKE_SPREAD = 1.5;
+const addShake = (world: World, amount: number) => {
+  if (!prefersReducedMotion()) world.shake = Math.min(world.shake + amount, SHAKE_MAX);
+};
+
 const ITEM_INFO: Record<ItemType, { emoji: string; toast: string }> = {
   split: { emoji: "🪄", toast: "🪄 โล่แยกเป็น 3 อัน!" },
   grow: { emoji: "🍄", toast: "🍄 โล่ใหญ่ขึ้น!" },
@@ -212,8 +234,22 @@ const currentSpeed = (world: World) => baseSpeed(world.height) * world.speedFact
 const PADDLE_WIDE_STEP = 1.3;
 const PADDLE_WIDE_MAX = 2;
 const PADDLE_WIDE_CAP = 0.5;
+// ↔️: the bar is drawn growing out to both sides over WIDE_GROW_SECS (eased out), while a flickering yellow
+// outline shows the size it is growing to — the hitbox takes the new size at once (drawing only)
+const WIDE_GROW_SECS = 0.6;
+const WIDE_OUTLINE_COLOR = "250, 204, 21"; // #FACC15, the shield spark's yellow (as r, g, b)
+const WIDE_OUTLINE_WIDTH = 4;
+const WIDE_OUTLINE_GAP = 3; // outline sits this far outside the bar
+const WIDE_FLICKER_SPEED = 24; // rad/s — the mock's 0.4 per frame at 60fps
 const paddleWidth = (world: World, scale = world.paddleScale) =>
   Math.min(world.width * PADDLE_WIDE_CAP, Math.min(world.width * 0.45, Math.max(110, px(PADDLE_WIDTH))) * scale);
+/** Bar scale as drawn: part way from wideGrow.from to paddleScale while a ↔️ grow plays (ease-out). */
+const drawnPaddleScale = (world: World) => {
+  const grow = world.wideGrow;
+  if (!grow) return world.paddleScale;
+  const t = 1 - (1 - Math.min(1, grow.elapsed / WIDE_GROW_SECS)) ** 3;
+  return grow.from + (world.paddleScale - grow.from) * t;
+};
 
 // Item drops: the bricks holding items are fixed when the wall is built (placeItems). On break, the brick's item
 // only drops if catching it would really do something — judged as if every item already falling were caught
@@ -601,10 +637,12 @@ const createWorld = (levelIdx: number, seed = ""): World => {
     items: [],
     shards: [],
     clearDelay: null,
+    shake: 0,
     attached: true,
     radius: BALL_RADIUS,
     growFlicker: null,
     paddleScale: 1,
+    wideGrow: null,
     lastItem: null,
     itemDrops: { split: 0, grow: 0, slow: 0, wide: 0 },
     speedFactor: 1,
@@ -633,13 +671,12 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const missesRef = useRef(0);
   const levelMissesRef = useRef(0);
-  // the picture of each stage — picked once per game, all preloaded when the game starts
-  const picturesRef = useRef<Picture[] | null>(null);
   // the day the game was started ("YYYY-MM-DD", Thai time) — fixed for the whole game, even past midnight
   const playDateRef = useRef<string | null>(null);
   const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const dragRef = useRef<{ pointerId: number; startX: number; moved: boolean } | null>(null);
   const logRef = useRef(logEvent);
+  usePreloadSfx(G17_SFX);
   useEffect(() => {
     logRef.current = logEvent;
   });
@@ -657,6 +694,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     []
   );
 
+  // the picture of each stage — picked once per game, all preloaded when the game starts
+  const picturesRef = useRef<Picture[] | null>(null);
   const pictureOf = (idx: number) => (picturesRef.current ??= planPictures())[idx];
 
   // start loading every stage's picture up front, so the next stage's bricks are ready when it starts
@@ -724,6 +763,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       // already at the biggest size: nothing to flicker between
       if (world.radius > from) world.growFlicker = { from, elapsed: 0 };
     } else if (type === "wide") {
+      // grow from the size drawn right now, so a second ↔️ mid-grow carries on smoothly
+      world.wideGrow = { from: drawnPaddleScale(world), elapsed: 0 };
       world.paddleScale = Math.min(PADDLE_WIDE_MAX, world.paddleScale * PADDLE_WIDE_STEP);
       // widens around its centre — keep it on screen near the edges
       const half = paddleWidth(world) / 2;
@@ -742,6 +783,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       });
     }
     showToast(ITEM_INFO[type].toast);
+    audio.playSfx("g17.powerUp");
     logRef.current("item_collect", {
       game_id: "G17",
       item: type,
@@ -774,6 +816,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
     if (world.ended || world.layoutPending) return;
     updateShards(world, dt);
+    world.shake = Math.max(0, world.shake - SHAKE_DECAY * dt);
     // tails: drop path points older than TRAIL_SECS (also while frozen at level clear, so they shrink away)
     world.clock += dt;
     for (const b of world.balls) {
@@ -782,6 +825,10 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     if (world.growFlicker) {
       world.growFlicker.elapsed += dt;
       if (world.growFlicker.elapsed >= GROW_FLICKER_SECS) world.growFlicker = null;
+    }
+    if (world.wideGrow) {
+      world.wideGrow.elapsed += dt;
+      if (world.wideGrow.elapsed >= WIDE_GROW_SECS) world.wideGrow = null;
     }
     // last brick gone: shields hold still while its pieces fall and fade, then the level-clear screen
     if (world.clearDelay !== null) {
@@ -804,13 +851,19 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       if (ball.x < r) {
         ball.x = r;
         ball.vx = Math.abs(ball.vx);
+        audio.playSfx("g17.paddleBounce", WALL_BOUNCE_SFX);
+        addShake(world, SHAKE_WALL);
       } else if (ball.x > width - r) {
         ball.x = width - r;
         ball.vx = -Math.abs(ball.vx);
+        audio.playSfx("g17.paddleBounce", WALL_BOUNCE_SFX);
+        addShake(world, SHAKE_WALL);
       }
       if (ball.y < r) {
         ball.y = r;
         ball.vy = Math.abs(ball.vy);
+        audio.playSfx("g17.paddleBounce", WALL_BOUNCE_SFX);
+        addShake(world, SHAKE_WALL);
       }
 
       // paddle — bounce angle depends on where the ball lands; each bounce nudges the speed up
@@ -826,6 +879,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         ball.vx = speed * Math.sin(offset * MAX_BOUNCE_ANGLE);
         ball.vy = -speed * Math.cos(offset * MAX_BOUNCE_ANGLE);
         ball.y = py - r;
+        audio.playSfx("g17.paddleBounce");
+        addShake(world, SHAKE_PADDLE);
       }
 
       // one brick per ball per frame; bounce off the side the ball came in from
@@ -836,6 +891,8 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
         brick.alive = false;
         breakBrick(world, rect, ball.x, ball.y);
+        audio.playSfx("g17.blockBreak");
+        addShake(world, SHAKE_BRICK);
 
         if (brick.item) {
           const type = dropItem(world, brick.item);
@@ -893,6 +950,10 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     const { width, height } = world;
     const fontFamily = notoLoopedThai.style.fontFamily;
     ctx.clearRect(0, 0, width, height);
+    ctx.save();
+    if (world.shake > 0) {
+      ctx.translate((Math.random() - 0.5) * world.shake * SHAKE_SPREAD, (Math.random() - 0.5) * world.shake * SHAKE_SPREAD);
+    }
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -927,10 +988,22 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     ctx.font = `${itemSize()}px sans-serif`;
     for (const item of world.items) ctx.fillText(ITEM_INFO[item.type].emoji, item.x, item.y);
 
-    const pw = paddleWidth(world);
     const py = paddleTop(height);
+    const ph = paddleHeight();
+    // ↔️ growing: flickering yellow outline around the size the bar is growing to (= its hitbox already)
+    if (world.wideGrow) {
+      const tw = paddleWidth(world) + WIDE_OUTLINE_GAP * 2;
+      const th = ph + WIDE_OUTLINE_GAP * 2;
+      const alpha = (Math.sin(world.wideGrow.elapsed * WIDE_FLICKER_SPEED) * 0.5 + 0.5) * 0.9;
+      ctx.beginPath();
+      ctx.roundRect(world.paddleX - tw / 2, py - WIDE_OUTLINE_GAP, tw, th, th / 2);
+      ctx.lineWidth = WIDE_OUTLINE_WIDTH;
+      ctx.strokeStyle = `rgba(${WIDE_OUTLINE_COLOR}, ${alpha})`;
+      ctx.stroke();
+    }
+    const pw = paddleWidth(world, drawnPaddleScale(world));
     ctx.beginPath();
-    ctx.roundRect(world.paddleX - pw / 2, py, pw, paddleHeight(), paddleHeight() / 2);
+    ctx.roundRect(world.paddleX - pw / 2, py, pw, ph, ph / 2);
     ctx.fillStyle = PADDLE_COLOR;
     ctx.fill();
 
@@ -955,6 +1028,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       ctx.fillStyle = "#FFFFFF";
       ctx.fillText(label, width / 2, y);
     }
+    ctx.restore();
   };
 
   // game loop — refs hold the world, so update/draw can be recreated each render
@@ -1090,7 +1164,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       <GameIntro
         containerClassName="bg-white gp-compact"
         title="โล่กันโกง"
-        objective="ลากแถบด้านล่างไปซ้าย-ขวา รับโล่ให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริง ภาพ AI หรือภาพตัดต่อ"
+        objective="ลากแถบด้านล่างไปซ้าย-ขวา รับโล่ให้เด้งไปทำลายกล่องภาพให้หมด แล้วมาดูกันว่าภาพนั้นเป็นภาพจริงหรือภาพ AI"
         choices="ของช่วย: 🪄 โล่แยกเป็น 3 อัน · 🍄 โล่ใหญ่ขึ้น · 🐢 โล่ช้าลง · ↔️ แถบรับยาวขึ้น"
         imageSrc="/assets/icons/g17-breaker.png"
         onStart={() => {
@@ -1117,7 +1191,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
               กล่องที่ท่านทำลายไป ต่อกันเป็นภาพนี้
             </p>
 
-            {/* eslint-disable-next-line @next/next/no-img-element -- same G3 assets, shown as-is like G15/G16 */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- stage picture shown as-is like G15/G16 */}
             <img
               src={picture.media}
               alt={picture.claim}

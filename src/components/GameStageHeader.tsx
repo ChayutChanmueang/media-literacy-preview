@@ -1,5 +1,6 @@
 import React from "react";
 import { notoLoopedThai } from "@/lib/fonts";
+import { GameAudioToggle } from "./AudioToggle";
 
 /**
  * Header card of the fun games (G13 ต่อไอติม, G17 โล่กันโกง, G18 จำให้ขึ้นใจ, G19 เรียงผลไม้,
@@ -7,7 +8,8 @@ import { notoLoopedThai } from "@/lib/fonts";
  * bottom corners, a label + big number on each side.
  * Inside a `.gp-compact` root the gp-* sizes shrink on small phones (outside it they stay 1×).
  * `left` is optional — Figma leaves that slot empty; a same-width spacer keeps `right` in place.
- * `children` goes in the middle (dev-only QA buttons, styled with HUD_DEV_BUTTON_CLASS).
+ * `children` goes in the middle (dev-only QA buttons, styled with HUD_DEV_BUTTON_CLASS), after the
+ * sound on/off button — the play screen hides the app header, so this is the in-game sound control.
  */
 export default function GameStageHeader({
   left,
@@ -21,7 +23,10 @@ export default function GameStageHeader({
   return (
     <div className={`${notoLoopedThai.className} relative z-10 flex shrink-0 items-end justify-between rounded-b-[24px] border-2 border-t-0 border-solid border-[#D9D9D9] bg-white gp-px-34 gp-pt-16 gp-pb-20 text-center`}>
       {left ? <StageSlot {...left} /> : <div className="w-[85px]" aria-hidden="true" />}
-      {children}
+      <div className="flex items-center gap-2 self-center">
+        <GameAudioToggle />
+        {children}
+      </div>
       <StageSlot {...right} />
     </div>
   );

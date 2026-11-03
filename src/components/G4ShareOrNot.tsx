@@ -10,6 +10,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import ITEMS from "@/data/g4-privacy-items.json";
+import { cancelSpeech, speak } from "@/lib/audio/speech";
 
 /**
  * G4 — แชร์ดีไหม? (Privacy & Online Safety Game) — PROTOTYPE (US-GAME-04)
@@ -97,20 +98,15 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
     if (!synth) return;
 
     if (speaking) {
-      synth.cancel();
+      cancelSpeech();
       setSpeaking(false);
       logEvent("toggle_audio", { game_id: "g4", item_id: item.id, action: "mute" });
       return;
     }
 
     logEvent("toggle_audio", { game_id: "g4", item_id: item.id, action: "play" });
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "th-TH";
-    utterance.rate = 0.9;
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
     setSpeaking(true);
-    synth.speak(utterance);
+    speak(text, { rate: 0.9, onEnd: () => setSpeaking(false) });
   };
 
   const handleAnswer = (choice: Choice) => {
@@ -131,7 +127,7 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
   };
 
   const handleNext = () => {
-    synthRef.current?.cancel();
+    cancelSpeech();
     setSpeaking(false);
 
     if (currentIdx < items.length - 1) {

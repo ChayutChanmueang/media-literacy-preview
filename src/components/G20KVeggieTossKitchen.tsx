@@ -9,6 +9,10 @@ import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
 import GameIntro from "@/components/GameIntro";
 import { fitStage, toStage } from "@/lib/gameViewport";
 import { useStageScale } from "@/lib/useStageScale";
+import { audio } from "@/lib/audio/audioEngine";
+import { usePreloadSfx } from "@/lib/audio/useAudio";
+
+const G20_SFX = ["g20.dragLoop", "g20.throwBall", "g20.basketScore", "g20.ballMiss"] as const;
 
 /**
  * G20K — ผักบุ้งลอยฟ้า (ทดลอง: ไม่มีลูกศร) — EXPERIMENTAL copy of G20VeggieToss
@@ -749,6 +753,14 @@ function drawVeggie(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null,
 export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
   // header card / result screen shrink with the screen (the scene already fits itself, see fitStage)
   const { ref: stageRootRef } = useStageScale({ gameId: "G20K", logEvent });
+  usePreloadSfx(G20_SFX);
+  // sound id of the drag hum while the player aims — stopped on release / cancel / unmount
+  const dragSfxRef = useRef<number | null>(null);
+  const stopDragSfx = () => {
+    audio.stopSfx("g20.dragLoop", dragSfxRef.current);
+    dragSfxRef.current = null;
+  };
+  useEffect(() => () => audio.stopSfx("g20.dragLoop", dragSfxRef.current), []);
   const [phase, setPhase] = useState<Phase>("intro");
   const [level, setLevel] = useState(1);
   const [throwsLeft, setThrowsLeft] = useState(THROWS_PER_RUN);
@@ -912,6 +924,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     const world = worldRef.current;
     const v = world.veggie;
     v.state = "served";
+    audio.playSfx("g20.basketScore");
     v.vx = 0;
     v.vy = 0;
     v.y = PLATE_Y + 8 - VEGGIE_DRAW_DY; // lower half hidden by the bowl's front, so it reads as "in the bowl"
@@ -947,6 +960,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
 
   const onMiss = () => {
     const world = worldRef.current;
+    audio.playSfx("g20.ballMiss");
     const tStep = tutorialStepRef.current;
     if (tStep) {
       // practice: no throws used — back to the spot with the guide again (the missed flight's trail is cleared)
@@ -1143,6 +1157,8 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     e.currentTarget.setPointerCapture(e.pointerId);
     world.drag = { startX: pos.x, startY: pos.y, x: pos.x, y: pos.y };
     world.veggie.state = "dragging";
+    stopDragSfx();
+    dragSfxRef.current = audio.playSfx("g20.dragLoop");
     say("ลากขึ้นไปทางจาน แล้วปล่อยนิ้ว");
     // starting a drag closes the tutorial guide (unlike the mock, a touch elsewhere keeps it up);
     // from here the box gives live hints on the aim
@@ -1193,6 +1209,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     const world = worldRef.current;
     const { veggie, drag } = world;
     world.drag = null;
+    stopDragSfx();
     if (veggie.state !== "dragging" || !drag) return;
 
     const dx = drag.x - drag.startX;
@@ -1206,6 +1223,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     veggie.vx = dx * POWER;
     veggie.vy = Math.max(dy * POWER * 1.5, -MAX_UP_SPEED);
     veggie.state = "flying";
+    audio.playSfx("g20.throwBall");
     const tStep = tutorialStepRef.current;
     if (tStep) {
       // practice throw: doesn't use up a throw
@@ -1237,6 +1255,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
   const onPointerCancel = () => {
     const world = worldRef.current;
     world.drag = null;
+    stopDragSfx();
     if (world.veggie.state === "dragging") {
       world.veggie.state = "idle";
       backToGuide();

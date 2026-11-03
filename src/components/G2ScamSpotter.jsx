@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, AlertTriangle, ArrowRight, ShieldAlert, HeartHandshake, Volume2, VolumeX } from 'lucide-react';
+import { cancelSpeech, speak } from '@/lib/audio/speech';
 
 const SCENARIOS = [
   {
@@ -153,21 +154,15 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
     if (!synthRef.current) return;
 
     if (speaking) {
-      synthRef.current.cancel();
+      cancelSpeech();
       setSpeaking(false);
       logEvent('toggle_audio', { action: 'mute', scenario_id: scenario.id });
       return;
     }
 
     logEvent('toggle_audio', { action: 'play', scenario_id: scenario.id });
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'th-TH';
-    utterance.rate = 0.95;
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-
     setSpeaking(true);
-    synthRef.current.speak(utterance);
+    speak(text, { rate: 0.95, onEnd: () => setSpeaking(false) });
   };
 
   const handleBlockTap = (block) => {
@@ -186,7 +181,7 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
   };
 
   const handleCheck = () => {
-    if (synthRef.current) synthRef.current.cancel();
+    if (synthRef.current) cancelSpeech();
     setSpeaking(false);
     setShowSummary(true);
     
@@ -202,7 +197,7 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
 
   const handleNext = () => {
     if (synthRef.current) {
-      synthRef.current.cancel();
+      cancelSpeech();
       setSpeaking(false);
     }
 

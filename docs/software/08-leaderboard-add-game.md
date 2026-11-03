@@ -16,7 +16,7 @@ src/app/lessons/[id]/game/page.tsx  handleFinishGame()
   ├─ leaderboardScoreService.savePendingScore(gid, score)   → sessionStorage (มีได้ทีละ 1 คะแนน)
   └─ setScorePrompt(...) → <SaveScorePopup> "เก็บคะแนนไหม?"
        ├─ ใช่ → /lessons/[id]/leaderboard?step=save    (หน้ากรอกชื่อ)
-       └─ ไม่ → ลบ pending score → /lessons/[id]/leaderboard?skipped=1
+       └─ ไม่ → ลบ pending score → /lessons (โหมดอิสระ) | /lessons/complete (Flow) — ไม่ผ่านกระดานคะแนน
        ▼
 src/app/lessons/[id]/leaderboard/page.tsx  loadLeaderboard()
   ├─ localOnly ? localLeaderboardService.saveScore()          → localStorage

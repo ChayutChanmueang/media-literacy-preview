@@ -254,11 +254,11 @@ Dev Game Hub ใช้ระบบ **mock** เพื่อแยกขาดจ
 > **Route:** `/lessons/[id]/leaderboard` — ดู [US-CF-50](../agile/user-stories/US-CF-50.md)
 
 1. **จบเกมสนุก (G13, G18–G20K):** กด "จบเกม" บนหน้าผลของเกม → เก็บ pending score ใน `sessionStorage` แล้วขึ้น popup "ต้องการเก็บคะแนนหรือไม่?" บนหน้าเกม (`SaveScorePopup`, Figma `3157:15321`) — ปิด popup เองไม่ได้ ต้องเลือก
-   - **"ไม่"** → ล้าง pending score แล้วไป `/lessons/<id>/leaderboard?skipped=1` (กระดานคะแนนของเกมนั้น ไม่เก็บคะแนนรอบนี้) — log `leaderboard_save_declined`
+   - **"ไม่"** → ล้าง pending score แล้วข้ามกระดานคะแนน ไปที่เดียวกับปุ่ม "กดเพื่อเสร็จสิ้น" บนกระดาน: โหมดอิสระ → `/lessons` (หน้าหมวดหมู่), Flow (G13) → `/lessons/complete` — log `leaderboard_save_declined` (2026-11-03: เดิมไป `/lessons/<id>/leaderboard?skipped=1`)
    - **"ใช่"** → ไป `/lessons/<id>/leaderboard?step=save` (หน้ากรอกชื่อ) — log `leaderboard_save_chosen`
 2. หน้า `?step=save` (Figma `3157:15657`): การ์ดไอคอนผู้ใช้ + "กรอกชื่อเพื่อเก็บคะแนน" + ช่องชื่อ + ปุ่ม "กดเพื่อยืนยัน" — ถ้ามี local player profile `{ player_uuid, name }` ใน `localStorage` อยู่แล้ว เติมชื่อเดิมไว้ให้ (แก้ได้)
 3. กด "กดเพื่อยืนยัน" เมื่อชื่อ 1–30 ตัวอักษร: ชื่อเดิม = ใช้ profile เดิม, ชื่อใหม่ (หรือยังไม่มี profile) = สร้าง UUID + profile ใหม่ลงเครื่อง แล้ว `router.replace` ไปกระดานคะแนน (ไม่มี `step`) ซึ่งบันทึก pending score ของผู้เล่นก่อนแสดงอันดับ (ชื่อว่าง = ปุ่มเป็นสีเทาแต่กดได้ กดแล้วช่องชื่อสั่น ขอบแดง ขึ้น "กรุณากรอกชื่อของคุณ" ใต้ช่อง และโฟกัสช่องชื่อ)
-4. หน้า leaderboard ที่ไม่มี `step=save` แสดงกระดานคะแนนเสมอ (ไม่บังคับกรอกชื่อ) — ไม่มี profile หรือมาจาก "ไม่" (`skipped=1`) = แสดง "ดูอันดับโดยไม่เก็บคะแนน" แทนแคปซูลชื่อ
+4. หน้า leaderboard ที่ไม่มี `step=save` แสดงกระดานคะแนนเสมอ (ไม่บังคับกรอกชื่อ) — ไม่มี profile (หรือลิงก์เก่า `skipped=1`) = แสดง "ดูอันดับโดยไม่เก็บคะแนน" แทนแคปซูลชื่อ
 5. (ยกเลิก) เดิมหน้านี้มีปุ่ม "ไม่เก็บคะแนน" / "เก็บคะแนน" + popup ยืนยัน และข้ามฟอร์มชื่อเมื่อมี profile — ย้ายการตัดสินใจไปเป็น popup ตอนจบเกมแทน
 6. หน้าแปลง `[id]` จาก route เป็น `gid` เช่น `flow-g13 → G13`; ถ้าไม่รองรับให้แสดง not found
 7. เรียก `GET /api/leaderboard?gid=<gid>&limit=10`; endpoint ต้องปฏิเสธ request ที่ไม่มี `gid`

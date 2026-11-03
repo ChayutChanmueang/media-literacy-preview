@@ -2,6 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
+import G18Background from "./G18Background";
 import { Eye } from "lucide-react";
 import { notoLoopedThai } from "@/lib/fonts";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
@@ -12,6 +13,7 @@ import StagePopup, { type StagePopupStage } from "@/components/StagePopup";
 import DATA from "@/data/g18-simon-pads.json";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 import { useStageScale } from "@/lib/useStageScale";
+import { audio } from "@/lib/audio/audioEngine";
 
 /**
  * G18 — จำให้ขึ้นใจ (Simon memory game)
@@ -91,6 +93,10 @@ const BOARD_PAD_PX = 16; // board padding and gap between pads
 const BOARD_RADIUS_PX = 20; // board and pad corners
 // pad face sits this far above its darker base; a lit/pressed pad drops onto it (like GameAnswerButton)
 const PAD_LIFT_PX = 8;
+// darker stroke around the board (outside its edge, so it takes no layout space);
+// stays dark when the board flashes white on a correct pattern
+const BOARD_STROKE_PX = 4;
+const BOARD_STROKE = "#12121F";
 const PAD_PRESS_MS = 90; // face slide time — same as GameAnswerButton/Button3D
 // Guided tutorial, as in the mock: hole padding/radius around the pad to press
 const TUTORIAL_HOLE_PAD_PX = 8;
@@ -150,7 +156,6 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   const bestRef = useRef(0);
   const tutorialDoneRef = useRef(false);
   const timersRef = useRef<number[]>([]);
-  const audioRef = useRef<AudioContext | null>(null);
   const { ref: stageRootRef } = useStageScale({ gameId: "G18", logEvent });
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -239,40 +244,12 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     timersRef.current = [];
   };
 
-  useEffect(
-    () => () => {
-      clearTimers();
-      audioRef.current?.close().catch(() => {});
-    },
-    []
-  );
+  useEffect(() => () => clearTimers(), []);
 
-  // Needs a user gesture on iOS/LINE browser — called from the start button.
-  const ensureAudio = () => {
-    if (audioRef.current) return;
-    const Ctx =
-      window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (Ctx) audioRef.current = new Ctx();
-  };
-
+  // Pad tone on the shared audio system's SFX channel (follows the sound on/off button) — peak 0.22 ×
+  // the default SFX volume 0.8 ≈ the 0.18 the game used with its own AudioContext
   const playTone = (padIdx: number, ms: number) => {
-    const ctx = audioRef.current;
-    if (!ctx) return;
-    if (ctx.state === "suspended") ctx.resume().catch(() => {});
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "triangle";
-    osc.frequency.value = PADS[padIdx].toneHz;
-    const now = ctx.currentTime;
-    const end = now + ms / 1000;
-    // soft attack/release so the tone doesn't click
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
-    gain.gain.setValueAtTime(0.18, Math.max(now + 0.02, end - 0.06));
-    gain.gain.linearRampToValueAtTime(0, end);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(end + 0.02);
+    audio.playTone(PADS[padIdx].toneHz, ms, { type: "triangle", peak: 0.22 });
   };
 
   const playSequence = () => {
@@ -327,7 +304,6 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   // The first call each time the game is opened plays the tutorial (not a run: run stays 0, nothing scored);
   // startLevel calls this again once it is done to begin run 1.
   const startRun = () => {
-    ensureAudio();
     clearTimers();
     sequenceRef.current = [];
     // Lights seeded by today's date (Bangkok time), like G13/G19: every player gets the same lights that day,
@@ -534,16 +510,9 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   return (
     <div
       ref={stageRootRef}
-      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col select-none`}
-      // light grey low-poly facets (repeating tile) with a soft brighter glow behind the board
-      style={{
-        backgroundColor: "#E6E8EB",
-        backgroundImage:
-          "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 65%), url(/assets/g18/facet-bg.svg)",
-        backgroundSize: "auto, 450px 600px",
-        backgroundPosition: "center, center top",
-      }}
+      className={`${notoLoopedThai.className} gp-compact relative isolate flex min-h-0 flex-1 flex-col select-none`}
     >
+      <G18Background />
       {/* Header card: same as G17 (GameStageHeader) — Figma leaves the left slot empty in the real game.
           During the tutorial: "โหมด ฝึกเล่น" on the left + the practice step on the right, like G20 */}
       <GameStageHeader
@@ -603,10 +572,19 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
             <div
               ref={boardRef}
               className={`relative shrink-0 transition-[background-color,box-shadow] duration-150 ${
-                phase === "correct" ? "bg-white shadow-[0_0_40px_rgba(255,255,255,1)]" : "bg-[#23233A]"
+                phase === "correct" ? "bg-white" : "bg-[#23233A]"
               }`}
-              // explicit square size from the board-size effect, so flex can never squash it out of shape
-              style={{ width: boardPx, height: boardPx, padding: boardPad, borderRadius: boardRadius }}
+              // explicit square size from the board-size effect, so flex can never squash it out of shape;
+              // the first shadow is the board's dark stroke (BOARD_STROKE_PX), kept during the white flash too
+              style={{
+                width: boardPx,
+                height: boardPx,
+                padding: boardPad,
+                borderRadius: boardRadius,
+                boxShadow: `0 0 0 ${BOARD_STROKE_PX * boardScale}px ${BOARD_STROKE}${
+                  phase === "correct" ? ", 0 0 40px rgba(255,255,255,1)" : ""
+                }`,
+              }}
             >
               <div className="grid h-full w-full grid-cols-2 grid-rows-2" style={{ gap: boardPad }}>
                 {PADS.map((pad, i) => {
