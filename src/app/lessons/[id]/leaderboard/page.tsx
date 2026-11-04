@@ -19,7 +19,6 @@ import { leaderboardPlayerService } from "@/services/leaderboardPlayerService";
 import { leaderboardScoreService } from "@/services/leaderboardScoreService";
 import { localLeaderboardService } from "@/services/localLeaderboardService";
 import Button3D from "@/components/Button3D";
-import { notoLoopedThai } from "@/lib/fonts";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
 import { loggingService } from "@/services/loggingService";
 import { progressService } from "@/services/progressService";
@@ -51,14 +50,14 @@ function RankBadge({ rank }: { rank: number }) {
   const medal = MEDALS[rank];
   if (medal) {
     return (
-      <span className="flex size-[52px] shrink-0 items-center justify-center text-[40px] leading-none" aria-label={`อันดับ ${rank}`}>
+      <span className="flex size-[52px] shrink-0 items-center justify-center text-[40px] leading-none" aria-label={`อันดับ ${rank}`} data-type-exempt="medal emoji">
         {medal}
       </span>
     );
   }
   return (
     <span
-      className="flex size-[52px] shrink-0 items-center justify-center rounded-full border-4 border-solid border-[#D9D9D9] bg-white text-[20px] font-semibold leading-[30px] text-black tabular-nums"
+      className="flex size-[52px] shrink-0 items-center justify-center rounded-full border-4 border-solid border-[#D9D9D9] bg-white text-button text-black tabular-nums"
       aria-label={`อันดับ ${rank}`}
     >
       {rank}
@@ -69,7 +68,7 @@ function RankBadge({ rank }: { rank: number }) {
 // 52px tall white pill with a grey ring, at least 56px wide (grows with longer scores)
 function ScorePill({ score }: { score: number }) {
   return (
-    <span className="flex h-[52px] min-w-[56px] shrink-0 items-center justify-center rounded-[24px] border-4 border-solid border-[#D9D9D9] bg-white px-[6px] text-[20px] font-semibold leading-[30px] text-black tabular-nums">
+    <span className="flex h-[52px] min-w-[56px] shrink-0 items-center justify-center rounded-[24px] border-4 border-solid border-[#D9D9D9] bg-white px-[6px] text-button text-black tabular-nums">
       {score.toLocaleString("th-TH")}
     </span>
   );
@@ -90,7 +89,7 @@ function BoardRow({ entry, own = false, climbing = false }: { entry: Leaderboard
     >
       <RankBadge rank={entry.rank} />
       <p
-        className={`min-w-0 flex-1 truncate text-[20px] font-normal leading-[30px] ${yellow ? "text-white" : "text-black"}`}
+        className={`min-w-0 flex-1 truncate text-body ${yellow ? "text-white" : "text-black"}`}
         style={yellow ? { textShadow: ON_YELLOW_SHADOW } : undefined}
         title={entry.name}
       >
@@ -394,7 +393,7 @@ function LeaderboardPageInner() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--border)] border-t-[var(--primary)]" />
-        <span className="text-[20px] text-[var(--text-secondary)]">กำลังเตรียมกระดานคะแนน...</span>
+        <span className="text-body text-[var(--text-secondary)]">กำลังเตรียมกระดานคะแนน...</span>
       </div>
     );
   }
@@ -404,8 +403,8 @@ function LeaderboardPageInner() {
       <main className="scroll-region bg-[var(--bg-app)]">
         <div className="flex min-h-full flex-col items-center justify-center gap-4 px-5 py-8 text-center">
           <Trophy size={52} className="text-[var(--text-secondary)]" aria-hidden="true" />
-          <h1 className="text-[32px] font-bold text-[var(--text-primary)]">ไม่พบเกมนี้</h1>
-          <p className="text-[20px] text-[var(--text-secondary)]">
+          <h1 className="text-h1 text-[var(--text-primary)]">ไม่พบเกมนี้</h1>
+          <p className="text-body text-[var(--text-secondary)]">
             กรุณาเปิดกระดานคะแนนจากหน้าจบเกมที่รองรับ
           </p>
         </div>
@@ -415,13 +414,13 @@ function LeaderboardPageInner() {
 
   if (viewState === "leaderboard") {
     return (
-      <main className={`${notoLoopedThai.className} gp-compact flex h-full min-h-0 flex-col bg-white`}>
+      <main className={`gp-compact flex h-full min-h-0 flex-col bg-white`}>
         <div className="mx-auto flex min-h-0 w-full max-w-[400px] flex-1 flex-col gp-px-24 pt-[24px]">
           {/* gap = the bar's mt: the game name sits midway between the title and the purple bar */}
           <header className="flex shrink-0 flex-col items-center gap-[8px] text-center">
-            <h1 className="text-[24px] font-semibold leading-[32px] text-black">กระดานคะแนน</h1>
+            <h1 className="text-h3 text-black">กระดานคะแนน</h1>
             {/* icon + name centred as one unit; the icon is sized in em so it stays about the text's size */}
-            <p className="flex items-center justify-center gap-[8px] text-[20px] font-normal leading-[30px] text-black">
+            <p className="flex items-center justify-center gap-[8px] text-body text-black">
               {game?.icon && (gameName || localName) && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={game.icon} alt="" aria-hidden="true" className="h-[1.2em] w-[1.2em] shrink-0 object-contain" />
@@ -429,12 +428,12 @@ function LeaderboardPageInner() {
               <span>{gameName || localName}</span>
             </p>
             {!isBrowse && (skipped || !player) && (
-              <p className="text-[20px] font-normal leading-[30px] text-[#4B4B4B]">ดูอันดับโดยไม่เก็บคะแนน</p>
+              <p className="text-body text-[#4B4B4B]">ดูอันดับโดยไม่เก็บคะแนน</p>
             )}
           </header>
 
           <div
-            className="mt-[8px] flex h-[60px] shrink-0 items-center rounded-[12px] px-[16px] text-[20px] font-normal leading-[30px] text-white"
+            className="mt-[8px] flex h-[60px] shrink-0 items-center rounded-[12px] px-[16px] text-body text-white"
             style={{ backgroundColor: BOARD_BAR }}
           >
             <span className="w-[72px]">อันดับ</span>
@@ -463,12 +462,12 @@ function LeaderboardPageInner() {
 
             {boardStatus === "error" && (
               <div className="rounded-[24px] border-2 border-solid border-[#D9D9D9] px-5 py-8 text-center">
-                <p className="text-[22px] font-bold text-[#4B4B4B]">โหลดกระดานคะแนนไม่สำเร็จ</p>
-                <p className="mt-2 text-[20px] text-[#4B4B4B]">กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง</p>
+                <p className="text-h3 text-[#4B4B4B]">โหลดกระดานคะแนนไม่สำเร็จ</p>
+                <p className="mt-2 text-body text-[#4B4B4B]">กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง</p>
                 <button
                   type="button"
                   onClick={handleRetry}
-                  className="mt-5 inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[20px] border-2 border-solid border-[#00A3E0] bg-white px-6 text-[20px] font-semibold text-[#0078A8]"
+                  className="mt-5 inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[20px] border-2 border-solid border-[#00A3E0] bg-white px-6 text-button text-[#0078A8]"
                 >
                   <RefreshCw size={24} aria-hidden="true" />
                   ลองใหม่
@@ -478,8 +477,8 @@ function LeaderboardPageInner() {
 
             {boardStatus === "ready" && entries.length === 0 && (
               <div className="rounded-[24px] border-2 border-dashed border-[#D9D9D9] px-5 py-8 text-center">
-                <p className="text-[22px] font-bold text-[#4B4B4B]">ยังไม่มีคะแนนในเกมนี้</p>
-                <p className="mt-2 text-[20px] text-[#4B4B4B]">มาเป็นผู้เล่นคนแรกบนกระดานคะแนนกันเลย</p>
+                <p className="text-h3 text-[#4B4B4B]">ยังไม่มีคะแนนในเกมนี้</p>
+                <p className="mt-2 text-body text-[#4B4B4B]">มาเป็นผู้เล่นคนแรกบนกระดานคะแนนกันเลย</p>
               </div>
             )}
 
@@ -513,7 +512,7 @@ function LeaderboardPageInner() {
   // (344px wide, 28px from the screen edges) sit centred in the space above the blue "ยืนยัน" button
   // (Button3D = Figma Component 24; Figma still says "กดเพื่อยืนยัน", shortened at the team's request).
   return (
-    <main className={`${notoLoopedThai.className} gp-compact flex h-full min-h-0 flex-col bg-white`}>
+    <main className={`gp-compact flex h-full min-h-0 flex-col bg-white`}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -528,7 +527,7 @@ function LeaderboardPageInner() {
               {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
               <img src="/assets/icons/leaderboard-avatar.svg" alt="" aria-hidden="true" width={100} height={100} className="block shrink-0" />
 
-              <h1 className="text-[28px] font-bold leading-[36px] text-[#4B4B4B]">กรอกชื่อเพื่อเก็บคะแนน</h1>
+              <h1 className="text-h2 text-[#4B4B4B]">กรอกชื่อเพื่อเก็บคะแนน</h1>
               <div className="w-full">
                 <label htmlFor="leaderboard-name" className="sr-only">
                   ชื่อที่ต้องการแสดง
@@ -543,7 +542,7 @@ function LeaderboardPageInner() {
                   aria-invalid={Boolean(errors.name)}
                   {...register("name")}
                   onAnimationEnd={() => setNameShaking(false)}
-                  className={`${nameShaking ? "gp1-shake" : ""} h-[64px] w-full rounded-[24px] border-2 border-solid bg-white px-4 text-center text-[20px] font-semibold leading-[30px] text-[#4B4B4B] shadow-[0px_2px_0px_0px_#D9D9D9] outline-none placeholder:text-[#A5A5A5] ${
+                  className={`${nameShaking ? "gp1-shake" : ""} h-[64px] w-full rounded-[24px] border-2 border-solid bg-white px-4 text-center text-button text-[#4B4B4B] shadow-[0px_2px_0px_0px_#D9D9D9] outline-none placeholder:text-[#A5A5A5] ${
                     errors.name
                       ? "border-[var(--accent-error)] focus:ring-4 focus:ring-[rgba(220,38,38,0.18)]"
                       : "border-[#D9D9D9] focus:border-[#00A3E0] focus:ring-4 focus:ring-[rgba(0,163,224,0.18)]"
@@ -553,7 +552,7 @@ function LeaderboardPageInner() {
                   <p
                     id="leaderboard-name-error"
                     role="alert"
-                    className="mt-3 text-[20px] font-semibold text-[var(--accent-error)]"
+                    className="mt-3 text-button text-[var(--accent-error)]"
                   >
                     {errors.name.message}
                   </p>

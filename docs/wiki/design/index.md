@@ -30,7 +30,8 @@
 3. **[03-application-guideline.md](03-application-guideline.md)** — แนวทางการนำไปประยุกต์ใช้ในการพัฒนาโปรเจกต์ React+Vite: CSS variables, โค้ดสลับคลาสตามตำแหน่ง และการทดสอบ Contrast
 4. **[design-tokens.json](design-tokens.json)** — ไฟล์รวบรวมค่าดีไซน์โทเค็นดิบในรูปแบบ JSON
 5. **[ui-visualization.html](ui-visualization.html)** — หน้าเครื่องมือจำลองและการใช้งาน UI Design (Interactive Visualizer & Component Playground) [NEW]
-6. **[05-screen-design.md](../../software/05-screen-design.md)** — แนวทางการจัดวางองค์ประกอบหน้าจอผู้สูงอายุแบบไม่เลื่อนหน้าจอ (No-Scroll Viewport Spec) และตารางเลือกตัดเนื้อหา [NEW]
+6. **[07-typography.md](07-typography.md)** — **ระบบตัวอักษรหลักของโครงการ** (Noto Looped Thai, text styles Display–Small Text จาก Figma) — ใช้แทนส่วนฟอนต์/ขนาดในข้อ 2 และ 4 [NEW]
+7. **[05-screen-design.md](../../software/05-screen-design.md)** — แนวทางการจัดวางองค์ประกอบหน้าจอผู้สูงอายุแบบไม่เลื่อนหน้าจอ (No-Scroll Viewport Spec) และตารางเลือกตัดเนื้อหา [NEW]
 
 ---
 
@@ -42,9 +43,8 @@
 | **สีส้ม (แพร่)** | `#E65100` | สีเด็ก/ครอบครัวในสัญลักษณ์และพระธาตุแพร่ |
 | **สีเขียว (น่าน)** | `#2E7D32` | สีหญิงสูงวัยในสัญลักษณ์และสีใบไม้ |
 | **สีสากล (Default Teal)** | `#0D9488` | ค่าเริ่มต้นสำหรับการเสริมสร้างสุขภาพ |
-| **ฟอนต์แสดงหัวเรื่อง (En/Headings)**| `'Outfit', 'Inter', sans-serif` | เสริมความพรีเมียม ทันสมัย น่าเชื่อถือ |
-| **ฟอนต์เนื้อหาไทย (Body)** | `'Sarabun', sans-serif` | ฟอนต์ไม่มีหัวกลมมากเกินไป อ่านภาษาไทยยาวๆ ง่ายที่สุด |
-| **ขนาดตัวหนังสือพื้นฐาน (Body Text)**| `20px` (สามารถขยายเป็น `24px` และ `28px` ได้) | ขนาดที่ผ่านการทดสอบว่าเหมาะสมกับผู้สูงวัยมากที่สุด |
+| **ฟอนต์ (ทุกข้อความ)** | `Noto Looped Thai` (400/600/700) — ดู [07-typography.md](07-typography.md) | ระบบตัวอักษรหลักจาก Figma |
+| **ขนาดตัวหนังสือพื้นฐาน (Body Text)**| `20px` / line-height `30px`, Regular 400 | ขนาดที่ผ่านการทดสอบว่าเหมาะสมกับผู้สูงวัยมากที่สุด |
 | **พื้นที่แตะปุ่มควบคุม (Touch Target)**| ความสูงอย่างน้อย `56px` (แนะนำ `64px` สำหรับปุ่มหลัก)| ป้องกันการสัมผัสคลาดเคลื่อน (Accidental Taps) |
 | **ความโค้งมนของการ์ด (Card Radius)**| `16px` (Radius LG) / `24px` (Radius XL) | ดีไซน์ลดความแข็งกระด้าง (แรงบันดาลใจจาก GreenTravel UI) |
 | **ขนาดหน้าจอรองรับหลัก (Layout)** | กว้างสูงสุด `480px` (Mobile-first Portrait) | การใช้งานบนหน้าจอสมาร์ตโฟนแนวตั้งเป็นหลัก (ผ่าน LINE app) |

@@ -244,7 +244,7 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
   const hasSelectedAny = Object.values(selectedBlocks).some(v => v);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 justify-between">
+    <div className="gp-compact flex flex-col flex-1 min-h-0 justify-between">
       <div className="scroll-region flex flex-col gap-4">
 
         {/* Progress & Speaker Header */}
@@ -266,7 +266,7 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
 
           <button
             onClick={() => handleSpeak(showSummary ? scenario.summary + ' ' + scenario.speakerSummary : 'กรุณาแตะจุดสีฟ้าหรือข้อความที่ท่านคิดว่าแปลกๆ น่าสงสัยเพื่อเลือก จากนั้นกดปุ่มดูเฉลยด้านล่าง')}
-            className={`px-4 py-2.5 rounded-[var(--radius-pill)] border-2 border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer flex items-center gap-2 text-[clamp(13px,3.91vw,18px)] font-bold min-h-[48px] ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[var(--bg-app)]'}`}
+            className={`px-4 py-2.5 rounded-[var(--radius-pill)] border-2 border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer flex items-center gap-2 gp-type-button min-h-[48px] ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[var(--bg-app)]'}`}
           >
             {speaking ? <VolumeX size={20} /> : <Volume2 size={20} />}
             <span>ฟังเสียงนำทาง</span>
@@ -275,8 +275,8 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
 
         {/* Info label */}
         <div className="text-left">
-          <h3 className="text-[clamp(15px,4.78vw,22px)] font-bold">{scenario.title}</h3>
-          <p className="text-small text-[var(--text-secondary)] mt-1">
+          <h3 className="gp-type-h3">{scenario.title}</h3>
+          <p className="gp-type-caption text-[var(--text-secondary)] mt-1">
             {!showSummary ? '👉 แตะกล่องข้อความหรือชื่อผู้ส่งจุดที่ท่านรู้สึกสงสัย (เลือกได้มากกว่า 1 จุด)' : '❌ แถบสีแดงคือจุดที่มิจฉาชีพใช้หลอกลวง'}
           </p>
         </div>
@@ -285,10 +285,10 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
         <div className="border-[3px] border-[var(--border)] rounded-[var(--radius-xl)] overflow-hidden bg-white shadow-[var(--shadow-md)]">
           {/* Simulated App Header — headerBg comes from the scenario data, so it stays an inline style (Tailwind can't statically see a runtime string) */}
           <div
-            className="text-white p-4 text-[clamp(14px,4.35vw,20px)] font-bold flex items-center gap-3"
+            className="text-white p-4 gp-type-button flex items-center gap-3"
             style={{ backgroundColor: scenario.headerBg }}
           >
-            <div className="w-[38px] h-[38px] rounded-full bg-white/20 flex items-center justify-center text-[clamp(14px,4.35vw,20px)]">
+            <div className="w-[38px] h-[38px] rounded-full bg-white/20 flex items-center justify-center text-[clamp(14px,4.35vw,20px)]" data-type-exempt="avatar initial in a 38px circle">
               {scenario.avatarLetter}
             </div>
             <span>{scenario.sender}</span>
@@ -300,14 +300,14 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
               <div
                 key={block.id}
                 onClick={() => handleBlockTap(block)}
-                className={`p-4 border-2 rounded-[var(--radius-lg)] text-left text-[clamp(13px,3.91vw,18px)] font-medium transition-all duration-200 ${showSummary ? 'cursor-default' : 'cursor-pointer'}`}
+                className={`p-4 border-2 rounded-[var(--radius-lg)] text-left gp-type-body transition-all duration-200 ${showSummary ? 'cursor-default' : 'cursor-pointer'}`}
                 style={getBlockStyle(block)}
               >
                 <div>{block.text}</div>
 
                 {/* Individual Explanations on ShowSummary */}
                 {showSummary && (
-                  <div className="mt-2 pt-2 border-t border-dashed border-[#fca5a5] text-[clamp(12px,3.7vw,17px)] text-[var(--accent-error)] font-bold leading-snug">
+                  <div className="mt-2 pt-2 border-t border-dashed border-[#fca5a5] gp-type-button text-[var(--accent-error)]">
                     {block.desc}
                   </div>
                 )}
@@ -321,13 +321,13 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
           <div className="premium-card border-2 border-[var(--primary)] bg-[var(--primary-light)] text-left p-5 [animation:fadeIn_0.4s_ease-out]">
             <div className="flex gap-3 items-center text-[var(--primary-dark)] mb-2">
               <ShieldAlert size={28} />
-              <strong className="text-[clamp(14px,4.35vw,20px)]">เกราะป้องกันภัย: หยุด คิด ถาม ทำ</strong>
+              <strong className="gp-type-button">เกราะป้องกันภัย: หยุด คิด ถาม ทำ</strong>
             </div>
-            <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-primary)] leading-relaxed">
+            <p className="gp-type-body text-[var(--text-primary)]">
               {scenario.summary}
             </p>
 
-            <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center gap-2.5 text-[clamp(12px,3.7vw,17px)] font-bold text-[var(--text-secondary)]">
+            <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center gap-2.5 gp-type-button text-[var(--text-secondary)]">
               <HeartHandshake size={20} color="var(--primary)" />
               <span>แจ้งสายด่วนตำรวจไซเบอร์ โทร. 1441 ทันทีเมื่อสงสัย</span>
             </div>
@@ -340,7 +340,7 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
         {!showSummary ? (
           <button
             onClick={handleCheck}
-            className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px]"
+            className="btn btn-primary gp-type-button min-h-[64px]"
             disabled={!hasSelectedAny}
           >
             <span>ตรวจหาจุดสัญญาณมิจ</span>
@@ -348,7 +348,7 @@ export default function G2ScamSpotter({ onFinish, logEvent }) {
         ) : (
           <button
             onClick={handleNext}
-            className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px]"
+            className="btn btn-primary gp-type-button min-h-[64px]"
           >
             <span>{currentIdx < SCENARIOS.length - 1 ? 'สถานการณ์ถัดไป' : 'จบบทเรียนและรับดาว'}</span>
             <ArrowRight size={24} />

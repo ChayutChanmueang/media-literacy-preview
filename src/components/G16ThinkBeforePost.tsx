@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Globe, Maximize2 } from "lucide-react";
-import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import FullscreenImageViewer from "@/components/FullscreenImageViewer";
 import GameAnswerButton from "@/components/GameAnswerButton";
@@ -159,17 +158,17 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
     <div className={`gp-compact flex min-h-0 flex-1 flex-col ${choice ? "bg-white" : "bg-[#E8EAF3]"}`}>
       {!choice || !result ? (
         <div className="flex min-h-0 flex-1 flex-col gp-px-24 gp-pt-20">
-          <p className={`${notoLoopedThai.className} gp-mb-12 shrink-0 text-center gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]`}>
+          <p className="gp-mb-12 shrink-0 text-center gp-type-button text-[#4B4B4B]">
             {isComment ? "ความเห็น" : "โพสต์"}ที่ {currentIdx + 1} จาก {deck.length} — ควรโพสต์ไหม?
           </p>
 
           {/* กรอบหน้าสร้างโพสต์จำลอง — ไม่มีปุ่มปิด/ย้อนกลับ/ปุ่มโพสต์ กันผู้สูงอายุเข้าใจผิดว่ากดได้จริง
               การตัดสินใจจริงอยู่ที่ปุ่มใหญ่ด้านล่าง */}
           <div
-            className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[24px] border-2 border-b-0 border-solid border-[#D9D9D9] bg-white`}
+            className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[24px] border-2 border-b-0 border-solid border-[#D9D9D9] bg-white`}
           >
             <div className="flex gp-h-58 shrink-0 items-center justify-center border-b-2 border-solid border-[#D9D9D9] gp-px-16 text-center">
-              <span className="gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]">
+              <span className="gp-type-button text-[#4B4B4B]">
                 {isComment ? "แสดงความคิดเห็น" : "สร้างโพสต์"}
               </span>
             </div>
@@ -178,29 +177,29 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
               <div className="flex min-h-full flex-col gp-gap-14">
                 {item.reply_to && (
                   <div className="rounded-[16px] border-2 border-solid border-[#E5E7EB] bg-[#F3F4F6] gp-px-14 gp-py-12">
-                    <p className="gp-text-20 font-semibold gp-leading-28 text-[#1a1a1a]">{item.reply_to.author}</p>
-                    <p className="gp-mt-4 gp-text-20 gp-leading-30 text-[#4B4B4B]">{item.reply_to.text}</p>
+                    <p className="gp-type-button text-[#1a1a1a]">{item.reply_to.author}</p>
+                    <p className="gp-mt-4 gp-type-body text-[#4B4B4B]">{item.reply_to.text}</p>
                   </div>
                 )}
 
                 <div className="flex items-center gp-gap-12">
-                  <div aria-hidden="true" className="flex gp-size-52 shrink-0 items-center justify-center rounded-full bg-[#FDE68A] gp-text-30">
+                  <div aria-hidden="true" className="flex gp-size-52 shrink-0 items-center justify-center rounded-full bg-[#FDE68A] gp-text-30" data-type-exempt="avatar emoji">
                     {item.author?.avatar ?? "👵"}
                   </div>
                   <div className="min-w-0">
-                    <p className="gp-text-20 font-semibold gp-leading-28 text-[#1a1a1a]">
+                    <p className="gp-type-button text-[#1a1a1a]">
                       {item.author?.name ?? "บัญชีของท่าน"}
                       {item.location && (
                         <span className="font-normal text-[#4B4B4B]"> — อยู่ที่ 📍 {item.location}</span>
                       )}
                     </p>
-                    <span className="gp-mt-4 inline-flex items-center gp-gap-6 rounded-[8px] bg-[#E5E7EB] gp-px-8 gp-py-2 gp-text-20 gp-leading-28 text-[#4B4B4B]">
+                    <span className="gp-mt-4 inline-flex items-center gp-gap-6 rounded-[8px] bg-[#E5E7EB] gp-px-8 gp-py-2 gp-type-body text-[#4B4B4B]">
                       <Globe size={18} aria-hidden="true" /> สาธารณะ
                     </span>
                   </div>
                 </div>
 
-                <p className="whitespace-pre-line gp-text-22 gp-leading-34 text-[#1a1a1a]">
+                <p className="whitespace-pre-line gp-type-body-lg text-[#1a1a1a]">
                   {item.text}
                   <span aria-hidden="true" className="ml-[2px] inline-block gp-h-26 w-[2px] translate-y-[5px] bg-[#1877F2] [animation:g16Caret_1s_steps(1)_infinite]" />
                 </p>
@@ -241,7 +240,7 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
               <ol className="flex flex-col gp-gap-12">
                 {item.safe_reasons.map((reason, i) => (
                   <li key={i} className="flex gp-gap-10 rounded-[12px] bg-[#f0fdf4] gp-px-12 gp-py-12">
-                    <span className="flex gp-size-32 shrink-0 items-center justify-center rounded-full bg-[var(--accent-success)] gp-text-20 font-bold text-white">
+                    <span className="flex gp-size-32 shrink-0 items-center justify-center rounded-full bg-[var(--accent-success)] gp-type-button text-white">
                       <span className={NUMBER_NUDGE}>{i + 1}</span>
                     </span>
                     <p className="min-w-0">{reason}</p>
@@ -254,7 +253,7 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
             <ol className="flex flex-col gp-gap-12">
               {item.flags.map((flag, i) => (
                 <li key={i} className="flex gp-gap-10 rounded-[12px] bg-[#fef2f2] gp-px-12 gp-py-12">
-                  <span className="flex gp-size-32 shrink-0 items-center justify-center rounded-full bg-[var(--accent-error)] gp-text-20 font-bold text-white">
+                  <span className="flex gp-size-32 shrink-0 items-center justify-center rounded-full bg-[var(--accent-error)] gp-type-button text-white">
                     <span className={NUMBER_NUDGE}>{i + 1}</span>
                   </span>
                   <div className="min-w-0">
@@ -270,12 +269,12 @@ export default function G16ThinkBeforePost({ onFinish, logEvent }: Props) {
             </ol>
           )}
 
-          <p className="gp-mt-26 gp-text-24 font-semibold gp-leading-32">คิดก่อนโพสต์</p>
+          <p className="gp-mt-26 gp-type-h3">คิดก่อนโพสต์</p>
           <p className="gp-mt-8">{item.tip}</p>
 
           {/* นโยบาย ai_disclosure — แจ้งหลังหน้าเฉลยเสมอ (docs/gdd/00-concept.md §5) */}
           {item.photo?.ai_disclosure && (
-            <p className="gp-mt-20 rounded-[12px] bg-[#F3F4F6] gp-px-12 gp-py-8 gp-text-20 gp-leading-28 text-[#4B4B4B]">
+            <p className="gp-mt-20 rounded-[12px] bg-[#F3F4F6] gp-px-12 gp-py-8 gp-type-body text-[#4B4B4B]">
               ⚠️ รูปในโพสต์นี้สร้างโดย AI เพื่อการเรียนรู้ บุคคลและชื่อในรูปไม่มีอยู่จริง
             </p>
           )}

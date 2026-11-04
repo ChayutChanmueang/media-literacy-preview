@@ -7,7 +7,10 @@ import { mali } from "@/lib/fonts";
  * a large title and a smaller line under it. It zooms/fades in, holds, then grows a little and fades
  * out — the game drives `stage` ("enter" = mounted hidden, so the change to "show" transitions in).
  * Sized to the box it covers (cqw), so it still fits on a small screen or a small board.
- * Used by G13 (time's up) and G18 (after each turn).
+ * Used by G13 (time's up), G18 (after each turn) and G20/G20K (end of the run).
+ *
+ * type-exempt: the only place Mali is used, and its sizes follow the box rather than the text styles
+ * (docs/wiki/design/07-typography.md).
  */
 export type StagePopupStage = "enter" | "show" | "leave";
 
@@ -34,6 +37,7 @@ export default function StagePopup({
     // aria-hidden: each game says the same thing in its own screen-reader status line
     <div
       aria-hidden="true"
+      data-type-exempt="stage popup text"
       className={`pointer-events-none absolute inset-0 ${className}`}
       style={{ containerType: "inline-size" }}
     >

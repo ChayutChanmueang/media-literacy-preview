@@ -26,7 +26,7 @@ export default function BottomActionButton({
     <button
       {...buttonProps}
       className={[
-        "btn w-full shrink-0 text-[26px]",
+        "btn w-full shrink-0 gp-type-button",
         appearanceClassName,
         heightClassName,
         shapeClassName,

@@ -497,7 +497,7 @@ export default function VideoLessonPage() {
         {!playerReady && (
           <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center text-white p-6 text-center z-20">
             <div className="w-12 h-12 border-4 border-slate-700 border-t-[var(--primary)] rounded-full animate-spin mb-4"></div>
-            <span className="text-lg font-bold">กำลังโหลดวิดีโอ...</span>
+            <span className="text-body">กำลังโหลดวิดีโอ...</span>
           </div>
         )}
       </div>

@@ -4,7 +4,6 @@ import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
-import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
 import { AGE_OPTIONS, type AgeGroup } from "@/lib/ageOptions";
 import Button3D from "@/components/Button3D";
@@ -37,13 +36,13 @@ export default function ConsentAgePage() {
   useDevSkip(() => goToLocation(ageGroup ?? "60-69"));
 
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+    <div className={`flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
       {/* scroll bar วาดเอง ให้เห็นตลอดทุกเบราว์เซอร์/มือถือเมื่อเนื้อหาเกินจอ */}
       <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
         <div className="flex min-h-full flex-col items-center justify-center gap-[32px] px-[24px] py-[28px]">
           <div className="flex flex-col items-center gap-[8px] text-center">
-            <p className="text-[24px] font-semibold leading-[32px]">ข้อมูลผู้ใช้</p>
-            <p className="text-[28px] font-bold leading-[36px]">โปรดเลือกช่วงอายุท่าน</p>
+            <p className="text-h3">ข้อมูลผู้ใช้</p>
+            <p className="text-h2">โปรดเลือกช่วงอายุท่าน</p>
           </div>
 
           <div role="radiogroup" aria-label="ช่วงอายุของท่าน" className="flex w-full flex-col items-center gap-[16px]">
@@ -58,7 +57,7 @@ export default function ConsentAgePage() {
                       role="radio"
                       aria-checked={selected}
                       onClick={() => setAgeGroup(opt.value)}
-                      className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] ${
+                      className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-button active:translate-y-[2px] ${
                         selected
                           ? "border-[#00A3E0] bg-[#D9F1FA] text-[#00A3E0]"
                           : "border-[#A5A5A5] bg-white text-[#7F7F7F]"

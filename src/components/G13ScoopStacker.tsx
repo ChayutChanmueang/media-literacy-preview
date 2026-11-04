@@ -1090,7 +1090,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       context.fill();
       context.stroke();
       context.fillStyle = "#422006";
-      context.font = `bold ${Math.round(radius * 0.42)}px sans-serif`;
+      context.font = `bold ${Math.round(radius * 0.42)}px sans-serif`; // type-exempt: "×2" badge drawn to the power-up's size
       context.textAlign = "center";
       context.textBaseline = "middle";
       context.fillText("×2", 0, 1);
@@ -1231,7 +1231,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       // score popups: fade in → drift up → fade out (no drift with reduced motion)
       if (world.popups.length > 0) {
         context.save();
-        context.font = `700 ${popupFontSize(world)}px ${notoLoopedThai.style.fontFamily}`;
+        // H3 (24px SemiBold) on stage; shrinks with the stage like gp-type-*, never below 20px on screen
+        context.font = `600 ${popupFontSize(world)}px ${notoLoopedThai.style.fontFamily}`;
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.lineJoin = "round";
@@ -1632,7 +1633,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
             <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-4">
               {tutorialBanner && (
                 <p
-                  className={`max-w-sm rounded-2xl border-2 bg-white/95 px-4 py-2 text-center text-[clamp(18px,5vw,22px)] font-bold leading-snug shadow-md ${
+                  className={`max-w-sm rounded-2xl border-2 bg-white/95 px-4 py-2 text-center gp-type-body-lg shadow-md ${
                     tutorialBanner.tone === "praise"
                       ? "border-emerald-500 text-emerald-800"
                       : tutorialBanner.tone === "retry"
@@ -1662,25 +1663,25 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       {/* same end screen as G18 / G19 / G20: trophy, title, one score line, best-score lines, Button3D + finish */}
       {phase === "summary" && (
         // no gp-compact of its own: it takes the scale the root sets
-        <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white`}>
+        <div className="flex min-h-0 flex-1 flex-col bg-white">
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
               <ResultTrophy />
-              <p className="result-pop gp-text-32 font-bold gp-leading-40 text-black">{height > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
+              <p className="result-pop gp-type-h1 text-black">{height > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
               {height > 0 ? (
-                <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+                <p className="result-rise gp-type-h3 text-[#4B4B4B]">
                   หอไอติมสูง <CountUp value={height} className="font-bold text-[#B45309]" /> ชั้น
                 </p>
               ) : (
-                <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+                <p className="result-rise gp-type-h3 text-[#4B4B4B]">
                   ลากกรวยไปรับลูกไอติม แล้วหลบลูกระเบิดนะ
                 </p>
               )}
               {SHOW_RESULT_BEST_SCORE && runs > 1 && height > 0 && height === bestHeight && (
-                <p className="result-rise gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
+                <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
               )}
               {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-                <p className="result-rise gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestHeight} ชั้น</p>
+                <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestHeight} ชั้น</p>
               )}
             </div>
           </div>

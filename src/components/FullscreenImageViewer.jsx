@@ -116,7 +116,7 @@ export default function FullscreenImageViewer({ src, alt = '', caption, onClose 
       </div>
 
       {caption && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-[90%] text-center bg-[rgba(15,23,42,0.85)] text-white px-4 py-2 rounded-[var(--radius-pill)] text-[clamp(12px,3.7vw,16px)] font-bold border border-white/20">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-[90%] text-center bg-[rgba(15,23,42,0.85)] text-white px-4 py-2 rounded-[var(--radius-pill)] gp-type-caption border border-white/20">
           {caption}
         </div>
       )}
@@ -125,7 +125,7 @@ export default function FullscreenImageViewer({ src, alt = '', caption, onClose 
         <button
           type="button"
           onClick={onClose}
-          className="btn btn-primary min-h-16 w-full max-w-xs text-[clamp(18px,4.8vw,22px)] font-bold gap-2"
+          className="btn btn-primary min-h-16 w-full max-w-xs gp-type-button gap-2"
         >
           <X size={26} strokeWidth={2.5} aria-hidden="true" />
           ปิด

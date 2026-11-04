@@ -20,9 +20,9 @@ export default function CompletionCard({ icon, eyebrow, title, caption }: Comple
         >
           {icon}
         </div>
-        <p className="w-full text-[24px] font-semibold leading-[32px]">{eyebrow}</p>
-        <p className="w-full text-[28px] font-bold leading-[36px]">{title}</p>
-        {caption && <p className="w-full text-[18px] font-normal leading-[26px]">{caption}</p>}
+        <p className="w-full text-h3">{eyebrow}</p>
+        <p className="w-full text-h2">{title}</p>
+        {caption && <p className="w-full text-caption">{caption}</p>}
       </div>
     </div>
   );

@@ -22,7 +22,7 @@
       "waveBlue": { "hex": "#0288D1", "meaning": "water waves, geography, secondary decoration" },
       "goldPagoda": { "hex": "#FFB300", "meaning": "temple, reward coins, success alert" }
     },
-    "font": { "defaultThai": "Sarabun", "source": "Senior accessibility standard" }
+    "font": { "defaultThai": "Noto Looped Thai", "source": "Figma typography — docs/wiki/design/07-typography.md" }
   },
   "website": {
     "colors": {
@@ -54,35 +54,22 @@
       }
     },
     "typography": {
+      "source": "Figma Scammer Game Prototype node 1055:615 — docs/wiki/design/07-typography.md",
       "fontFamilies": {
-        "base": ["Outfit", "Inter", "system-ui", "sans-serif"],
-        "thaiContent": ["Sarabun", "Inter", "sans-serif"]
+        "base": ["Noto Sans Thai Looped", "system-ui", "sans-serif"],
+        "stagePopupOnly": ["Mali"]
       },
-      "baseLineHeight": 1.6,
-      "weights": {
-        "normal": 400,
-        "subtitle": 600,
-        "title": 700
-      },
-      "scales": {
-        "normal": {
-          "title": 28,
-          "subtitle": 22,
-          "body": 18,
-          "small": 16
-        },
-        "large": {
-          "title": 32,
-          "subtitle": 24,
-          "body": 20,
-          "small": 18
-        },
-        "xlarge": {
-          "title": 36,
-          "subtitle": 28,
-          "body": 24,
-          "small": 20
-        }
+      "letterSpacing": 0,
+      "styles": {
+        "display": { "size": 40, "lineHeight": 48, "weight": 700 },
+        "h1": { "size": 32, "lineHeight": 40, "weight": 700 },
+        "h2": { "size": 28, "lineHeight": 36, "weight": 700 },
+        "h3": { "size": 24, "lineHeight": 32, "weight": 600 },
+        "bodyLarge": { "size": 22, "lineHeight": 32, "weight": 400 },
+        "body": { "size": 20, "lineHeight": 30, "weight": 400 },
+        "button": { "size": 20, "lineHeight": 30, "weight": 600 },
+        "caption": { "size": 18, "lineHeight": 26, "weight": 400 },
+        "small": { "size": 12, "lineHeight": 16, "weight": 400 }
       }
     },
     "layout": {
@@ -111,7 +98,7 @@
       "scoreProgressRing": {
         "strokeWidth": "10-12px",
         "trackColor": "var(--primary-light)",
-        "labelFont": "Outfit",
+        "labelFont": "Noto Looped Thai",
         "labelSize": "36px+"
       },
       "statTileGrid": {

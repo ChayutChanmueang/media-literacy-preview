@@ -6,7 +6,6 @@ import { PrefetchKind } from "next/dist/client/components/router-reducer/router-
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import { selfAssessmentService } from "@/services/selfAssessmentService";
-import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
 import { useSelfAssessmentDoneGuard } from "@/lib/useSelfAssessmentDoneGuard";
 import type { SelfAssessmentPhase } from "@/lib/selfAssessmentPhase";
@@ -94,7 +93,7 @@ export default function SelfAssessmentQuestionsPage() {
   if (blocked) return <div className="flex min-h-0 flex-1 flex-col bg-[#E8EAF3]" />;
 
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-[#E8EAF3] text-black`}>
+    <div className={`flex min-h-0 flex-1 flex-col bg-[#E8EAF3] text-black`}>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex flex-col gap-[20px] px-[24px] pb-[4px] pt-[28px]">
           {isClient &&
@@ -109,14 +108,14 @@ export default function SelfAssessmentQuestionsPage() {
                 >
                   <p
                     id={`${statement.id}-text`}
-                    className="w-full text-center text-[20px] font-normal leading-[30px] [word-break:break-word]"
+                    className="w-full text-center text-body [word-break:break-word]"
                   >
                     {statement.text}
                   </p>
 
                   {/* Figma packs the five buttons edge to edge (5 × 60 = 300px); columns share the width so no gaps appear.
                       Text scales with the row (cqw) in Figma's ratio — 20px number / 12px label at 300px — never below those sizes. */}
-                  <div className="@container flex min-h-[80px] w-full items-start">
+                  <div className="@container flex min-h-[80px] w-full items-start" data-type-exempt="scale buttons sized to the row (cqw), from Figma">
                     {SCALE.map((opt) => {
                       const isSelected = selected === opt.value;
                       return (

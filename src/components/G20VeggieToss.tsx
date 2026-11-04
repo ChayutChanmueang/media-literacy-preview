@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
-import { mali, notoLoopedThai } from "@/lib/fonts";
+import StagePopup from "@/components/StagePopup";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
 import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
@@ -1310,23 +1310,23 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
     // same end screen as G18 / G19: trophy, title, one score line, best-score lines, Button3D + "จบเกม"
     const newBest = runs > 1 && served > 0 && served === bestServed;
     return (
-      <div ref={stageRootRef} className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+      <div ref={stageRootRef} className={`gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
             <ResultTrophy />
-            <p className="result-pop gp-text-32 font-bold gp-leading-40 text-black">{served > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
+            <p className="result-pop gp-type-h1 text-black">{served > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
             {served > 0 ? (
-              <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
                 เสิร์ฟลงจานได้ <CountUp value={served} className="font-bold text-[#B45309]" /> จาน
               </p>
             ) : (
-              <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
                 {TOUCH_HINT}แล้วลากนิ้วขึ้น เล็งไปที่จานได้เลย
               </p>
             )}
-            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
+            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
             {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-              <p className="result-rise gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestServed} จาน</p>
+              <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestServed} จาน</p>
             )}
           </div>
         </div>
@@ -1341,7 +1341,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
   return (
     <div
       ref={stageRootRef}
-      className={`${notoLoopedThai.className} gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
+      className={`gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
       style={{ background: BACKGROUND }}
     >
       {/* Header card on top of the scene, whose top runs up behind the card's rounded corners */}
@@ -1414,7 +1414,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
             {/* veggies left, under the veggie's spot — the only place the count is shown (not in the header) */}
             {tutorialStep === 0 && (
               <p
-                className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[12px] text-[20px] font-semibold leading-[26px] text-[#4B4B4B]"
+                className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[12px] gp-type-button text-[#4B4B4B]"
                 style={{ top: Math.min(stage.oy + LEFT_COUNT_Y * stage.s + 4, stage.h - 32) }}
               >
                 เหลือ {throwsLeft} ต้น
@@ -1424,7 +1424,7 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
             {tutorialBox && (
               <p
                 aria-hidden="true"
-                className={`pointer-events-none absolute z-10 whitespace-pre rounded-[16px] border-2 border-solid bg-white gp-px-16 gp-py-8 text-center gp-text-22 font-bold gp-leading-30 shadow-md ${
+                className={`pointer-events-none absolute z-10 whitespace-pre rounded-[16px] border-2 border-solid bg-white gp-px-16 gp-py-8 text-center gp-type-body-lg shadow-md ${
                   tutorialBox.tone === "praise"
                     ? "border-emerald-500 text-emerald-800"
                     : tutorialBox.tone === "retry"
@@ -1441,32 +1441,15 @@ export default function G20VeggieToss({ onFinish, logEvent }: Props) {
                 {tutorialBox.text}
               </p>
             )}
-            {/* Finish text over the stage (as G19). aria-hidden: the screen-reader status already says the run is over. */}
+            {/* Finish text over the stage (as G19). The screen-reader status already says the run is over. */}
             {finishPopup && (
-              <div
-                aria-hidden="true"
-                className={`${mali.className} pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 px-2 text-center text-white`}
-                style={{
-                  opacity: finishPopup === "show" ? 1 : 0,
-                  transform:
-                    finishPopup === "enter" ? "scale(0.7)" : finishPopup === "leave" ? "scale(1.08)" : "scale(1)",
-                  transition:
-                    finishPopup === "leave"
-                      ? `opacity ${FINISH_OUT_MS}ms ease-in, transform ${FINISH_OUT_MS}ms ease-in`
-                      : `opacity ${FINISH_IN_MS}ms ease-out, transform ${FINISH_IN_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1)`,
-                  WebkitTextStroke: "8px #7C2D12",
-                  paintOrder: "stroke fill",
-                  textShadow: "0 4px 12px rgba(0,0,0,0.35)",
-                }}
-              >
-                {/* sized to the play area width (cqw) so it still fits on a small screen */}
-                <p className="font-bold leading-[1.3]" style={{ fontSize: "clamp(24px, 16cqw, 56px)" }}>
-                  เก่งมาก! 🎉
-                </p>
-                <p className="font-bold leading-[1.4]" style={{ fontSize: "clamp(20px, 9cqw, 32px)" }}>
-                  โยนครบ {THROWS_PER_RUN} ครั้งแล้ว
-                </p>
-              </div>
+              <StagePopup
+                stage={finishPopup}
+                title="เก่งมาก! 🎉"
+                subtitle={`โยนครบ ${THROWS_PER_RUN} ครั้งแล้ว`}
+                inMs={FINISH_IN_MS}
+                outMs={FINISH_OUT_MS}
+              />
             )}
           </>
         )}

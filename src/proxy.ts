@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getServerAppMode } from "@/lib/appMode";
+import { DEV_APP_MODE_COOKIE, getServerAppMode } from "@/lib/appMode";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isResearch = getServerAppMode() === "research";
+  const isResearch = getServerAppMode(request.cookies.get(DEV_APP_MODE_COOKIE)?.value) === "research";
 
   // Let public pages, APIs, static files, and assets pass through without checks
   if (

@@ -101,6 +101,7 @@ function Avatar({ emoji, size = 40 }: { emoji: string; size?: number }) {
       className="rounded-full bg-[var(--primary-light)] flex items-center justify-center shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.55 }}
       aria-hidden="true"
+      data-type-exempt="avatar emoji"
     >
       {emoji}
     </span>
@@ -109,7 +110,7 @@ function Avatar({ emoji, size = 40 }: { emoji: string; size?: number }) {
 
 function AuthorBadge({ text }: { text: string }) {
   return (
-    <span className="text-[clamp(8px,2.39vw,11px)] font-bold px-1.5 py-0.5 rounded bg-[var(--primary-light)] text-[var(--primary-dark)]">
+    <span className="gp-type-caption px-1.5 py-0.5 rounded bg-[var(--primary-light)] text-[var(--primary-dark)]">
       {text}
     </span>
   );
@@ -206,17 +207,17 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
   // ---- Level-complete interstitial ----
   if (phase === "levelEnd") {
     return (
-      <div className="flex flex-col flex-1 min-h-0 justify-center items-center gap-5 p-6 text-center">
-        <div className="text-[clamp(45px,13.91vw,64px)] leading-none">🎉</div>
-        <h2 className="text-[clamp(17px,5.22vw,24px)] font-bold text-[var(--primary-dark)]">
+      <div className="gp-compact flex flex-col flex-1 min-h-0 justify-center items-center gap-5 p-6 text-center">
+        <div className="text-[clamp(45px,13.91vw,64px)] leading-none" data-type-exempt="emoji">🎉</div>
+        <h2 className="gp-type-h3 text-[var(--primary-dark)]">
           ผ่าน{LEVELS[levelIdx].label}แล้ว!
         </h2>
         <div className="premium-card bg-[var(--primary-light)] p-4 max-w-sm">
-          <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-primary)] leading-relaxed">
+          <p className="gp-type-body text-[var(--text-primary)]">
             💡 {LEVEL_SUMMARIES[levelIdx]}
           </p>
         </div>
-        <button onClick={handleContinueLevel} className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px] w-full max-w-sm">
+        <button onClick={handleContinueLevel} className="btn btn-primary gp-type-button min-h-[64px] w-full max-w-sm">
           <span>ไปด่านต่อไป</span>
           <ArrowRight size={24} />
         </button>
@@ -227,34 +228,34 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
   // ---- Reusable link area (posted URL + FB-style preview card + inspect reveal) ----
   const linkArea = (
     <>
-      <p className="text-[clamp(10px,3.26vw,15px)] text-[var(--primary)] font-semibold break-all mt-1 mb-2">
+      <p className="gp-type-button text-[var(--primary)] break-all mt-1 mb-2">
         https://{item.link_display}
       </p>
       <div className="border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden">
-        <div className="h-14 bg-[var(--primary-light)] flex items-center justify-center text-[clamp(18px,5.65vw,26px)]">
+        <div className="h-14 bg-[var(--primary-light)] flex items-center justify-center text-[clamp(18px,5.65vw,26px)]" data-type-exempt="icon emoji">
           🔗
         </div>
         <div className="bg-[var(--bg-app)] px-3 py-2">
-          <div className="text-[clamp(8px,2.39vw,11px)] text-[var(--text-secondary)] tracking-wide uppercase break-all">
+          <div className="gp-type-caption text-[var(--text-secondary)] tracking-wide uppercase break-all">
             {hostnameOf(item.link_display)}
           </div>
-          <div className="text-[clamp(11px,3.48vw,16px)] font-bold leading-tight">{item.link_headline}</div>
+          <div className="gp-type-button">{item.link_headline}</div>
         </div>
       </div>
 
       {inspected && (
         <div className="mt-2 border-2 border-[var(--primary)] rounded-[var(--radius-lg)] p-3 bg-[var(--bg-app)] [animation:fadeIn_0.3s_ease-out]">
-          <p className="text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] mb-1">
+          <p className="gp-type-caption text-[var(--text-secondary)] mb-1">
             ลิงก์เต็ม (จำลอง — กดไม่ออกเว็บจริง):
           </p>
-          <p className="text-[clamp(10px,3.26vw,15px)] break-all text-[var(--text-primary)] mb-2">{item.link_full}</p>
-          <p className="text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] mb-1">
+          <p className="gp-type-body break-all text-[var(--text-primary)] mb-2">{item.link_full}</p>
+          <p className="gp-type-caption text-[var(--text-secondary)] mb-1">
             🔎 ชื่อเว็บตัวจริง (โดเมนหลักที่เว็บนี้เป็นเจ้าของ):
           </p>
-          <span className="inline-block text-[clamp(13px,3.91vw,18px)] font-bold px-2.5 py-1 rounded-[var(--radius-pill)] bg-[var(--primary-light)] text-[var(--primary-dark)] break-all">
+          <span className="inline-block gp-type-button px-2.5 py-1 rounded-[var(--radius-pill)] bg-[var(--primary-light)] text-[var(--primary-dark)] break-all">
             {item.owner_domain}
           </span>
-          <p className="text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] mt-2 leading-relaxed">
+          <p className="gp-type-caption text-[var(--text-secondary)] mt-2">
             💡 ดูที่โดเมนหลักว่าลงท้ายด้วยอะไร — รัฐไทยลงท้าย <strong>.go.th</strong>,
             บริษัท/รัฐวิสาหกิจไทยลงท้าย <strong>.co.th</strong> (ลิงก์ยาวหรือมีรหัสท้ายไม่ได้แปลว่าปลอม)
           </p>
@@ -265,16 +266,16 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
 
   // ---- Main play screen ----
   return (
-    <div className="flex flex-col flex-1 min-h-0 justify-between">
+    <div className="gp-compact flex flex-col flex-1 min-h-0 justify-between">
       <div className="scroll-region flex flex-col gap-3">
         {/* Header */}
         <div className="flex justify-between items-center gap-2">
-          <span className="text-[clamp(10px,3.26vw,15px)] font-bold text-[var(--primary-dark)]">
+          <span className="gp-type-button text-[var(--primary-dark)]">
             {LEVELS[levelIdx].label} · ข้อ {itemInLevel}/{ITEMS_PER_LEVEL}
           </span>
           <button
             onClick={() => handleSpeak(isAnswered ? item.explain : item.body)}
-            className={`px-3 py-2 rounded-[var(--radius-pill)] border-2 border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer flex items-center gap-1.5 text-[clamp(10px,3.26vw,15px)] font-bold min-h-[44px] ${
+            className={`px-3 py-2 rounded-[var(--radius-pill)] border-2 border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer flex items-center gap-1.5 gp-type-button min-h-[44px] ${
               speaking ? "bg-[var(--primary-light)]" : "bg-[var(--bg-app)]"
             }`}
           >
@@ -290,19 +291,19 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
               <Avatar emoji="📢" />
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
-                  <span className="text-[clamp(11px,3.48vw,16px)] font-bold truncate">{item.author}</span>
+                  <span className="gp-type-button truncate">{item.author}</span>
                   {item.verified && (
                     <BadgeCheck size={16} className="text-[var(--primary)] shrink-0" />
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-[clamp(8px,2.61vw,12px)] text-[var(--text-secondary)]">
+                <div className="flex items-center gap-1 gp-type-caption text-[var(--text-secondary)]">
                   <span>{item.sponsored ? "ได้รับการสนับสนุน" : item.time_ago}</span>
                   <span>·</span>
                   <Globe size={12} />
                 </div>
               </div>
             </div>
-            <p className="text-[clamp(13px,4.13vw,19px)] leading-snug mb-1">{item.body}</p>
+            <p className="gp-type-body mb-1">{item.body}</p>
             {linkArea}
           </div>
         ) : (
@@ -313,33 +314,33 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
               <Avatar emoji="🧑" size={36} />
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
-                  <span className="text-[clamp(10px,3.26vw,15px)] font-bold truncate">{item.parent_author}</span>
+                  <span className="gp-type-button truncate">{item.parent_author}</span>
                   {item.parent_verified && (
                     <BadgeCheck size={14} className="text-[var(--primary)] shrink-0" />
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-[clamp(8px,2.61vw,12px)] text-[var(--text-secondary)]">
+                <div className="flex items-center gap-1 gp-type-caption text-[var(--text-secondary)]">
                   <span>โพสต์</span>
                   <span>·</span>
                   <Globe size={12} />
                 </div>
               </div>
             </div>
-            <p className="text-[clamp(11px,3.48vw,16px)] leading-snug text-[var(--text-primary)] mb-2">
+            <p className="gp-type-caption text-[var(--text-primary)] mb-2">
               {item.parent_post}
             </p>
 
             {/* engagement bar (decorative, static) */}
-            <div className="flex justify-between items-center text-[clamp(8px,2.61vw,12px)] text-[var(--text-secondary)] border-t border-[var(--border)] pt-2">
+            <div className="flex justify-between items-center text-[clamp(8px,2.61vw,12px)] text-[var(--text-secondary)] border-t border-[var(--border)] pt-2" data-type-exempt="app mockup chrome">
               <span>👍❤️😆 1.2 พัน</span>
               <span>ความคิดเห็น · แชร์</span>
             </div>
-            <div className="flex justify-around text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] font-semibold border-y border-[var(--border)] my-2 py-1.5">
+            <div className="flex justify-around text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] font-semibold border-y border-[var(--border)] my-2 py-1.5" data-type-exempt="app mockup chrome">
               <span className="flex items-center gap-1"><ThumbsUp size={15} /> ถูกใจ</span>
               <span className="flex items-center gap-1"><MessageCircle size={15} /> แสดงความคิดเห็น</span>
               <span className="flex items-center gap-1"><Share2 size={15} /> แชร์</span>
             </div>
-            <div className="text-[clamp(9px,2.83vw,13px)] font-bold text-[var(--text-secondary)] mb-2">
+            <div className="text-[clamp(9px,2.83vw,13px)] font-bold text-[var(--text-secondary)] mb-2" data-type-exempt="app mockup chrome">
               ความคิดเห็นทั้งหมด ▾
             </div>
 
@@ -349,19 +350,19 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="bg-[var(--bg-app)] rounded-[var(--radius-lg)] px-3 py-2">
                   <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                    <span className="text-[clamp(10px,3.26vw,15px)] font-bold">{item.author}</span>
+                    <span className="gp-type-button">{item.author}</span>
                     {item.verified && (
                       <BadgeCheck size={14} className="text-[var(--primary)]" />
                     )}
                     {item.author_badge && <AuthorBadge text={item.author_badge} />}
-                    <span className="text-[clamp(8px,2.61vw,12px)] text-[var(--text-secondary)]">
+                    <span className="text-[clamp(8px,2.61vw,12px)] text-[var(--text-secondary)]" data-type-exempt="app mockup chrome">
                       · {item.time_ago}
                     </span>
                   </div>
-                  <p className="text-[clamp(13px,3.91vw,18px)] leading-snug">{item.body}</p>
+                  <p className="gp-type-body">{item.body}</p>
                 </div>
                 {linkArea}
-                <div className="flex gap-4 text-[clamp(9px,2.83vw,13px)] font-semibold text-[var(--text-secondary)] mt-1 px-1">
+                <div className="flex gap-4 text-[clamp(9px,2.83vw,13px)] font-semibold text-[var(--text-secondary)] mt-1 px-1" data-type-exempt="app mockup chrome">
                   <span>ถูกใจ</span>
                   <span>ตอบกลับ</span>
                 </div>
@@ -376,7 +377,7 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
             {!inspected && (
               <button
                 onClick={handleInspect}
-                className="btn btn-outline text-[clamp(14px,4.35vw,20px)] min-h-[56px] border-[var(--primary)] text-[var(--primary)]"
+                className="btn btn-outline gp-type-button min-h-[56px] border-[var(--primary)] text-[var(--primary)]"
               >
                 <Search size={22} /> ส่องลิงก์ก่อน
               </button>
@@ -384,13 +385,13 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
             <div className="flex gap-3">
               <button
                 onClick={() => handleJudge("safe")}
-                className="btn btn-outline flex-1 text-[clamp(14px,4.35vw,20px)] min-h-[64px] border-[var(--accent-success)] text-[var(--accent-success)]"
+                className="btn btn-outline flex-1 gp-type-button min-h-[64px] border-[var(--accent-success)] text-[var(--accent-success)]"
               >
                 ✓ ลิงก์ทางการ
               </button>
               <button
                 onClick={() => handleJudge("fake")}
-                className="btn btn-outline flex-1 text-[clamp(14px,4.35vw,20px)] min-h-[64px] border-[var(--accent-error)] text-[var(--accent-error)]"
+                className="btn btn-outline flex-1 gp-type-button min-h-[64px] border-[var(--accent-error)] text-[var(--accent-error)]"
               >
                 ✗ ลิงก์ปลอม
               </button>
@@ -406,21 +407,21 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
               {isCorrect ? (
                 <>
                   <CheckCircle2 size={28} />
-                  <strong className="text-[clamp(15px,4.78vw,22px)]">ถูกต้อง!</strong>
+                  <strong className="gp-type-h3">ถูกต้อง!</strong>
                 </>
               ) : (
                 <>
                   <AlertTriangle size={28} />
-                  <strong className="text-[clamp(15px,4.78vw,22px)]">ยังไม่ถูกนะ มาดูกัน</strong>
+                  <strong className="gp-type-h3">ยังไม่ถูกนะ มาดูกัน</strong>
                 </>
               )}
             </div>
 
             <div className="premium-card bg-[var(--primary-light)] p-4 text-left">
-              <strong className="text-[clamp(13px,3.91vw,18px)] block mb-1.5 text-[var(--primary-dark)]">
+              <strong className="gp-type-body block mb-1.5 text-[var(--primary-dark)]">
                 {item.is_safe ? "✓ ลิงก์นี้เป็นของทางการ" : "✗ ลิงก์นี้เป็นของปลอม"}
               </strong>
-              <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-primary)] leading-relaxed">
+              <p className="gp-type-body text-[var(--text-primary)]">
                 {item.explain}
               </p>
 
@@ -429,7 +430,7 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
                   {item.red_flags.map((flag) => (
                     <span
                       key={flag}
-                      className="inline-flex items-center gap-1 text-[clamp(10px,3.04vw,14px)] font-bold px-2.5 py-1 rounded-[var(--radius-pill)] bg-[rgba(220,38,38,0.12)] text-[var(--accent-error)]"
+                      className="inline-flex items-center gap-1 gp-type-button px-2.5 py-1 rounded-[var(--radius-pill)] bg-[rgba(220,38,38,0.12)] text-[var(--accent-error)]"
                     >
                       ⚠️ {flag}
                     </span>
@@ -437,7 +438,7 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
                 </div>
               )}
 
-              <p className="text-[clamp(10px,3.26vw,15px)] text-[var(--text-secondary)] mt-3 pt-3 border-t border-[var(--border)] leading-relaxed">
+              <p className="gp-type-caption text-[var(--text-secondary)] mt-3 pt-3 border-t border-[var(--border)]">
                 🏛️ {item.official_ref}
                 {!item.is_safe && (
                   <>
@@ -455,7 +456,7 @@ export default function G9LinkInspector({ onFinish, logEvent }: Props) {
 
       <button
         onClick={handleNext}
-        className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px] mt-4"
+        className="btn btn-primary gp-type-button min-h-[64px] mt-4"
         disabled={!isAnswered}
       >
         <span>{isLastItem ? "เสร็จสิ้นบทเรียน" : isLastOfLevel ? "จบด่านนี้" : "ข้อถัดไป"}</span>

@@ -143,6 +143,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ## 3. ระบบช่วยเหลือนำทางและขนาดอักษร (Accessibility Scale Switcher)
 
+> ⚠️ **เลิกใช้แล้ว (4 พ.ย. 2569):** ระบบปรับขนาด 3 ระดับ (`data-size`, `--font-size-*`, cookie `naplab_ml_size`) ถูกลบออกจากโค้ด — UI ปุ่มปรับขนาดถูกซ่อนตั้งแต่ US-CF-01 และ typography หลักจาก Figma มีขนาดเดียว ดู [07-typography.md](07-typography.md) และ utility `text-*` / `gp-type-*` ใน `src/app/globals.css` — ส่วนนี้เก็บไว้เป็นประวัติเท่านั้น
+
 เพื่อรองรับความต้องการขยายอักษรของผู้สูงอายุ ให้เก็บสถานะระดับอักษรไว้ใน LocalStorage หรือ React Context และผูกกับแอตทริบิวต์ `data-size` เพื่อปรับขนาดโดยอัตโนมัติ:
 
 ```css

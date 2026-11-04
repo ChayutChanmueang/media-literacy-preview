@@ -8,7 +8,6 @@ import locationData from "@/data/thailand-location.json";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import { selfAssessmentService } from "@/services/selfAssessmentService";
-import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
 import Button3D from "@/components/Button3D";
 import CustomScrollArea from "@/components/CustomScrollArea";
@@ -31,7 +30,7 @@ const VIEWPORT_MARGIN = 16; // เว้นจากขอบล่างจอ
 
 function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <p id={id} role="alert" className="flex items-center gap-[8px] text-[20px] font-semibold leading-[30px] text-[#D92D20]">
+    <p id={id} role="alert" className="flex items-center gap-[8px] text-button text-[#D92D20]">
       <AlertCircle size={24} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />
       {children}
     </p>
@@ -146,7 +145,7 @@ function SelectCard({
           aria-describedby={invalid ? errorId : undefined}
           aria-haspopup="listbox"
           aria-expanded={open}
-          className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-[20px] font-semibold leading-[30px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:translate-y-0 ${
+          className={`relative flex h-[62px] w-full cursor-pointer items-center justify-center rounded-[20px] border-2 border-solid text-button active:translate-y-[2px] disabled:cursor-not-allowed disabled:border-[#D9D9D9] disabled:text-[#A5A5A5] disabled:active:translate-y-0 ${
             value
               ? "border-[#00A3E0] bg-[#D9F1FA] text-[#00A3E0]"
               : invalid
@@ -175,7 +174,7 @@ function SelectCard({
             // button — same idea as Figma Component 58 (list tucked behind the trigger)
             <div
               ref={listRef}
-              className={`${notoLoopedThai.className} pointer-events-none fixed z-40 overflow-hidden`}
+              className={`pointer-events-none fixed z-40 overflow-hidden`}
               style={{ left: placement.left, width: placement.width, top: placement.top, paddingTop: LIST_GAP }}
             >
               {/* scroll bar วาดเอง (CustomScrollArea) ให้เห็นตลอดทุกเบราว์เซอร์/มือถือเมื่อรายการยาวเกินกรอบ */}
@@ -201,7 +200,7 @@ function SelectCard({
                         onChange(o);
                         onOpenChange(false);
                       }}
-                      className={`flex min-h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] border-b-2 border-solid border-[#D9D9D9] px-[32px] text-[20px] font-semibold leading-[30px] last:border-b-0 active:bg-[#F2F2F2] ${
+                      className={`flex min-h-[62px] w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] border-b-2 border-solid border-[#D9D9D9] px-[32px] text-button last:border-b-0 active:bg-[#F2F2F2] ${
                         selected ? "bg-[#D9F1FA] text-[#00A3E0]" : "bg-white text-[#595959]"
                       }`}
                     >
@@ -355,7 +354,7 @@ export default function ConsentLocationPage() {
   });
 
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+    <div className={`flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
       <CustomScrollArea
         className="min-h-0 flex-1"
         scrollRef={scrollRef}
@@ -365,8 +364,8 @@ export default function ConsentLocationPage() {
       >
         <div className="flex min-h-full flex-col items-center gap-[32px] px-[24px] pb-[28px] pt-[32px]">
           <div className="flex flex-col items-center gap-[8px] text-center">
-            <p className="text-[24px] font-semibold leading-[32px]">ข้อมูลผู้ใช้</p>
-            <p className="text-[28px] font-bold leading-[36px]">โปรดเลือกที่อยู่ของท่าน</p>
+            <p className="text-h3">ข้อมูลผู้ใช้</p>
+            <p className="text-h2">โปรดเลือกที่อยู่ของท่าน</p>
           </div>
 
           {isClient && (
@@ -435,7 +434,7 @@ export default function ConsentLocationPage() {
                     {/* Figma node 2917:16420: ขอบ #D9D9D9 — ติ๊กแล้วใช้ฟ้าเหมือนตัวเลือกที่เลือกอยู่; ยังไม่ติ๊กตอนกดยินยอม = แดง */}
                     {accepted && <Check size={26} strokeWidth={3} className="text-[#00A3E0]" aria-hidden="true" />}
                   </button>
-                  <p className="flex-1 text-[18px] font-normal leading-[26px]">
+                  <p className="flex-1 text-caption">
                     ข้าพเจ้าได้อ่านและยอมรับ
                     <button
                       type="button"
@@ -467,8 +466,8 @@ export default function ConsentLocationPage() {
       {showPDPA && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-[24px]">
           <div className="flex w-full max-w-[352px] flex-col gap-[16px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white p-[24px] text-center">
-            <p className="text-[24px] font-semibold leading-[32px]">การคุ้มครองข้อมูล (PDPA)</p>
-            <p className="text-[18px] font-normal leading-[26px]">
+            <p className="text-h3">การคุ้มครองข้อมูล (PDPA)</p>
+            <p className="text-caption">
               แอปพลิเคชันนี้จะบันทึกช่วงอายุ และจังหวัด/อำเภอ/ตำบลที่ท่านเลือกเอง เพื่อวิเคราะห์สถิติโครงการเท่านั้น
               โดยไม่มีการเก็บชื่อ เบอร์โทรศัพท์ พิกัด GPS หรือข้อมูลส่วนบุคคลที่ระบุตัวตนจริงของท่าน
             </p>

@@ -238,15 +238,15 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
   // ---- Stage-complete interstitial ----
   if (phase === "stageEnd") {
     return (
-      <div className="flex flex-col flex-1 min-h-0 justify-center items-center gap-5 p-6 text-center">
-        <div className="text-[clamp(45px,13.91vw,64px)] leading-none">🎉</div>
-        <h2 className="text-[clamp(17px,5.22vw,24px)] font-bold text-[var(--primary-dark)]">เครื่องสะอาดแล้ว!</h2>
+      <div className="gp-compact flex flex-col flex-1 min-h-0 justify-center items-center gap-5 p-6 text-center">
+        <div className="text-[clamp(45px,13.91vw,64px)] leading-none" data-type-exempt="emoji">🎉</div>
+        <h2 className="gp-type-h3 text-[var(--primary-dark)]">เครื่องสะอาดแล้ว!</h2>
         <div className="premium-card bg-[var(--primary-light)] p-4 max-w-sm">
-          <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-primary)] leading-relaxed">
+          <p className="gp-type-body text-[var(--text-primary)]">
             💡 {STAGE_SUMMARIES[stageIdx]}
           </p>
         </div>
-        <button onClick={nextStage} className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px] w-full max-w-sm">
+        <button onClick={nextStage} className="btn btn-primary gp-type-button min-h-[64px] w-full max-w-sm">
           {isLastStage ? "เสร็จสิ้นบทเรียน" : "ด่านต่อไป"}
         </button>
       </div>
@@ -256,12 +256,12 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
   // ---- Missed-fakes reveal (player pressed "ครบแล้ว" too early) ----
   if (phase === "reveal") {
     return (
-      <div className="scroll-region flex flex-col flex-1 min-h-0 items-center gap-4 p-6 text-center">
-        <div className="text-[clamp(36px,11.3vw,52px)] leading-none">🔎</div>
-        <h2 className="text-[clamp(15px,4.78vw,22px)] font-bold text-[var(--accent-error)]">
+      <div className="gp-compact scroll-region flex flex-col flex-1 min-h-0 items-center gap-4 p-6 text-center">
+        <div className="text-[clamp(36px,11.3vw,52px)] leading-none" data-type-exempt="emoji">🔎</div>
+        <h2 className="gp-type-h3 text-[var(--accent-error)]">
           ยังมีแอปปลอมที่มองข้ามไป {missedReveal.length} อัน
         </h2>
-        <p className="text-[clamp(11px,3.48vw,16px)] text-[var(--text-secondary)]">
+        <p className="gp-type-caption text-[var(--text-secondary)]">
           ไม่เป็นไร มาดูกันว่ามีแอปไหนบ้าง แล้วจำจุดสังเกตไว้
         </p>
         <div className="flex flex-col gap-2 w-full max-w-sm">
@@ -270,12 +270,12 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
               key={app.id}
               className="flex items-center gap-3 premium-card bg-[var(--primary-light)] p-3 text-left"
             >
-              <span className="text-[clamp(22px,6.96vw,32px)] leading-none shrink-0" aria-hidden="true">
+              <span className="text-[clamp(22px,6.96vw,32px)] leading-none shrink-0" data-type-exempt="app icon emoji" aria-hidden="true">
                 {app.icon}
               </span>
               <div className="min-w-0">
-                <p className="text-[clamp(12px,3.7vw,17px)] font-bold leading-tight">{app.name}</p>
-                <p className="text-[clamp(10px,3.04vw,14px)] text-[var(--accent-error)] leading-snug">
+                <p className="gp-type-button">{app.name}</p>
+                <p className="gp-type-caption text-[var(--accent-error)]">
                   ⚠️ {app.red_flags[0]}
                 </p>
               </div>
@@ -283,11 +283,11 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
           ))}
         </div>
         <div className="premium-card bg-[var(--bg-app)] p-3 max-w-sm">
-          <p className="text-[clamp(10px,3.26vw,15px)] text-[var(--text-primary)] leading-relaxed">
+          <p className="gp-type-caption text-[var(--text-primary)]">
             💡 {STAGE_SUMMARIES[stageIdx]}
           </p>
         </div>
-        <button onClick={nextStage} className="btn btn-primary text-[clamp(14px,4.35vw,20px)] min-h-[60px] w-full max-w-sm">
+        <button onClick={nextStage} className="btn btn-primary gp-type-button min-h-[60px] w-full max-w-sm">
           {isLastStage ? "เข้าใจแล้ว เสร็จสิ้นบทเรียน" : "เข้าใจแล้ว ไปด่านต่อไป"}
         </button>
       </div>
@@ -299,19 +299,19 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
 
   // ---- Main grid screen ----
   return (
-    <div className="flex flex-col flex-1 min-h-0 justify-between relative">
+    <div className="gp-compact flex flex-col flex-1 min-h-0 justify-between relative">
       <div className="scroll-region flex flex-col gap-4">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <span className="text-[clamp(10px,3.26vw,15px)] font-bold text-[var(--primary-dark)]">
+          <span className="gp-type-button text-[var(--primary-dark)]">
             ด่าน {stageIdx + 1}/{STAGES.length} · ตาราง {cfg.grid}
           </span>
-          <span className="text-[clamp(10px,3.26vw,15px)] font-bold text-[var(--accent-error)]">
+          <span className="gp-type-button text-[var(--accent-error)]">
             🔎 เหลือแอปปลอมต้องหา: {fakesRemaining}
           </span>
         </div>
 
-        <p className="text-[clamp(14px,4.35vw,20px)] font-bold leading-snug text-center">
+        <p className="gp-type-button text-center">
           แตะแอปที่ดูแปลกเพื่อตรวจสอบ แล้วลบแอปปลอมออก
         </p>
 
@@ -328,7 +328,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
                   className="aspect-square rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border)] bg-[var(--bg-app)] flex flex-col items-center justify-center text-[var(--text-secondary)] opacity-70"
                 >
                   <Trash2 size={22} />
-                  <span className="text-[clamp(8px,2.61vw,12px)] mt-1">ลบแล้ว</span>
+                  <span className="gp-type-caption mt-1">ลบแล้ว</span>
                 </div>
               );
             }
@@ -343,10 +343,10 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
                     <CheckCircle2 size={18} />
                   </span>
                 )}
-                <span className="text-[clamp(28px,8.7vw,40px)] leading-none" aria-hidden="true">
+                <span className="text-[clamp(28px,8.7vw,40px)] leading-none" data-type-exempt="app icon emoji" aria-hidden="true">
                   {slot.item.icon}
                 </span>
-                <span className="text-[clamp(9px,2.83vw,13px)] font-semibold text-center leading-tight line-clamp-2">
+                <span className="gp-type-caption text-center line-clamp-2">
                   {slot.item.name}
                 </span>
               </button>
@@ -354,7 +354,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
           })}
         </div>
 
-        <p className="text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] text-center">
+        <p className="gp-type-caption text-[var(--text-secondary)] text-center">
           แอปดีที่ตรวจแล้วจะมีเครื่องหมาย ✓ · ไม่มีการจับเวลา ตรวจได้เรื่อยๆ
         </p>
       </div>
@@ -362,7 +362,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
       {/* Submit — advance if all fakes are gone, otherwise reveal the missed ones */}
       <button
         onClick={handleDone}
-        className="btn btn-primary text-[clamp(14px,4.35vw,20px)] min-h-[60px] mt-3 shrink-0"
+        className="btn btn-primary gp-type-button min-h-[60px] mt-3 shrink-0"
       >
         ครบแล้ว ✓
       </button>
@@ -374,13 +374,13 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
           <div className="bg-[var(--bg-card)] rounded-[var(--radius-xl)] w-full p-5 shadow-[var(--shadow-lg)] overflow-y-auto min-h-0">
             {/* App identity */}
             <div className="flex items-start gap-3 mb-3">
-              <span className="text-[clamp(34px,10.43vw,48px)] leading-none" aria-hidden="true">
+              <span className="text-[clamp(34px,10.43vw,48px)] leading-none" data-type-exempt="app icon emoji" aria-hidden="true">
                 {inspectSlot.item.icon}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-[clamp(15px,4.78vw,22px)] font-bold leading-tight">{inspectSlot.item.name}</p>
+                <p className="gp-type-button">{inspectSlot.item.name}</p>
                 <p
-                  className={`text-[clamp(10px,3.26vw,15px)] font-semibold mt-1 ${
+                  className={`gp-type-button mt-1 ${
                     inspectSlot.item.source === "store"
                       ? "text-[var(--accent-success)]"
                       : "text-[var(--accent-error)]"
@@ -411,14 +411,14 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
             </div>
 
             {/* Permissions */}
-            <p className="text-[clamp(10px,3.04vw,14px)] text-[var(--text-secondary)] mb-1">ขอสิทธิ์ใช้งาน:</p>
+            <p className="gp-type-caption text-[var(--text-secondary)] mb-1">ขอสิทธิ์ใช้งาน:</p>
             <div className="flex flex-wrap gap-2 mb-4">
               {inspectSlot.item.permissions.map((perm) => {
                 const danger = DANGEROUS_PERMS.has(perm);
                 return (
                   <span
                     key={perm}
-                    className={`inline-flex items-center gap-1 text-[clamp(10px,3.04vw,14px)] font-semibold px-2.5 py-1 rounded-[var(--radius-pill)] ${
+                    className={`inline-flex items-center gap-1 gp-type-button px-2.5 py-1 rounded-[var(--radius-pill)] ${
                       danger
                         ? "bg-[rgba(220,38,38,0.12)] text-[var(--accent-error)]"
                         : "bg-[var(--bg-app)] text-[var(--text-secondary)]"
@@ -434,13 +434,13 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
               <div className="flex gap-2.5">
                 <button
                   onClick={() => decide("remove")}
-                  className="btn btn-outline flex-1 text-[clamp(13px,4.13vw,19px)] min-h-[56px] border-[var(--accent-error)] text-[var(--accent-error)]"
+                  className="btn btn-outline flex-1 gp-type-button min-h-[56px] border-[var(--accent-error)] text-[var(--accent-error)]"
                 >
                   <Trash2 size={20} /> ลบแอปนี้
                 </button>
                 <button
                   onClick={() => decide("keep")}
-                  className="btn btn-outline flex-1 text-[clamp(13px,4.13vw,19px)] min-h-[56px] border-[var(--accent-success)] text-[var(--accent-success)]"
+                  className="btn btn-outline flex-1 gp-type-button min-h-[56px] border-[var(--accent-success)] text-[var(--accent-success)]"
                 >
                   <ShieldCheck size={20} /> เก็บไว้
                 </button>
@@ -455,14 +455,14 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
                   {result.correct ? (
                     <>
                       <CheckCircle2 size={26} />
-                      <strong className="text-[clamp(14px,4.35vw,20px)]">
+                      <strong className="gp-type-h3">
                         {result.action === "remove" ? "ลบถูกต้อง!" : "เก็บไว้ถูกแล้ว!"}
                       </strong>
                     </>
                   ) : (
                     <>
                       <AlertTriangle size={26} />
-                      <strong className="text-[clamp(14px,4.35vw,20px)]">
+                      <strong className="gp-type-h3">
                         {inspectSlot.item.is_fake
                           ? "อันนี้ยังน่าสงสัยนะ"
                           : "อันนี้แอปดีนะ"}
@@ -472,7 +472,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
                 </div>
 
                 <div className="premium-card bg-[var(--primary-light)] p-3.5 text-left">
-                  <p className="text-[clamp(12px,3.7vw,17px)] text-[var(--text-primary)] leading-relaxed">
+                  <p className="gp-type-body text-[var(--text-primary)]">
                     {inspectSlot.item.explain}
                   </p>
                   {inspectSlot.item.red_flags.length > 0 && (
@@ -480,7 +480,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
                       {inspectSlot.item.red_flags.map((flag) => (
                         <span
                           key={flag}
-                          className="inline-flex items-center gap-1 text-[clamp(9px,2.83vw,13px)] font-bold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[rgba(220,38,38,0.12)] text-[var(--accent-error)]"
+                          className="inline-flex items-center gap-1 gp-type-button px-2 py-0.5 rounded-[var(--radius-pill)] bg-[rgba(220,38,38,0.12)] text-[var(--accent-error)]"
                         >
                           ⚠️ {flag}
                         </span>
@@ -488,7 +488,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
                     </div>
                   )}
                   {inspectSlot.item.is_fake && (
-                    <p className="text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] mt-2.5">
+                    <p className="gp-type-caption text-[var(--text-secondary)] mt-2.5">
                       ลบแอปจริง: กดค้างที่ไอคอน → ถอนการติดตั้ง · ถ้าถูกดูดเงินโทร 1441
                     </p>
                   )}
@@ -496,7 +496,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
 
                 <button
                   onClick={closeInspect}
-                  className="btn btn-primary text-[clamp(13px,4.13vw,19px)] min-h-[56px] w-full mt-3"
+                  className="btn btn-primary gp-type-button min-h-[56px] w-full mt-3"
                 >
                   {result.correct && result.action === "remove"
                     ? "ลบแล้ว กลับไปตรวจต่อ"
@@ -516,7 +516,7 @@ export default function G10WhoseApp({ onFinish, logEvent }: Props) {
               >
                 <X size={28} />
               </button>
-              <span className="text-[clamp(10px,3.04vw,14px)] font-bold text-white">ปิด</span>
+              <span className="gp-type-caption text-white">ปิด</span>
             </div>
           )}
           </div>

@@ -4,7 +4,6 @@ import React, { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { progressService } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
-import { notoLoopedThai } from "@/lib/fonts";
 import { useDevSkip } from "@/lib/devSkip";
 import type { SelfAssessmentPhase } from "@/lib/selfAssessmentPhase";
 import Button3D from "@/components/Button3D";
@@ -37,7 +36,7 @@ export default function SelfAssessmentCompletePage() {
   useDevSkip(handleContinue);
 
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white`}>
+    <div className={`flex min-h-0 flex-1 flex-col bg-white`}>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center px-[24px] py-[28px]">
           <CompletionCard

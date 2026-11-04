@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Home, RotateCcw, Trophy, X, SkipForward } from "lucide-react";
+import { Menu, Home, RotateCcw, Trophy, X, SkipForward, FlaskConical } from "lucide-react";
+import { DEV_APP_MODE_COOKIE } from "@/lib/appMode";
 import { progressService, type AppMode } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 // Imported for its side effect: the pending pre/post queue syncs on load and on "online" from every page.
@@ -16,9 +17,6 @@ import pkg from "../../package.json";
 interface AppLayoutProps {
   children: React.ReactNode;
   initialTheme: string;
-  // ยังรับไว้จาก layout.tsx เพื่อคงกลไก font-size ฝั่ง server (data-size จาก cookie);
-  // UI ปุ่มปรับขนาดถูกซ่อนตาม US-CF-01 จึงไม่ได้ใช้ค่านี้ใน component นี้แล้ว
-  initialSize?: string;
   // โหมดของ deployment นี้ จาก env APP_MODE (อ่านฝั่ง server ใน layout.tsx)
   appMode: AppMode;
 }
@@ -140,6 +138,28 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
     }
   };
 
+  // Dev-only: สลับโหมดปกติ/วิจัย (override APP_MODE ผ่าน cookie — ดู src/lib/appMode.ts) — รีเซ็ตข้อมูลทั้งหมด
+  // แล้วพากลับหน้าแรกเสมอ เพื่อให้ dev เห็น flow ของแต่ละโหมดตั้งแต่ต้น โดยไม่มีข้อมูลค้างจากโหมดก่อนหน้าปนกัน
+  const handleToggleMode = () => {
+    const nextMode = appMode === "research" ? "normal" : "research";
+    const confirmMessage =
+      nextMode === "research"
+        ? "สลับเป็นโหมดวิจัยจะรีเซ็ตข้อมูลและความคืบหน้าทั้งหมด แล้วพากลับไปหน้าแรก ยืนยันหรือไม่?"
+        : "สลับเป็นโหมดปกติจะรีเซ็ตข้อมูลและความคืบหน้าทั้งหมด แล้วพากลับไปหน้าแรก ยืนยันหรือไม่?";
+
+    if (window.confirm(confirmMessage)) {
+      progressService.resetAll();
+      loggingService.logEvent("dev_switch_app_mode", { to: nextMode });
+
+      document.cookie = `${DEV_APP_MODE_COOKIE}=${nextMode}; path=/; max-age=31536000; samesite=lax`;
+      document.cookie = "naplab_ml_size=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = "naplab_ml_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = "naplab_ml_progress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
+      window.location.href = "/";
+    }
+  };
+
   // US-CF-01B: ไปหน้าแรก (Start Menu / Landing) จาก drawer
   const handleGoHome = () => {
     setMenuOpen(false);
@@ -216,7 +236,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
           }}
           data-dev-only="step-skip"
           aria-label="ข้ามขั้นตอนนี้ (สำหรับนักพัฒนา)"
-          className="fixed top-2 right-2 z-40 flex items-center gap-1 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50/90 px-2.5 py-1 text-[16px] font-bold text-amber-700 cursor-pointer"
+          className="fixed top-2 right-2 z-40 flex items-center gap-1 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50/90 px-2.5 py-1 text-button text-amber-700 cursor-pointer"
         >
           <SkipForward size={18} aria-hidden="true" />
           DEV ข้าม
@@ -238,7 +258,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
               onClick={handleHeaderClick}
               className="flex items-center gap-2 cursor-pointer"
             >
-              <span className="font-bold text-[22px] text-[var(--primary)]">รู้ทันสื่อ</span>
+              <span className="text-h3 text-[var(--primary)]">รู้ทันสื่อ</span>
             </div>
 
             <div className="ml-auto flex items-center gap-2">
@@ -252,7 +272,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
                 }}
                 data-dev-only="step-skip"
                 aria-label="ข้ามขั้นตอนนี้ (สำหรับนักพัฒนา)"
-                className="flex items-center gap-1 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50 px-2.5 py-1 text-[16px] font-bold text-amber-700 cursor-pointer"
+                className="flex items-center gap-1 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50 px-2.5 py-1 text-button text-amber-700 cursor-pointer"
               >
                 <SkipForward size={18} aria-hidden="true" />
                 DEV ข้าม
@@ -272,7 +292,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
                     type="button"
                     onClick={() => window.dispatchEvent(new CustomEvent("videoSkipRequest"))}
                     aria-label="ข้ามคลิปวิดีโอนี้"
-                    className="flex items-center gap-1.5 min-h-[48px] px-3.5 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] text-[20px] font-medium hover:bg-[var(--bg-app)] active:bg-[var(--bg-app)] cursor-pointer"
+                    className="flex items-center gap-1.5 min-h-[48px] px-3.5 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] text-button hover:bg-[var(--bg-app)] active:bg-[var(--bg-app)] cursor-pointer"
                   >
                     <span>ข้าม</span>
                     <SkipForward size={18} strokeWidth={2} />
@@ -318,7 +338,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)]">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-[18px] text-[var(--primary)]">รู้ทันสื่อ</span>
+              <span className="text-h3 text-[var(--primary)]">รู้ทันสื่อ</span>
             </div>
             <button
               onClick={() => setMenuOpen(false)}
@@ -332,7 +352,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
           <nav className="flex flex-col gap-1 p-2">
             <button
               onClick={handleGoHome}
-              className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-[17px] font-bold text-[var(--text-primary)] hover:bg-[var(--primary-light)] cursor-pointer text-left"
+              className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-button text-[var(--text-primary)] hover:bg-[var(--primary-light)] cursor-pointer text-left"
             >
               <Home size={24} className="text-[var(--primary)] shrink-0" />
               <span>ไปหน้าแรก</span>
@@ -344,7 +364,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
                   loggingService.logEvent("nav_leaderboard_from_drawer");
                   setPickerOpen(true);
                 }}
-                className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-[17px] font-bold text-[var(--text-primary)] hover:bg-[var(--primary-light)] cursor-pointer text-left"
+                className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-button text-[var(--text-primary)] hover:bg-[var(--primary-light)] cursor-pointer text-left"
               >
                 <Trophy size={24} className="text-[var(--primary)] shrink-0" />
                 <span>กระดานคะแนน</span>
@@ -357,10 +377,26 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
                   setMenuOpen(false);
                   handleResetAll();
                 }}
-                className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-[17px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-app)] cursor-pointer text-left"
+                className="flex items-center gap-3 min-h-14 px-4 rounded-xl text-button text-[var(--text-secondary)] hover:bg-[var(--bg-app)] cursor-pointer text-left"
               >
                 <RotateCcw size={24} className="shrink-0" />
                 <span>รีเซ็ตข้อมูล</span>
+              </button>
+            )}
+            {DEV_SKIP_ENABLED && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleToggleMode();
+                }}
+                data-dev-only="mode-toggle"
+                className="flex items-center gap-3 min-h-14 px-4 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50 text-button text-amber-700 hover:bg-amber-100 cursor-pointer text-left"
+              >
+                <FlaskConical size={24} className="shrink-0" />
+                <span>
+                  โหมด: {appMode === "research" ? "วิจัย" : "ปกติ"} (DEV แตะเพื่อสลับเป็น
+                  {appMode === "research" ? "ปกติ" : "วิจัย"})
+                </span>
               </button>
             )}
           </nav>
@@ -369,7 +405,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
           <AudioSettingsPanel />
 
           {/* เลขเวอร์ชันแอป — ล่างสุดของ drawer */}
-          <div className="mt-auto px-4 py-3 border-t border-[var(--border)] text-[15px] text-[var(--text-secondary)]">
+          <div className="mt-auto px-4 py-3 border-t border-[var(--border)] text-small text-[var(--text-secondary)]">
             เวอร์ชัน {pkg.version}
           </div>
         </div>

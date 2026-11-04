@@ -82,7 +82,7 @@ export default function CertificatePage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 border-4 border-slate-200 border-t-[var(--primary)] rounded-full animate-spin"></div>
-        <span className="text-lg">กำลังเตรียมใบประกาศเกียรติคุณ...</span>
+        <span className="text-body">กำลังเตรียมใบประกาศเกียรติคุณ...</span>
       </div>
     );
   }
@@ -96,7 +96,7 @@ export default function CertificatePage() {
           className="bg-none border-none text-[var(--primary-dark)] cursor-pointer p-1 flex items-center gap-1 hover:opacity-85"
         >
           <ChevronLeft size={24} />
-          <span className="text-lg font-bold">กลับหน้าหลัก</span>
+          <span className="text-button">กลับหน้าหลัก</span>
         </button>
       </div>
 
@@ -107,8 +107,8 @@ export default function CertificatePage() {
             <Award size={64} style={{ filter: "drop-shadow(0 0 8px rgba(234, 179, 8, 0.4))" }} />
           </div>
           
-          <h2 className="text-2xl font-extrabold text-[var(--text-primary)]">ยินดีด้วยอย่างยิ่ง!</h2>
-          <p className="text-lead mt-2">
+          <h2 className="text-h2 text-[var(--text-primary)]">ยินดีด้วยอย่างยิ่ง!</h2>
+          <p className="text-body-lg text-[var(--text-secondary)] mt-2">
             ท่านเรียนครบถ้วนทุกบทเรียนแล้ว กรุณาพิมพ์ชื่อของท่านเพื่อใช้สร้างใบประกาศความสำเร็จ
           </p>
 
@@ -119,17 +119,17 @@ export default function CertificatePage() {
                 placeholder="พิมพ์ชื่อเล่น หรือ ชื่อจริงที่นี่..."
                 {...register("nickname")}
                 maxLength={15}
-                className="w-full min-h-[60px] text-[22px] px-4 py-3 rounded-2xl border-3 border-[var(--primary)] text-center font-bold outline-none bg-white focus:border-[var(--primary-hover)] text-[var(--text-primary)]"
+                className="w-full min-h-[60px] text-body-lg px-4 py-3 rounded-2xl border-3 border-[var(--primary)] text-center outline-none bg-white focus:border-[var(--primary-hover)] text-[var(--text-primary)]"
                 required
               />
               {errors.nickname && (
-                <p className="text-red-600 text-sm mt-1 text-center font-semibold">{errors.nickname.message}</p>
+                <p className="text-red-600 text-caption mt-1 text-center">{errors.nickname.message}</p>
               )}
             </div>
             
             <button 
               type="submit"
-              className="btn btn-primary text-[22px] min-h-[64px] w-full"
+              className="btn btn-primary min-h-[64px] w-full"
             >
               <span>สร้างใบประกาศทองคำ</span>
             </button>
@@ -139,8 +139,8 @@ export default function CertificatePage() {
         /* Step 2: Render Premium Certificate Card */
         <div className="flex flex-col gap-5 flex-1 min-h-0">
           <div className="content-area">
-            {/* The Certificate Frame */}
-            <div className="relative border-[10px] border-double border-[#eab308] rounded-2xl px-4 py-6 bg-[#fffbeb] text-[#1e293b] shadow-xl text-center mx-auto w-full max-w-[400px]">
+            {/* The Certificate Frame — drawn like a printed certificate, so its type is part of the artwork */}
+            <div data-type-exempt="certificate artwork" className="relative border-[10px] border-double border-[#eab308] rounded-2xl px-4 py-6 bg-[#fffbeb] text-[#1e293b] shadow-xl text-center mx-auto w-full max-w-[400px]">
               {/* Corner Ornaments */}
               <div className="absolute top-2 left-2 text-[#eab308] text-[18px]">✦</div>
               <div className="absolute top-2 right-2 text-[#eab308] text-[18px]">✦</div>
@@ -192,7 +192,7 @@ export default function CertificatePage() {
             </div>
 
             {/* Instruction note */}
-            <p className="text-small text-[var(--text-secondary)] mt-3 italic text-center leading-normal">
+            <p className="text-caption text-[var(--text-secondary)] mt-3 italic text-center">
               💡 วิธีเซฟเก็บไว้: คุณลุงคุณป้าสามารถ **แคปหน้าจอ** โทรศัพท์มือถือ <br />
               เพื่อบันทึกรูปภาพเกียรติบัตรไว้อวดลูกหลานได้เลย!
             </p>
@@ -202,7 +202,7 @@ export default function CertificatePage() {
           <div className="flex flex-col gap-3 w-full shrink-0">
             <button 
               onClick={handleShareLine}
-              className="btn flex items-center justify-center bg-[#06c755] hover:bg-[#05b04b] text-white text-[22px] min-h-[64px] border-none shadow-md cursor-pointer"
+              className="btn flex items-center justify-center bg-[#06c755] hover:bg-[#05b04b] text-white min-h-[64px] border-none shadow-md cursor-pointer"
             >
               <Share2 size={24} />
               <span>แชร์ลิงก์ให้เพื่อนร่วมเรียนใน LINE</span>
@@ -213,7 +213,7 @@ export default function CertificatePage() {
                 setValue("nickname", "");
                 setSubmittedName("");
               }}
-              className="btn btn-outline text-[18px] min-h-[52px] cursor-pointer"
+              className="btn btn-outline min-h-[52px] cursor-pointer"
             >
               <RefreshCw size={18} />
               <span>พิมพ์ชื่อเพื่อออกใบประกาศใหม่</span>

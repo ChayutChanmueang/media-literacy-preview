@@ -35,7 +35,7 @@ function GameAudioToggleButton({ className }: { className: string }) {
       onClick={toggle}
       aria-label="ปิดเสียงเกม"
       aria-pressed={!on}
-      className={`flex min-h-12 min-w-12 shrink-0 flex-col items-center justify-center rounded-xl px-1 text-[20px] font-bold leading-6 text-[#4B4B4B] active:bg-black/5 ${className}`}
+      className={`flex min-h-12 min-w-12 shrink-0 flex-col items-center justify-center rounded-xl px-1 text-button text-[#4B4B4B] active:bg-black/5 ${className}`}
     >
       {on ? <Volume2 size={28} aria-hidden /> : <VolumeX size={28} aria-hidden />}
       <span>{on ? "เปิด" : "ปิด"}</span>
@@ -62,7 +62,7 @@ function AudioSettingsSection() {
 
   return (
     <section aria-label="เสียง" className="flex flex-col gap-2 border-t border-[var(--border)] px-4 py-3">
-      <h2 className="text-[20px] font-bold text-[var(--text-primary)]">เสียง</h2>
+      <h2 className="text-h3 text-[var(--text-primary)]">เสียง</h2>
       <ChannelRow
         icon={<Music size={24} className="shrink-0 text-[var(--primary)]" aria-hidden />}
         label="เพลงประกอบ"
@@ -116,13 +116,13 @@ function ChannelRow({
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-3">
         {icon}
-        <span className="flex-1 text-[20px] font-bold text-[var(--text-primary)]">{label}</span>
+        <span className="flex-1 text-button text-[var(--text-primary)]">{label}</span>
         <button
           type="button"
           onClick={onToggle}
           aria-label={`ปิด${label}`}
           aria-pressed={muted}
-          className={`flex min-h-12 min-w-[88px] items-center justify-center gap-1 rounded-xl border-2 px-2 text-[20px] font-bold cursor-pointer ${
+          className={`flex min-h-12 min-w-[88px] items-center justify-center gap-1 rounded-xl border-2 px-2 text-button cursor-pointer ${
             muted
               ? "border-[var(--border)] text-[var(--text-secondary)]"
               : "border-[var(--primary)] bg-[var(--primary-light)] text-[var(--primary)]"

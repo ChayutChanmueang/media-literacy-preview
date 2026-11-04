@@ -985,7 +985,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
     drawShards(ctx, world, picture, area);
 
-    ctx.font = `${itemSize()}px sans-serif`;
+    ctx.font = `${itemSize()}px sans-serif`; // type-exempt: emoji items
     for (const item of world.items) ctx.fillText(ITEM_INFO[item.type].emoji, item.x, item.y);
 
     const py = paddleTop(height);
@@ -1016,7 +1016,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
     if (world.attached) {
       const label = "แตะจอเพื่อปล่อยโล่";
-      ctx.font = `600 ${textPx(22)}px ${fontFamily}`;
+      ctx.font = `600 ${textPx(20)}px ${fontFamily}`; // Button (20px SemiBold)
       const w = ctx.measureText(label).width + px(32);
       const pillH = px(44, 36);
       // halfway between the grid and the shield, so it never covers bricks on a short screen
@@ -1180,14 +1180,14 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     const verdict = VERDICTS[picture.isAi ? (picture.category === "edited" ? "edited" : "ai") : "real"];
     const VerdictIcon = verdict.icon;
     return (
-      <div className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+      <div className="gp-compact flex min-h-0 flex-1 flex-col bg-white">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center gp-gap-20 gp-px-24 gp-py-28">
             <CheckCircle2 size={72} className="shrink-0 text-[#2FB84E]" aria-hidden="true" />
-            <p className="text-center gp-text-32 font-bold gp-leading-40 text-black">
+            <p className="text-center gp-type-h1 text-black">
               {isLastLevel ? "ผ่านครบทุกด่านแล้ว!" : `ผ่านด่านที่ ${levelIdx + 1} แล้ว!`}
             </p>
-            <p className="text-center gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">
+            <p className="text-center gp-type-body-lg text-[#4B4B4B]">
               กล่องที่ท่านทำลายไป ต่อกันเป็นภาพนี้
             </p>
 
@@ -1199,14 +1199,14 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
             />
 
             <div className={`w-full rounded-[16px] border-2 border-solid gp-px-16 gp-py-12 ${verdict.boxClass}`}>
-              <p className={`flex items-center gp-gap-8 gp-text-24 font-bold gp-leading-32 ${verdict.textClass}`}>
+              <p className={`flex items-center gp-gap-8 gp-type-h3 ${verdict.textClass}`}>
                 <VerdictIcon size={28} className="shrink-0" aria-hidden="true" />
                 {verdict.label}
               </p>
-              <p className="gp-mt-8 gp-text-20 font-semibold gp-leading-30 text-[#1a1a1a]">{picture.claim}</p>
-              <p className="gp-mt-8 gp-text-20 gp-leading-30 text-[#1a1a1a]">{picture.explanation}</p>
+              <p className="gp-mt-8 gp-type-button text-[#1a1a1a]">{picture.claim}</p>
+              <p className="gp-mt-8 gp-type-body text-[#1a1a1a]">{picture.explanation}</p>
               {picture.aiDisclosure && (
-                <p className="gp-mt-8 gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]">ⓘ {picture.aiDisclosure}</p>
+                <p className="gp-mt-8 gp-type-button text-[#4B4B4B]">ⓘ {picture.aiDisclosure}</p>
               )}
             </div>
           </div>
@@ -1221,7 +1221,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
   return (
     <div
-      className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col overflow-hidden select-none`}
+      className="gp-compact flex min-h-0 flex-1 flex-col overflow-hidden select-none"
       style={{ backgroundImage: "linear-gradient(155.36deg, #E6F6FC 0%, #C4CFE1 100%)" }}
     >
       <GameStageHeader
@@ -1236,7 +1236,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
               logEvent("g17_dev_skip_level", { game_id: "G17", level: levelIdx + 1 });
               if (!worldRef.current.ended) finishLevel();
             }}
-            className="min-h-[48px] self-center rounded-[12px] border-2 border-dashed border-violet-500 bg-violet-50 gp-px-12 gp-text-20 font-bold text-violet-800"
+            className="min-h-[48px] self-center rounded-[12px] border-2 border-dashed border-violet-500 bg-violet-50 gp-px-12 gp-type-button text-violet-800"
             data-dev-only="g17-skip-level"
           >
             ข้ามด่าน
@@ -1258,7 +1258,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         {toast && (
           <div
             role="status"
-            className="pointer-events-none absolute inset-x-[16px] top-[12px] mx-auto w-fit max-w-full rounded-full bg-[rgba(75,75,75,0.9)] gp-px-20 gp-py-8 text-center gp-text-20 font-semibold gp-leading-28 text-white"
+            className="pointer-events-none absolute inset-x-[16px] top-[12px] mx-auto w-fit max-w-full rounded-full bg-[rgba(75,75,75,0.9)] gp-px-20 gp-py-8 text-center gp-type-button text-white"
           >
             {toast}
           </div>

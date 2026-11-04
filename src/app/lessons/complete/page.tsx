@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { loggingService } from "@/services/loggingService";
 import { progressService } from "@/services/progressService";
-import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import CompletionCard from "@/components/CompletionCard";
 
@@ -37,7 +36,7 @@ export default function LessonCompletePage() {
   };
 
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white`}>
+    <div className={`flex min-h-0 flex-1 flex-col bg-white`}>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center px-[24px] py-[28px]">
           <CompletionCard

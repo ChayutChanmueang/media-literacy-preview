@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import AppLayout from "@/components/AppLayout";
 import AudioProvider from "@/components/AudioProvider";
-import { getServerAppMode } from "@/lib/appMode";
+import { DEV_APP_MODE_COOKIE, getServerAppMode } from "@/lib/appMode";
+import { notoLoopedThai } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "รู้ทันสื่อ - Interactive Learning",
@@ -41,11 +42,9 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("naplab_ml_session");
-  const sizeCookie = cookieStore.get("naplab_ml_size");
 
   // Theme is always purple regardless of province (retained for future use)
   const theme = "purple";
-  let size = "normal";
 
   // if (sessionCookie?.value) {
   //   try {
@@ -65,13 +64,9 @@ export default async function RootLayout({
   //   }
   // }
 
-  if (sizeCookie?.value) {
-    size = sizeCookie.value;
-  }
-
   return (
     // suppressHydrationWarning: IOS_SAFARI_SCRIPT adds data-ios-safari to <html> before React hydrates
-    <html lang="th" data-theme={theme} data-size={size} suppressHydrationWarning>
+    <html lang="th" data-theme={theme} className={notoLoopedThai.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: IOS_SAFARI_SCRIPT }} />
         {process.env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_UNREGISTER_SW_SCRIPT }} />}
@@ -79,7 +74,7 @@ export default async function RootLayout({
       <body className="min-h-full flex justify-center bg-[#f8fafc]">
         {/* ระบบเสียงกลางระบบเดียว (docs/software/11) — mount ครั้งเดียว อยู่ข้ามทุก route */}
         <AudioProvider />
-        <AppLayout initialTheme={theme} initialSize={size} appMode={getServerAppMode()}>
+        <AppLayout initialTheme={theme} appMode={getServerAppMode(cookieStore.get(DEV_APP_MODE_COOKIE)?.value)}>
           {children}
         </AppLayout>
       </body>

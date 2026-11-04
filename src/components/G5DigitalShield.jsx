@@ -189,13 +189,13 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
   const currentHazard = HAZARDS[activeHazardIdx];
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 justify-between [font-family:var(--font-content)]">
+    <div className="gp-compact flex flex-col flex-1 min-h-0 justify-between [font-family:var(--font-content)]">
 
       {/* 1. CONFIDENCE BAR HEADER */}
       <div className="p-4 bg-[var(--bg-card)] rounded-[var(--radius-md)] border border-[var(--border)] shadow-[var(--shadow-sm)] mb-3">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-[clamp(13px,3.91vw,18px)] font-extrabold text-[var(--primary-dark)]">🛡️ ระดับพลังสะกัดภัยไซเบอร์</span>
-          <span className="text-[clamp(15px,4.78vw,22px)] font-black text-[var(--primary)]">{confidence}%</span>
+          <span className="gp-type-button text-[var(--primary-dark)]">🛡️ ระดับพลังสะกัดภัยไซเบอร์</span>
+          <span className="gp-type-button text-[var(--primary)]">{confidence}%</span>
         </div>
         <div className="w-full h-6 bg-[#e2e8f0] rounded-xl overflow-hidden border border-[var(--border)]">
           {/* Width is driven by game state (confidence), and the striped texture needs a raw gradient — both stay inline */}
@@ -209,7 +209,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
             borderRadius: '12px'
           }}></div>
         </div>
-        <p className="text-[clamp(10px,3.04vw,14px)] mt-1.5 text-[var(--text-secondary)] text-center">
+        <p className="gp-type-caption mt-1.5 text-[var(--text-secondary)] text-center">
           สะกัดกั้นข้อความล่อลวงสำเร็จ {confidence / 20} จาก 5 ด่าน
         </p>
       </div>
@@ -225,13 +225,13 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
 
           {/* Safety Line at the bottom */}
           <div className="absolute left-0 right-0 bottom-[22%] h-1 bg-[rgba(239,68,68,0.4)] border-t border-dashed border-[#ef4444] flex items-center justify-center z-[1]">
-            <span className="text-[clamp(8px,2.39vw,11px)] text-[#f87171] bg-[#1e293b] px-2 py-0.5 rounded border border-[#7f1d1d] font-bold tracking-[1px]">ขอบเขตความปลอดภัย (SAFETY BASELINE)</span>
+            <span className="text-[clamp(8px,2.39vw,11px)] text-[#f87171] bg-[#1e293b] px-2 py-0.5 rounded border border-[#7f1d1d] font-bold tracking-[1px]" data-type-exempt="label on the board marker line">ขอบเขตความปลอดภัย (SAFETY BASELINE)</span>
           </div>
 
           {/* User Instructions Overlay */}
           {gameState === 'playing' && isFalling && (
             <div className="absolute top-3 left-3 right-3 text-center bg-[rgba(15,23,42,0.7)] px-3 py-2 rounded-[var(--radius-md)] border border-[#334155] pointer-events-none [animation:pulse_2s_infinite] z-[2]">
-              <span className="text-[#38bdf8] font-bold text-[clamp(10px,3.26vw,15px)]">
+              <span className="text-[#38bdf8] gp-type-button">
                 👉 แตะจิ้มลงไปที่กล่องข้อความสีแดงเพื่อสกัดภัย!
               </span>
             </div>
@@ -260,15 +260,15 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
             >
               {/* Visible Bubble */}
               <div className="bg-[rgba(30,41,59,0.95)] border-[3px] border-[#ef4444] shadow-[0_0_15px_rgba(239,68,68,0.4)] rounded-3xl py-3.5 px-[18px] w-[280px] flex flex-col items-center justify-center pointer-events-none [animation:bounceBubble_1.5s_infinite_alternate]">
-                <span className="text-[clamp(8px,2.39vw,11px)] font-bold text-[#ef4444] bg-[rgba(239,68,68,0.1)] px-2 py-0.5 rounded-lg mb-1.5 uppercase">
+                <span className="gp-type-caption text-[#ef4444] bg-[rgba(239,68,68,0.1)] px-2 py-0.5 rounded-lg mb-1.5 uppercase">
                   ⚠️ {currentHazard.type}
                 </span>
-                <p className="text-[clamp(12px,3.7vw,17px)] font-bold text-[#f8fafc] m-0 text-center leading-snug">
+                <p className="gp-type-button text-[#f8fafc] m-0 text-center">
                   &quot;{currentHazard.text}&quot;
                 </p>
 
                 {/* Assist circle indicator */}
-                <div className="mt-2 w-8 h-8 rounded-full bg-[rgba(239,68,68,0.2)] border-2 border-dashed border-[#f87171] flex items-center justify-center text-[#f87171] text-[clamp(8px,2.61vw,12px)] font-bold">
+                <div className="mt-2 w-8 h-8 rounded-full bg-[rgba(239,68,68,0.2)] border-2 border-dashed border-[#f87171] flex items-center justify-center text-[#f87171] text-[clamp(8px,2.61vw,12px)] font-bold" data-type-exempt="tap marker in a 32px circle">
                   แตะ
                 </div>
               </div>
@@ -281,7 +281,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
               <div className="w-[90%] max-w-[320px] text-center p-6 bg-[#1e293b] rounded-3xl border-2 border-[var(--primary)] shadow-[0_0_25px_rgba(14,165,233,0.4)]">
                 <Shield size={64} color="var(--primary)" className="[animation:pulse_1s_infinite] mb-4" />
 
-                <h3 className="text-[clamp(14px,4.35vw,20px)] text-[#38bdf8] mb-4 font-bold">
+                <h3 className="gp-type-h3 text-[#38bdf8] mb-4">
                   🛡️ กางโล่สะกดภัยสำเร็จ!
                 </h3>
 
@@ -297,12 +297,12 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                           isVisible ? 'opacity-100' : 'opacity-[0.15]'
                         } ${isCurrent ? 'scale-[1.15] bg-[rgba(14,165,233,0.15)]' : 'scale-100 bg-transparent'}`}
                       >
-                        <span className="text-[clamp(22px,6.96vw,32px)]">{s.icon}</span>
-                        <span className={`text-[clamp(20px,6.09vw,28px)] font-black ${isCurrent ? 'text-[var(--primary)]' : 'text-[#f1f5f9]'}`}>
+                        <span className="text-[clamp(22px,6.96vw,32px)]" data-type-exempt="icon emoji">{s.icon}</span>
+                        <span className={`gp-type-h2 ${isCurrent ? 'text-[var(--primary)]' : 'text-[#f1f5f9]'}`}>
                           {s.text}
                         </span>
                         {isCurrent && (
-                          <span className="text-[clamp(9px,2.83vw,13px)] text-[var(--primary-light)] italic">
+                          <span className="gp-type-caption text-[var(--primary-light)] italic">
                             ({s.detail})
                           </span>
                         )}
@@ -322,24 +322,24 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                   <AlertTriangle size={48} color="#ef4444" />
                 </div>
 
-                <h3 className="text-[clamp(15px,4.78vw,22px)] font-extrabold text-[#991b1b] mb-1">
+                <h3 className="gp-type-h3 text-[#991b1b] mb-1">
                   ฟองภัยสแกมหลุดรอด!
                 </h3>
-                <span className="text-[clamp(9px,2.83vw,13px)] text-[#b91c1c] bg-[#fee2e2] px-2 py-[3px] rounded-lg font-bold">
+                <span className="gp-type-caption text-[#b91c1c] bg-[#fee2e2] px-2 py-[3px] rounded-lg">
                   ภัยเงียบ: {currentHazard.type}
                 </span>
 
                 {/* Question Quote */}
                 <div className="my-4 p-3 bg-[var(--bg-app)] rounded-xl border-l-4 border-l-[#ef4444] text-left">
-                  <p className="text-[clamp(10px,3.26vw,15px)] text-[var(--text-primary)] italic m-0">
+                  <p className="gp-type-caption text-[var(--text-primary)] italic m-0">
                     &quot;{currentHazard.text}&quot;
                   </p>
                 </div>
 
                 {/* Positive Advice Text */}
                 <div className="text-left mb-5">
-                  <span className="text-[clamp(10px,3.04vw,14px)] font-bold text-[var(--primary-dark)]">💡 คำแนะนำเสริมสติ:</span>
-                  <p className="text-[clamp(11px,3.48vw,16px)] text-[var(--text-secondary)] mt-1 leading-relaxed">
+                  <span className="gp-type-button text-[var(--primary-dark)]">💡 คำแนะนำเสริมสติ:</span>
+                  <p className="gp-type-caption text-[var(--text-secondary)] mt-1">
                     {currentHazard.advice}
                   </p>
                 </div>
@@ -347,7 +347,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                 {/* Accessibility Speaker button */}
                 <button
                   onClick={() => handleSpeak(currentHazard.speech)}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-[var(--radius-pill)] border border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer text-[clamp(10px,3.26vw,15px)] font-bold mb-4 ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[#f8fafc]'}`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-[var(--radius-pill)] border border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer gp-type-button mb-4 ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[#f8fafc]'}`}
                 >
                   {speaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   {speaking ? 'หยุดฟังเสียงบรรยาย' : '🔊 ฟังเสียงพูดแนะนำ'}
@@ -356,7 +356,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
                 {/* Resume Button */}
                 <button
                   onClick={handleCloseAdvice}
-                  className="btn btn-primary w-full text-[clamp(14px,4.35vw,20px)] p-3.5 rounded-[var(--radius-md)] shadow-[var(--shadow-md)]"
+                  className="btn btn-primary w-full gp-type-button p-3.5 rounded-[var(--radius-md)] shadow-[var(--shadow-md)]"
                 >
                   <Play size={20} fill="currentColor" />
                   เข้าใจแล้วและเล่นต่อ
@@ -376,14 +376,14 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
             </div>
           </div>
 
-          <h2 className="text-[clamp(20px,6.09vw,28px)] font-black text-[var(--primary-dark)] mb-2">
+          <h2 className="gp-type-h2 text-[var(--primary-dark)] mb-2">
             🎉 ผ่านการทดสอบกางโล่!
           </h2>
-          <span className="text-[clamp(10px,3.26vw,15px)] text-[#0f766e] bg-[#ccfbf1] px-4 py-1 rounded-[var(--radius-pill)] font-bold mb-4">
+          <span className="gp-type-caption text-[#0f766e] bg-[#ccfbf1] px-4 py-1 rounded-[var(--radius-pill)] mb-4">
             ระดับเกราะป้องกัน: สมบูรณ์ร้อยเปอร์เซ็นต์
           </span>
 
-          <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-secondary)] leading-relaxed max-w-[360px] mb-7">
+          <p className="gp-type-body text-[var(--text-secondary)] max-w-[360px] mb-7">
             ยอดเยี่ยมมาก! คุณลุงคุณป้ามีความคุ้นชินและเตรียมพร้อมรับมือภัยออนไลน์ด้วยหลักคิด
             <strong> &quot;หยุด คิด ถาม ทำ&quot;</strong> อย่างเต็มร้อย นำความรู้ไปประยุกต์ใช้เพื่อความสุขไซเบอร์นะ
           </p>
@@ -391,7 +391,7 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
           {/* Finish Button */}
           <button
             onClick={handleFinish}
-            className="btn btn-primary w-full max-w-[300px] text-[clamp(15px,4.78vw,22px)] py-4 px-6 rounded-[var(--radius-md)] shadow-[var(--shadow-md)]"
+            className="btn btn-primary w-full max-w-[300px] gp-type-button py-4 px-6 rounded-[var(--radius-md)] shadow-[var(--shadow-md)]"
           >
             ไปต่อเพื่อรับคะแนนความมั่นใจ
           </button>
@@ -402,14 +402,14 @@ export default function G5DigitalShield({ onFinish, logEvent }) {
       {gameState === 'playing' && (
         <div className="mt-3 flex justify-between items-center py-3 px-4 bg-[var(--bg-card)] rounded-[var(--radius-md)] border border-[var(--border)]">
           <div className="flex items-center gap-2">
-            <span className="text-[clamp(10px,3.26vw,15px)] font-bold text-[var(--text-primary)]">
+            <span className="gp-type-button text-[var(--text-primary)]">
               ด่านสกัดภัยที่: {activeHazardIdx + 1}/5
             </span>
           </div>
 
           <button
             onClick={() => handleSpeak("บทเรียนนี้ให้ผู้เรียนสังเกตและแตะข้อความที่ค่อยๆ ร่วงหล่นลงมาเพื่อสะกัดสแกมเมอร์ ด้วยการเปิดเกราะกำบังโล่กู้ชีพ")}
-            className={`px-3 py-2 rounded-[var(--radius-pill)] border border-[var(--border)] text-[var(--text-secondary)] cursor-pointer text-[clamp(10px,3.04vw,14px)] font-bold flex items-center gap-1 ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[#f8fafc]'}`}
+            className={`px-3 py-2 rounded-[var(--radius-pill)] border border-[var(--border)] text-[var(--text-secondary)] cursor-pointer gp-type-button flex items-center gap-1 ${speaking ? 'bg-[var(--primary-light)]' : 'bg-[#f8fafc]'}`}
           >
             {speaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
             วิธีเล่น

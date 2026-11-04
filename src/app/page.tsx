@@ -7,7 +7,6 @@ import { progressService } from "@/services/progressService";
 import { useIsClient } from "@/lib/useIsClient";
 import { loggingService } from "@/services/loggingService";
 import { FLOW_SEQUENCE, firstIncompleteFlowLesson } from "@/lib/flow";
-import { notoLoopedThai } from "@/lib/fonts";
 import Button3D from "@/components/Button3D";
 import pkg from "../../package.json";
 
@@ -53,13 +52,13 @@ export default function LandingPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 border-4 border-slate-200 border-t-[var(--primary)] rounded-full animate-spin"></div>
-        <span className="text-[var(--text-secondary)] text-lg">กำลังโหลด...</span>
+        <span className="text-body text-[var(--text-secondary)]">กำลังโหลด...</span>
       </div>
     );
   }
 
   return (
-    <div className={`${notoLoopedThai.className} relative flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+    <div className={`relative flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex min-h-full flex-col items-center justify-center gap-[20px] px-[24px] py-[28px] text-center">
           <Image
@@ -72,29 +71,19 @@ export default function LandingPage() {
             className="size-[172px] shrink-0 object-contain"
           />
 
-          {/* globals.css styles h1 unlayered, so Tailwind utilities lose to it — Figma's type is set inline */}
-          <h1
-            style={{
-              fontFamily: "inherit",
-              fontSize: "40px",
-              lineHeight: "48px",
-              fontWeight: 700,
-              color: "#4B4B4B",
-              marginBottom: 0,
-            }}
-          >
+          <h1 className="mb-0 text-display text-[#4B4B4B]">
             รู้ทันสื่อ
           </h1>
 
-          <p className="w-full text-[24px] font-semibold leading-[32px]">หยุด · คิด · ถาม · ทำ</p>
+          <p className="w-full text-h3">หยุด · คิด · ถาม · ทำ</p>
 
-          <p className="w-full text-[22px] font-normal leading-[32px]">
+          <p className="w-full text-body-lg">
             เรียนรู้ความปลอดภัยออนไลน์
             <br />
             ด้วยตัวคุณเอง
           </p>
 
-          <p className="w-full text-[18px] font-normal leading-[26px] text-[#595959]">
+          <p className="w-full text-caption text-[#595959]">
             ยินดีต้อนรับ ชวนทุกท่านมาดูคลิปสั้นสนุก ๆ และเล่นเกมฝึกจับกลโกงแยกแยะข่าวจริง-ข่าวปลอม และสังเกตสื่อ AI เพื่อป้องกันพวกมิจฉาชีพในมือถือกัน
           </p>
         </div>
@@ -105,9 +94,9 @@ export default function LandingPage() {
       </div>
 
       {/* เวอร์ชันแอป + โหมดของ deployment นี้ (APP_MODE: normal / research) มุมซ้ายล่าง ในช่องว่างใต้ปุ่ม
-          ข้อยกเว้นกฎตัวอักษร ≥ 20px (ผู้ใช้ขอ): เป็นข้อมูลให้ทีมเช็กว่าเปิดเว็บไหนอยู่ ไม่ใช่เนื้อหาสำหรับผู้เรียน
-          ขนาดเท่าเลขเวอร์ชันใน drawer ของ AppLayout */}
-      <p className="pointer-events-none absolute bottom-[12px] left-[16px] text-[15px] leading-[20px] text-[#595959]">
+          Small Text (ข้อความที่ไม่ต้องอ่าน — docs/wiki/design/07-typography.md): เป็นข้อมูลให้ทีมเช็กว่าเปิดเว็บไหนอยู่
+          ไม่ใช่เนื้อหาสำหรับผู้เรียน เท่าเลขเวอร์ชันใน drawer ของ AppLayout */}
+      <p className="pointer-events-none absolute bottom-[12px] left-[16px] text-small text-[#595959]">
         {pkg.version} ({progressService.getAppMode()})
       </p>
     </div>

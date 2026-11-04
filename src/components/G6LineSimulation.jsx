@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Link2, AlertTriangle } from 'lucide-react';
-import { notoLoopedThai } from '@/lib/fonts';
 import AutoAdvanceButton from './AutoAdvanceButton';
 import Button3D from './Button3D';
 import GameAnswerButton from './GameAnswerButton';
@@ -357,12 +356,12 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
   const renderBubbleContent = (bubble) => {
     switch (bubble.type) {
       case 'text':
-        return <div className="text-[20px] font-normal leading-[30px] text-[#4B4B4B]">{bubble.text}</div>;
+        return <div className="gp-type-body text-[#4B4B4B]">{bubble.text}</div>;
       case 'sticker':
         return (
           <div className="text-center p-1">
-            <div className="text-[clamp(34px,10.43vw,48px)] leading-none">{bubble.stickerEmoji}</div>
-            <div className="text-[clamp(11px,3.48vw,16px)] font-bold mt-1 text-[#1a1a1a]">{bubble.caption}</div>
+            <div className="text-[clamp(34px,10.43vw,48px)] leading-none" data-type-exempt="sticker emoji">{bubble.stickerEmoji}</div>
+            <div className="gp-type-caption mt-1 text-[#1a1a1a]">{bubble.caption}</div>
           </div>
         );
       case 'image':
@@ -374,19 +373,19 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
                 <div key={i} className="flex-1 bg-[#16a34a] rounded-t-[3px]" style={{ height: `${h}%` }} />
               ))}
             </div>
-            <div className="text-[clamp(12px,3.7vw,17px)] font-bold text-[#1a1a1a] leading-snug">{bubble.chartCaption}</div>
+            <div className="gp-type-button text-[#1a1a1a]">{bubble.chartCaption}</div>
           </div>
         );
       case 'link-card':
         return (
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="w-12 h-12 rounded-lg bg-[#f1f5f9] flex items-center justify-center text-[clamp(17px,5.22vw,24px)] shrink-0">
+              <div className="w-12 h-12 rounded-lg bg-[#f1f5f9] flex items-center justify-center text-[clamp(17px,5.22vw,24px)] shrink-0" data-type-exempt="link icon emoji">
                 {bubble.thumbEmoji}
               </div>
-              <div className="text-[clamp(12px,3.7vw,17px)] font-bold text-[#1a1a1a] leading-snug">{bubble.linkTitle}</div>
+              <div className="gp-type-button text-[#1a1a1a]">{bubble.linkTitle}</div>
             </div>
-            <div className="mt-2 pt-2 border-t border-[#e5e5e5] flex items-center gap-1 text-[clamp(10px,3.04vw,14px)] text-[#6b7280]">
+            <div className="mt-2 pt-2 border-t border-[#e5e5e5] flex items-center gap-1 gp-type-caption text-[#6b7280]">
               <Link2 size={14} />
               <span>{bubble.domain}</span>
             </div>
@@ -396,7 +395,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
         return (
           /* ctaColor comes from the scenario data, so background-color stays inline */
           <button
-            className="w-full border-none rounded-[var(--radius-pill)] text-white font-bold text-[clamp(13px,3.91vw,18px)] py-3.5 px-4 shadow-[0_4px_10px_rgba(0,0,0,0.15)] pointer-events-none"
+            className="w-full border-none rounded-[var(--radius-pill)] text-white gp-type-button py-3.5 px-4 shadow-[0_4px_10px_rgba(0,0,0,0.15)] pointer-events-none"
             style={{ backgroundColor: scenario.ctaColor }}
           >
             {bubble.buttonText}
@@ -412,7 +411,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
   // กรอบจอ LINE จำลอง — ตัด status bar (เวลา/wifi/แบต) + input bar (พิมพ์ข้อความ) ออก
   // เหลือแค่ header (ใครกำลังคุย) + ฟองข้อความ + คำกำกับเล็ก; ความสูง/scroll คุมด้วย flex (ตามพื้นที่จริง)
   const renderPhoneFrame = (frameClass, chatBodyClass) => (
-    <div className={`${notoLoopedThai.className} flex flex-col overflow-hidden rounded-t-[24px] border-2 border-solid border-[#D9D9D9] bg-[#8DABD9] ${frameClass}`}>
+    <div className={`flex flex-col overflow-hidden rounded-t-[24px] border-2 border-solid border-[#D9D9D9] bg-[#8DABD9] ${frameClass}`}>
       {/* Chat Header — ใครกำลังส่งข้อความมา */}
       <div
         onClick={() => headerBubble && handleToggleExplain(headerBubble)}
@@ -424,10 +423,10 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
         }}
       >
         {/* ไม่มีลูกศรกลับ/ปุ่มโทร/เมนู — กันผู้สูงอายุเข้าใจผิดว่ากดออกจากเกมหรือโทรออกได้ */}
-        <span className="truncate text-[20px] font-semibold leading-[30px] text-[#4B4B4B]">{scenario.accountName}</span>
+        <span className="truncate gp-type-button text-[#4B4B4B]">{scenario.accountName}</span>
       </div>
       {responseChosen && headerBubble && expandedIds[headerBubble.id] && (
-        <div className="shrink-0 bg-[#fef2f2] px-[24px] py-[10px] text-[18px] font-bold leading-[26px] text-[var(--accent-error)]">
+        <div className="shrink-0 bg-[#fef2f2] px-[24px] py-[10px] gp-type-button text-[var(--accent-error)]">
           {headerBubble.desc}
         </div>
       )}
@@ -451,16 +450,16 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
             >
               {renderBubbleContent(bubble)}
               {responseChosen && bubble.isRedFlag && (
-                <div className="absolute -top-2.5 -right-2.5 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[var(--accent-error)] text-[14px] font-bold text-white shadow-[var(--shadow-sm)]">
+                <div className="absolute -top-2.5 -right-2.5 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[var(--accent-error)] text-[14px] font-bold text-white shadow-[var(--shadow-sm)]" data-type-exempt="count badge in a 26px circle">
                   {flagIndexMap[bubble.id]}
                 </div>
               )}
             </div>
             {bubble.time && (
-              <span className="text-[12px] font-normal leading-[16px] text-black">{bubble.time}</span>
+              <span className="gp-type-small text-black">{bubble.time}</span>
             )}
             {responseChosen && bubble.isRedFlag && expandedIds[bubble.id] && (
-              <div className="w-full rounded-[24px] border-2 border-dashed border-[#fca5a5] bg-[#fef2f2] px-[14px] py-[10px] text-[18px] font-bold leading-[26px] text-[var(--accent-error)] [animation:fadeIn_0.3s_ease-out]">
+              <div className="w-full rounded-[24px] border-2 border-dashed border-[#fca5a5] bg-[#fef2f2] px-[14px] py-[10px] gp-type-button text-[var(--accent-error)] [animation:fadeIn_0.3s_ease-out]">
                 {bubble.desc}
               </div>
             )}
@@ -479,7 +478,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
         {/* ข้อความระบบในแชท — บอกให้ผู้เล่นเลือกตอบกลับหรือไม่ตอบกลับ */}
         {conversationDone && !responseChosen && (
           <div className="mt-1 w-full rounded-[24px] border-2 border-solid border-[var(--primary)] bg-[var(--primary-light)] px-[14px] py-[12px] text-center [animation:fadeIn_0.3s_ease-out]">
-            <p className="text-[20px] font-bold leading-[30px] text-[var(--primary-dark)]">
+            <p className="gp-type-button text-[var(--primary-dark)]">
               👉 อ่านข้อความในไลน์นี้แล้ว ท่านจะทำอย่างไร
             </p>
           </div>
@@ -509,32 +508,32 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
   }
 
   return (
-    <div className={`flex flex-col flex-1 min-h-0 ${responseChosen ? 'bg-white' : 'bg-[#E8EAF3]'}`}>
+    <div className={`gp-compact flex flex-col flex-1 min-h-0 ${responseChosen ? 'bg-white' : 'bg-[#E8EAF3]'}`}>
 
 
 
       {!introDone ? (
         /* INTRO เฟสแรก: แสดงสถานการณ์เต็มจอ (auto ไปแชทใน 15 วิ หรือกดข้าม) — US-CF-09 ขยายตัวอักษร */
         <div className="flex-1 min-h-0 flex flex-col justify-center gap-5 text-center px-2 [animation:fadeIn_0.3s_ease-out]">
-          <div className="text-[clamp(45px,13.91vw,64px)] leading-none">📱💬</div>
+          <div className="text-[clamp(45px,13.91vw,64px)] leading-none" data-type-exempt="emoji">📱💬</div>
           <h3 className="flex flex-col gap-1.5 leading-snug">
             {scenario.title.includes(': ') ? (
               <>
-                <span className="text-[clamp(16px,4.5vw,22px)] text-[var(--text-secondary)] font-normal">
+                <span className="gp-type-body-lg text-[var(--text-secondary)]">
                   {scenario.title.split(': ')[0]}
                 </span>
-                <span className="text-[clamp(22px,7vw,32px)] font-bold">
+                <span className="gp-type-h1">
                   {scenario.title.split(': ')[1]}
                 </span>
               </>
             ) : (
-              <span className="text-[clamp(20px,6.5vw,30px)] font-bold">{scenario.title}</span>
+              <span className="gp-type-h1">{scenario.title}</span>
             )}
           </h3>
-          <p className="text-[clamp(18px,5.2vw,24px)] text-[var(--text-secondary)] leading-relaxed">
+          <p className="gp-type-body-lg text-[var(--text-secondary)]">
             เดี๋ยวจะมีข้อความเข้ามาในไลน์ ลองอ่านให้จบแล้วคิดดูว่าจะทำอย่างไร
           </p>
-          <p className="text-[clamp(14px,3.5vw,16px)] text-[var(--text-secondary)] opacity-80">ระบบจะพาไปหน้าแชทเองเมื่อครบเวลา (ดูแถบที่ปุ่มด้านล่าง)</p>
+          <p className="gp-type-caption text-[var(--text-secondary)] opacity-80">ระบบจะพาไปหน้าแชทเองเมื่อครบเวลา (ดูแถบที่ปุ่มด้านล่าง)</p>
         </div>
       ) : !responseChosen ? (
         /* READING เฟสสอง: จอจำลองเต็มพื้นที่ที่เหลือ, แชท scroll ตามความสูงจริง (flex);
@@ -562,7 +561,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
             ))}
           </ul>
 
-          <p className="mt-[26px] text-[24px] font-semibold leading-[32px]">เกราะป้องกันภัย: หยุด คิด ถาม ทำ</p>
+          <p className="mt-[26px] gp-type-h3">เกราะป้องกันภัย: หยุด คิด ถาม ทำ</p>
           <p className="mt-[8px]">{scenario.summary}</p>
 
           <a
@@ -586,7 +585,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
             }}
             onAutoAdvance={() => setIntroDone(true)}
             delayMs={15000}
-            className="btn btn-primary text-[clamp(18px,5.65vw,26px)] min-h-[100px] w-full relative rounded-t-[25px] rounded-b-none"
+            className="btn btn-primary gp-type-button min-h-[100px] w-full relative rounded-t-[25px] rounded-b-none"
           >
             <span>อ่านข้อความเลย</span>
             <ArrowRight size={28} />
@@ -631,10 +630,10 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
             <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center text-[var(--accent-error)] mb-3 shadow-sm">
               <AlertTriangle size={42} />
             </div>
-            <h4 className="text-[clamp(22px,6vw,30px)] font-bold text-[var(--accent-error)] mb-2">
+            <h4 className="gp-type-h2 text-[var(--accent-error)] mb-2">
               {scamWarning}
             </h4>
-            <p className="text-[clamp(14px,4vw,18px)] text-[var(--text-secondary)] mb-6 leading-relaxed">
+            <p className="gp-type-body text-[var(--text-secondary)] mb-6">
               ในชีวิตจริง ไม่ควรกดลิงก์หรือปุ่มลักษณะนี้จากคนที่ไม่น่าเชื่อถือเด็ดขาดนะ!
             </p>
             <div className="w-[200px] flex">

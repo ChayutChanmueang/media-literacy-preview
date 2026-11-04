@@ -31,7 +31,7 @@ export default function GameChoiceButton({
       className={`choice-btn choice-btn--${variant} flex-1 flex flex-col items-center justify-center gap-1.5 px-1 py-3 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
     >
       {Icon && <Icon size={34} strokeWidth={2.25} />}
-      <span className="text-[clamp(15px,4.78vw,22px)] font-bold leading-tight text-center">
+      <span className="gp-type-button text-center">
         {label}
       </span>
     </button>

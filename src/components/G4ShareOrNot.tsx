@@ -144,7 +144,7 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 justify-between">
+    <div className="gp-compact flex flex-col flex-1 min-h-0 justify-between">
       <div className="scroll-region flex flex-col gap-4">
         {/* Header: progress dots + audio */}
         <div className="flex justify-between items-center">
@@ -165,7 +165,7 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
 
           <button
             onClick={() => handleSpeak(isAnswered ? item.explain : item.prompt)}
-            className={`px-3 py-2 rounded-[var(--radius-pill)] border-2 border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer flex items-center gap-1.5 text-[clamp(11px,3.48vw,16px)] font-bold min-h-[44px] ${
+            className={`px-3 py-2 rounded-[var(--radius-pill)] border-2 border-[var(--primary)] text-[var(--primary-dark)] cursor-pointer flex items-center gap-1.5 gp-type-button min-h-[44px] ${
               speaking ? "bg-[var(--primary-light)]" : "bg-[var(--bg-app)]"
             }`}
           >
@@ -180,13 +180,13 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
           role="img"
           aria-label={item.image_alt}
         >
-          <span className="text-[clamp(77px,23.91vw,110px)] leading-none select-none" aria-hidden="true">
+          <span className="text-[clamp(77px,23.91vw,110px)] leading-none select-none" data-type-exempt="picture emoji" aria-hidden="true">
             {item.emoji}
           </span>
 
           {/* AI disclosure badge — shows once real assets set ai_disclosure=true */}
           {item.ai_disclosure && (
-            <div className="absolute top-3 left-3 bg-[rgba(15,23,42,0.85)] text-white px-3 py-1.5 rounded-[var(--radius-pill)] text-[clamp(10px,3.04vw,14px)] font-bold border border-white/20">
+            <div className="absolute top-3 left-3 bg-[rgba(15,23,42,0.85)] text-white px-3 py-1.5 rounded-[var(--radius-pill)] gp-type-caption border border-white/20">
               ⚠️ สื่อนี้สร้างโดย AI เพื่อการเรียนรู้
             </div>
           )}
@@ -194,8 +194,8 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
 
         {/* Prompt */}
         <div className="text-left">
-          <span className="text-[clamp(11px,3.48vw,16px)] text-[var(--text-secondary)] font-bold">คำถาม:</span>
-          <p className="text-[clamp(15px,4.78vw,22px)] font-bold leading-snug">{item.prompt}</p>
+          <span className="gp-type-button text-[var(--text-secondary)]">คำถาม:</span>
+          <p className="gp-type-h3">{item.prompt}</p>
         </div>
 
         {/* Choices */}
@@ -203,19 +203,19 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
           <div className="flex flex-col gap-3 mt-1">
             <button
               onClick={() => handleAnswer("safe_share")}
-              className="btn btn-outline text-[clamp(15px,4.78vw,22px)] min-h-[64px] border-[var(--accent-success)] text-[var(--accent-success)]"
+              className="btn btn-outline gp-type-button min-h-[64px] border-[var(--accent-success)] text-[var(--accent-success)]"
             >
               ✓ แชร์ได้ปลอดภัย
             </button>
             <button
               onClick={() => handleAnswer("no_share")}
-              className="btn btn-outline text-[clamp(15px,4.78vw,22px)] min-h-[64px] border-[var(--accent-error)] text-[var(--accent-error)]"
+              className="btn btn-outline gp-type-button min-h-[64px] border-[var(--accent-error)] text-[var(--accent-error)]"
             >
               ✗ ไม่ควรแชร์เด็ดขาด
             </button>
             <button
               onClick={() => handleAnswer("unsure")}
-              className="btn btn-outline text-[clamp(15px,4.78vw,22px)] min-h-[64px] border-[#b45309] text-[#b45309]"
+              className="btn btn-outline gp-type-button min-h-[64px] border-[#b45309] text-[#b45309]"
             >
               ❓ ไม่แน่ใจ / ต้องเช็กก่อน
             </button>
@@ -235,17 +235,17 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
               {isCorrect ? (
                 <>
                   <CheckCircle2 size={28} />
-                  <strong className="text-[clamp(15px,4.78vw,22px)]">ถูกต้อง!</strong>
+                  <strong className="gp-type-h3">ถูกต้อง!</strong>
                 </>
               ) : isCautious ? (
                 <>
                   <ShieldCheck size={28} />
-                  <strong className="text-[clamp(15px,4.78vw,22px)]">รอบคอบมาก!</strong>
+                  <strong className="gp-type-h3">รอบคอบมาก!</strong>
                 </>
               ) : (
                 <>
                   <AlertTriangle size={28} />
-                  <strong className="text-[clamp(15px,4.78vw,22px)]">ลองมาดูกันนะ</strong>
+                  <strong className="gp-type-h3">ลองมาดูกันนะ</strong>
                 </>
               )}
             </div>
@@ -254,20 +254,20 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
               {/* When cautious, praise + reveal the safe answer first */}
               {isCautious && (
                 <>
-                  <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-primary)] leading-relaxed mb-2">
+                  <p className="gp-type-body text-[var(--text-primary)] mb-2">
                     การหยุดคิดว่า &ldquo;ไม่แน่ใจ&rdquo; ก่อนแชร์ คือทักษะที่ปลอดภัยที่สุด
                     ถ้าไม่แน่ใจ อย่าเพิ่งแชร์
                   </p>
-                  <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--primary-dark)] font-bold mb-2">
+                  <p className="gp-type-button text-[var(--primary-dark)] mb-2">
                     คำตอบที่ปลอดภัยของข้อนี้คือ: {ANSWER_LABEL[item.safe_answer]}
                   </p>
                 </>
               )}
 
-              <strong className="text-[clamp(13px,3.91vw,18px)] block mb-1.5 text-[var(--primary-dark)]">
+              <strong className="gp-type-button block mb-1.5 text-[var(--primary-dark)]">
                 {item.safe_answer === "no_share" ? "ทำไมไม่ควรแชร์:" : "ทำไมแชร์ได้:"}
               </strong>
-              <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-primary)] leading-relaxed">
+              <p className="gp-type-body text-[var(--text-primary)]">
                 {item.explain}
               </p>
 
@@ -277,7 +277,7 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
                   {item.impact_tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 text-[clamp(10px,3.04vw,14px)] font-bold px-2.5 py-1 rounded-[var(--radius-pill)] bg-[rgba(220,38,38,0.12)] text-[var(--accent-error)]"
+                      className="inline-flex items-center gap-1 gp-type-button px-2.5 py-1 rounded-[var(--radius-pill)] bg-[rgba(220,38,38,0.12)] text-[var(--accent-error)]"
                     >
                       ⚠️ {tag}
                     </span>
@@ -288,10 +288,10 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
               {/* Decision criteria on the cautious card */}
               {isCautious && (
                 <div className="mt-3 pt-3 border-t border-[var(--border)]">
-                  <strong className="text-[clamp(11px,3.48vw,16px)] block mb-1.5 text-[var(--primary-dark)]">
+                  <strong className="gp-type-button block mb-1.5 text-[var(--primary-dark)]">
                     ก่อนแชร์ทุกครั้ง ลองถามตัวเอง 3 ข้อ:
                   </strong>
-                  <ul className="text-[clamp(11px,3.48vw,16px)] text-[var(--text-primary)] leading-relaxed list-none flex flex-col gap-1">
+                  <ul className="gp-type-caption text-[var(--text-primary)] list-none flex flex-col gap-1">
                     {CRITERIA.map((c, i) => (
                       <li key={i} className="flex gap-2">
                         <span aria-hidden="true">{i + 1}.</span>
@@ -304,7 +304,7 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
 
               {/* Hotline for no_share items */}
               {item.safe_answer === "no_share" && (
-                <p className="text-[clamp(10px,3.26vw,15px)] text-[var(--text-secondary)] mt-3">
+                <p className="gp-type-caption text-[var(--text-secondary)] mt-3">
                   หากข้อมูลส่วนตัวหลุดหรือถูกนำไปใช้ โทรปรึกษา{" "}
                   <strong className="text-[var(--primary-dark)]">1441</strong> (ตำรวจไซเบอร์)
                   หรือ <strong className="text-[var(--primary-dark)]">1212</strong>{" "}
@@ -318,7 +318,7 @@ export default function G4ShareOrNot({ onFinish, logEvent }: Props) {
 
       <button
         onClick={handleNext}
-        className="btn btn-primary text-[clamp(15px,4.78vw,22px)] min-h-[64px] mt-6"
+        className="btn btn-primary gp-type-button min-h-[64px] mt-6"
         disabled={!isAnswered}
       >
         <span>{currentIdx < items.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้นบทเรียน"}</span>

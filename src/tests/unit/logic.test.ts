@@ -94,17 +94,3 @@ describe("Quiz Scoring Logic (Zod & Scoring Engine)", () => {
     expect(parsed.success).toBe(false);
   });
 });
-
-describe("Font Size Accessibility Scale helpers", () => {
-  it("should return the correct CSS styling variable classes based on data-size state", () => {
-    const sizes = {
-      normal: { base: "20px", title: "32px" },
-      large: { base: "24px", title: "38px" },
-      xlarge: { base: "28px", title: "44px" },
-    };
-
-    expect(sizes.normal.base).toBe("20px");
-    expect(sizes.large.base).toBe("24px");
-    expect(sizes.xlarge.base).toBe("28px");
-  });
-});

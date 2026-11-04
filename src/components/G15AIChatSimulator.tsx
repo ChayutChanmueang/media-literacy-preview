@@ -5,7 +5,6 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import FullscreenImageViewer from "@/components/FullscreenImageViewer";
 import GameIntro from "@/components/GameIntro";
 import ITEMS from "@/data/g15-chat-items.json";
-import { notoLoopedThai } from "@/lib/fonts";
 
 /**
  * G15 — ลองถาม AI (Generative AI chat simulator)
@@ -311,7 +310,7 @@ function G15Chat({ onFinish, logEvent, onExit }: Props) {
             <div className="w-24 h-24 rounded-full bg-[var(--primary-light)] flex items-center justify-center select-none">
               <CheckCircle2 size={56} className="text-[var(--primary-dark)]" />
             </div>
-            <h2 className="text-[clamp(22px,6vw,28px)] font-bold text-[var(--primary-dark)]">
+            <h2 className="gp-type-h2 text-[var(--primary-dark)]">
               ลองถาม AI ครบ 3 เรื่องแล้ว!
             </h2>
 
@@ -329,7 +328,7 @@ function G15Chat({ onFinish, logEvent, onExit }: Props) {
           </div>
         </div>
 
-        <button onClick={handleExit} className="btn btn-primary text-[clamp(20px,5.5vw,24px)] gp-tap-min-h-64 shrink-0">
+        <button onClick={handleExit} className="btn btn-primary gp-type-button gp-tap-min-h-64 shrink-0">
           <ArrowLeft size={24} />
           <span>กลับหน้ารวมเกม</span>
         </button>
@@ -341,7 +340,7 @@ function G15Chat({ onFinish, logEvent, onExit }: Props) {
   const showChoices = stage === "idle" && choices.length > 0;
   const gradientBg = showChoices || stage === "reading";
   return (
-    <div className={`${notoLoopedThai.className} gp-compact relative isolate flex flex-col flex-1 min-h-0 bg-[#E8EAF3]`}>
+    <div className={`gp-compact relative isolate flex flex-col flex-1 min-h-0 bg-[#E8EAF3]`}>
       {/* gradient as its own layer so it fades with the panel (a background-image can't transition) */}
       <div
         aria-hidden="true"
@@ -350,7 +349,7 @@ function G15Chat({ onFinish, logEvent, onExit }: Props) {
         }`}
       />
       {/* Header — generic chatbot name, no real brand. Figma caption is 18px; 20px here per the AGENT.md minimum. */}
-      <p className="shrink-0 gp-pt-40 gp-pb-12 px-[24px] text-center gp-text-20 font-normal gp-leading-30">
+      <p className="shrink-0 gp-pt-40 gp-pb-12 px-[24px] text-center gp-type-body">
         <span className="text-[#4B4B4B]">AI ผู้ช่วยแอป</span> <span className="text-[#A5A5A5]">AI (จำลอง)</span>
       </p>
 
@@ -367,13 +366,13 @@ function G15Chat({ onFinish, logEvent, onExit }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/images/games/g15-ai-avatar-large.svg" alt="" aria-hidden="true" className="gp-size-104 shrink-0" />
               <div className="flex flex-col items-center gp-gap-8">
-                <p className="gp-text-24 font-semibold gp-leading-32 text-black">
+                <p className="gp-type-h3 text-black">
                   สวัสดีค่ะ
                   <br />
                   วันนี้อยากรู้อะไรคะ
                 </p>
                 {/* Figma 18px → 20px (AGENT.md minimum) */}
-                <p className="gp-text-20 font-normal gp-leading-30 text-[#595959]">แตะเลือกคำถามด้านล่างได้เลย</p>
+                <p className="gp-type-body text-[#595959]">แตะเลือกคำถามด้านล่างได้เลย</p>
               </div>
             </div>
           )}
@@ -400,13 +399,13 @@ function G15Chat({ onFinish, logEvent, onExit }: Props) {
       {/* Question choices — only between answers (Figma: hidden while the AI is answering) */}
       <SlidePanel open={showChoices}>
         <div className="px-[24px] gp-pt-20 gp-pb-action-bar flex flex-col gp-gap-12">
-          <p className="text-center gp-text-20 font-semibold gp-leading-30 text-black">เลือกคำถาม 1 ข้อ</p>
+          <p className="text-center gp-type-button text-black">เลือกคำถาม 1 ข้อ</p>
           {choices.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => handleAsk(item)}
-              className="flex w-full items-center justify-center gp-tap-min-h-60 px-[16px] gp-py-4 rounded-[20px] border-2 border-solid border-[#A5A5A5] bg-white text-center gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B] cursor-pointer transition-colors active:bg-[#D9F1FA]"
+              className="flex w-full items-center justify-center gp-tap-min-h-60 px-[16px] gp-py-4 rounded-[20px] border-2 border-solid border-[#A5A5A5] bg-white text-center gp-type-button text-[#4B4B4B] cursor-pointer transition-colors active:bg-[#D9F1FA]"
             >
               {item.chip_label}
             </button>
@@ -419,7 +418,7 @@ function G15Chat({ onFinish, logEvent, onExit }: Props) {
             together with the READING_MS timer — mounted earlier (hidden) it would already be full */}
         {stage === "reading" && (
           <div className="px-[24px] gp-pt-20 gp-pb-action-bar flex flex-col gp-gap-12" role="status">
-            <p className="text-center gp-text-20 font-semibold gp-leading-30 text-[#4B4B4B]">
+            <p className="text-center gp-type-button text-[#4B4B4B]">
               {readingPaused
                 ? "หยุดเวลาไว้ให้แล้ว อ่านได้ตามสบายค่ะ"
                 : "ถามครบแล้ว ค่อยๆ อ่านคำตอบได้เลยค่ะ (แตะค้างหรือเลื่อนจอเพื่อหยุดเวลา)"}
@@ -483,7 +482,7 @@ function UserBubble({ item, onOpenImage }: { item: ChatItem; onOpenImage: (img: 
         </button>
       )}
       {item.sms && (
-        <div className="max-w-[85%] px-[20px] gp-py-16 rounded-[20px] border-2 border-solid border-[#D9D9D9] bg-[#F2F2F2] gp-text-20 gp-leading-30 text-[#1a1a1a]">
+        <div className="max-w-[85%] px-[20px] gp-py-16 rounded-[20px] border-2 border-solid border-[#D9D9D9] bg-[#F2F2F2] gp-type-body text-[#1a1a1a]">
           <p className="font-semibold text-[#595959]">ข้อความ SMS จำลอง</p>
           <p className="gp-mt-8 font-semibold">ผู้ส่ง: {item.sms.sender}</p>
           <p className="gp-mt-8">{item.sms.body}</p>
@@ -494,7 +493,7 @@ function UserBubble({ item, onOpenImage }: { item: ChatItem; onOpenImage: (img: 
         </div>
       )}
       {/* Figma 3076:13565 — white pill, grey border */}
-      <div className="max-w-[85%] px-[20px] gp-py-16 rounded-[40px] border-2 border-solid border-[#D9D9D9] bg-white gp-text-20 font-semibold gp-leading-30 text-[#595959]">
+      <div className="max-w-[85%] px-[20px] gp-py-16 rounded-[40px] border-2 border-solid border-[#D9D9D9] bg-white gp-type-button text-[#595959]">
         {item.question}
       </div>
     </div>
@@ -516,7 +515,7 @@ function AiMessage({
     return (
       <div className="flex items-center gap-[8px]">
         <AiAvatar pulsing />
-        <span className="gp-text-20 gp-leading-30 text-[#595959] motion-safe:animate-pulse">{thinkingLabel}</span>
+        <span className="gp-type-body text-[#595959] motion-safe:animate-pulse">{thinkingLabel}</span>
       </div>
     );
   }
@@ -550,7 +549,7 @@ function AiMessage({
   return (
     <div className="flex items-start gap-[8px]">
       <AiAvatar />
-      <div className="flex-1 min-w-0 flex flex-col gp-gap-8 gp-text-20 font-normal gp-leading-30 text-[#4B4B4B]">
+      <div className="flex-1 min-w-0 flex flex-col gp-gap-8 gp-type-body text-[#4B4B4B]">
         {groups.map((group, gi) =>
           group.kind === "li" ? (
             <ul key={gi} className="list-disc pl-6 flex flex-col gap-1.5">
@@ -586,12 +585,12 @@ function AiAvatar({ pulsing = false }: { pulsing?: boolean }) {
 function Takeaway({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
   return (
     <li className="premium-card bg-[var(--bg-card)] p-4 flex items-start gap-3">
-      <span aria-hidden="true" className="gp-text-30 leading-none mt-0.5">
+      <span aria-hidden="true" className="gp-text-30 leading-none mt-0.5" data-type-exempt="icon emoji">
         {icon}
       </span>
       <div className="flex flex-col gap-1">
-        <strong className="text-[clamp(18px,5vw,22px)] text-[var(--text-primary)]">{title}</strong>
-        <span className="text-[clamp(18px,5vw,21px)] text-[var(--text-secondary)] leading-relaxed">{children}</span>
+        <strong className="gp-type-button text-[var(--text-primary)]">{title}</strong>
+        <span className="gp-type-body text-[var(--text-secondary)]">{children}</span>
       </div>
     </li>
   );

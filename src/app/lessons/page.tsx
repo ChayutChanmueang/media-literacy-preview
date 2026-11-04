@@ -7,7 +7,6 @@ import { progressService, type UserProgress } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 import { firstIncompleteFlowLesson } from "@/lib/flow";
 import { useIsClient } from "@/lib/useIsClient";
-import { notoLoopedThai } from "@/lib/fonts";
 import CustomScrollArea from "@/components/CustomScrollArea";
 import { PAGE_SCROLL_TRACK_CLASS, SCROLL_THUMB_CLASS } from "@/lib/scrollbarStyles";
 import { getOrderedLessonIds, getVideoByLessonId } from "@/lib/videos";
@@ -104,8 +103,8 @@ function ModeCard({
           />
         </div>
         <div className="w-[148px] shrink-0 text-[#4B4B4B]">
-          <p className="text-[28px] font-bold leading-[36px]">{name}</p>
-          <p className="text-[20px] font-normal leading-[30px]">{body}</p>
+          <p className="text-h2">{name}</p>
+          <p className="text-body">{body}</p>
         </div>
         {/* decorative: the whole card is the button */}
         {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG from the Figma design */}
@@ -138,7 +137,7 @@ function CategoryCard({
       <div className="flex min-h-[96px] items-center gap-[28px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white py-[8px] pl-[20px] pr-[18px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={icon} alt="" aria-hidden="true" className="size-[60px] shrink-0 rounded-[12px] object-cover" />
-        <p className="min-w-0 flex-1 text-[24px] font-semibold leading-[32px] text-[#4B4B4B]">{label}</p>
+        <p className="min-w-0 flex-1 text-h3 text-[#4B4B4B]">{label}</p>
       </div>
     </Press3D>
   );
@@ -149,7 +148,7 @@ function BackPillButton({ onClick }: { onClick: () => void }) {
   return (
     <Press3D onClick={onClick} className="mx-auto w-fit min-w-[172px]" baseRadius="rounded-[20px]">
       <div className="flex h-[56px] items-center justify-center rounded-[20px] border-2 border-solid border-[#D9D9D9] bg-white px-[24px]">
-        <span className="text-[20px] font-semibold leading-[30px] text-[#A5A5A5]">ย้อนกลับ</span>
+        <span className="text-button text-[#A5A5A5]">ย้อนกลับ</span>
       </div>
     </Press3D>
   );
@@ -233,7 +232,7 @@ export default function LessonSelectorPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 border-4 border-slate-200 border-t-[var(--primary)] rounded-full animate-spin"></div>
-        <span className="text-lg">กำลังโหลดแผนผังบทเรียน...</span>
+        <span className="text-body">กำลังโหลดแผนผังบทเรียน...</span>
       </div>
     );
   }
@@ -341,10 +340,10 @@ function LessonSelector() {
 
   if (activeSubPage === "modes") {
     return (
-      <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+      <div className={`flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center gap-[36px] px-[24px] py-[36px]">
-            <p className="w-full max-w-[352px] text-center text-[28px] font-bold leading-[36px]">
+            <p className="w-full max-w-[352px] text-center text-h2">
               โปรดเลือกรูปแบบการเรียนรู้ของคุณ
             </p>
 
@@ -393,10 +392,10 @@ function LessonSelector() {
   // Figma node "อิสระ" (หมวดหมู่) — หน้าหมวดหมู่ของโหมดอิสระ คั่นก่อนเข้ารายวิชา/เกมสนุก/วิดีโอ
   if (activeSubPage === "categories") {
     return (
-      <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+      <div className={`flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
-            <p className="text-[28px] font-bold leading-[36px]">หมวดหมู่</p>
+            <p className="text-h2">หมวดหมู่</p>
 
             <div className="flex w-full flex-col gap-[16px]">
               {CATEGORIES.map((category) => (
@@ -421,11 +420,11 @@ function LessonSelector() {
   // เกมสนุก (นอกสาย Flow) — ยังไม่มีดีไซน์เฉพาะ จึงใช้ลิสต์การ์ดสไตล์เดียวกับหน้าหมวดหมู่
   if (activeSubPage === "fun-games") {
     return (
-      <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+      <div className={`flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
         {/* scroll bar วาดเอง ให้เห็นตลอดเมื่อรายการยาวเกินจอ (native scrollbar บนมือถือซ่อนตัวเอง) */}
         <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
           <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
-            <p className="text-[28px] font-bold leading-[36px]">เกมสนุก</p>
+            <p className="text-h2">เกมสนุก</p>
 
             <div className="flex w-full flex-col gap-[16px]">
               {FUN_GAMES.map((game) => (
@@ -451,11 +450,11 @@ function LessonSelector() {
   // Figma node "เกมเพื่อการเรียนรู้" — ใช้รูปแบบการ์ดเดียวกันซ้ำสำหรับทั้ง 3 รายการย่อยของโหมดอิสระ
   if (activeSubPage === "videos") {
     return (
-      <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+      <div className={`flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
         {/* scroll bar วาดเอง ให้เห็นตลอดเมื่อรายการยาวเกินจอ (native scrollbar บนมือถือซ่อนตัวเอง) */}
         <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
           <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
-            <p className="text-[28px] font-bold leading-[36px]">วิดีโอ</p>
+            <p className="text-h2">วิดีโอ</p>
 
             <div className="flex w-full flex-col gap-[16px]">
               {VIDEOS.map((video) => (
@@ -478,11 +477,11 @@ function LessonSelector() {
   }
 
   return (
-    <div className={`${notoLoopedThai.className} flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
+    <div className={`flex min-h-0 flex-1 flex-col bg-white text-[#4B4B4B]`}>
       {/* scroll bar วาดเอง ให้เห็นตลอดเมื่อรายการยาวเกินจอ (native scrollbar บนมือถือซ่อนตัวเอง) */}
       <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
         <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
-          <p className="text-[28px] font-bold leading-[36px]">เกมเพื่อการเรียนรู้</p>
+          <p className="text-h2">เกมเพื่อการเรียนรู้</p>
 
           <div className="flex w-full flex-col gap-[16px]">
             {LEARNING_GAMES.map((game) => (

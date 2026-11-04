@@ -4,7 +4,6 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import G18Background from "./G18Background";
 import { Eye } from "lucide-react";
-import { notoLoopedThai } from "@/lib/fonts";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
 import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
@@ -422,23 +421,23 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   if (phase === "result") {
     const newBest = runs > 1 && score > 0 && score === bestScore;
     return (
-      <div ref={stageRootRef} className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+      <div ref={stageRootRef} className={`gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
             <ResultTrophy />
-            <p className="result-pop gp-text-32 font-bold gp-leading-40 text-black">{score > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
+            <p className="result-pop gp-type-h1 text-black">{score > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
             {score > 0 ? (
-              <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
                 ทำได้ต่อเนื่อง <CountUp value={score} className="font-bold text-[#2563EB]" /> ด่าน
               </p>
             ) : (
-              <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
                 ด่านแรกมีไฟดวงเดียว ค่อย ๆ ดูแล้วกดตามได้เลย
               </p>
             )}
-            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
+            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
             {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-              <p className="result-rise gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} ด่าน</p>
+              <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} ด่าน</p>
             )}
           </div>
         </div>
@@ -510,7 +509,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
   return (
     <div
       ref={stageRootRef}
-      className={`${notoLoopedThai.className} gp-compact relative isolate flex min-h-0 flex-1 flex-col select-none`}
+      className={`gp-compact relative isolate flex min-h-0 flex-1 flex-col select-none`}
     >
       <G18Background />
       {/* Header card: same as G17 (GameStageHeader) — Figma leaves the left slot empty in the real game.
@@ -553,7 +552,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
               <div aria-live="polite" className="relative z-40 flex w-full gp-min-h-84 items-center justify-center">
                 {tutorialTip && (
                   <p
-                    className={`max-w-[352px] whitespace-pre-line rounded-[16px] border-2 border-solid bg-white gp-px-16 gp-py-8 text-center gp-text-22 font-bold gp-leading-30 shadow-md ${
+                    className={`max-w-[352px] whitespace-pre-line rounded-[16px] border-2 border-solid bg-white gp-px-16 gp-py-8 text-center gp-type-body-lg shadow-md ${
                       tutorialTip.tone === "praise"
                         ? "border-emerald-500 text-emerald-800"
                         : tutorialTip.tone === "retry"
@@ -711,6 +710,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
                 />
                 <span
                   className="g19-guide-finger absolute left-0 top-[-4px] block text-[60px] leading-none"
+                  data-type-exempt="hand emoji"
                   style={{ filter: "drop-shadow(0 3px 4px rgba(0,0,0,0.35))", animationDuration: `${TUTORIAL_HAND_MS}ms` }}
                 >
                   👆
@@ -724,7 +724,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
           <p
             role="status"
             aria-live="polite"
-            className="relative z-40 whitespace-pre-line rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white gp-px-12 gp-py-4 text-center gp-text-20 font-normal gp-leading-30 text-black"
+            className="relative z-40 whitespace-pre-line rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white gp-px-12 gp-py-4 text-center gp-type-body text-black"
           >
             {status}
           </p>
@@ -738,7 +738,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
               type="button"
               onClick={replay}
               disabled={!isInput}
-              className="flex min-h-[56px] items-center justify-center gap-2 rounded-[16px] border-2 border-solid border-[#2563EB] bg-white gp-px-20 gp-text-22 font-bold text-[#1D4ED8] disabled:border-[#CBD5E1] disabled:text-[#64748B]"
+              className="flex min-h-[56px] items-center justify-center gap-2 rounded-[16px] border-2 border-solid border-[#2563EB] bg-white gp-px-20 gp-type-button text-[#1D4ED8] disabled:border-[#CBD5E1] disabled:text-[#64748B]"
             >
               <Eye size={26} aria-hidden="true" />
               ดูอีกครั้ง

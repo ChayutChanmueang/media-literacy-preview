@@ -1,7 +1,6 @@
 "use client";
 
 import { Star } from "lucide-react";
-import { notoLoopedThai } from "@/lib/fonts";
 
 interface GameScoreCardProps {
   /** ดาวที่ได้ (0-3) */
@@ -22,11 +21,11 @@ export default function GameScoreCard({
 }: GameScoreCardProps) {
   return (
     <div
-      className={`${notoLoopedThai.className} flex w-full max-w-[352px] flex-col items-center gap-[24px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[24px] py-[32px] shadow-[0px_2px_0px_0px_#D9D9D9]`}
+      className={`flex w-full max-w-[352px] flex-col items-center gap-[24px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[24px] py-[32px] shadow-[0px_2px_0px_0px_#D9D9D9]`}
     >
       <div className="flex flex-col items-center gap-[8px] text-center">
-        <p className="text-[28px] font-bold leading-[36px] text-[#4B4B4B]">{title}</p>
-        <p className="text-[20px] font-normal leading-[30px] text-[#7F7F7F]">{subtitle}</p>
+        <p className="text-h2 text-[#4B4B4B]">{title}</p>
+        <p className="text-body text-[#7F7F7F]">{subtitle}</p>
       </div>
 
       <div className="flex items-center gap-[12px]" role="img" aria-label={`ได้ ${stars} จาก 3 ดาว`}>
@@ -53,7 +52,7 @@ export default function GameScoreCard({
           aria-hidden="true"
           className="absolute inset-x-0 bottom-0 h-[56px] rounded-[20px] bg-[#0078A8] transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]"
         />
-        <span className="absolute inset-x-0 top-0 flex h-[56px] items-center justify-center rounded-[20px] bg-[#00A3E0] text-[20px] font-semibold leading-[30px] text-white transition-transform duration-[90ms] ease-out group-active:translate-y-[8px]">
+        <span className="absolute inset-x-0 top-0 flex h-[56px] items-center justify-center rounded-[20px] bg-[#00A3E0] text-button text-white transition-transform duration-[90ms] ease-out group-active:translate-y-[8px]">
           {nextLabel}
         </span>
       </button>

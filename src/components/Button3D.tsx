@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { notoLoopedThai } from "@/lib/fonts";
 
 interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -35,7 +34,7 @@ export default function Button3D({
   const outerSize = secondary ? "gp-h-64 rounded-[16px]" : "gp-h-104 rounded-[24px]";
   const faceSize = secondary ? "gp-h-58 rounded-[16px]" : "gp-h-96 rounded-[24px]";
   const baseColour = secondary ? "bg-[#CBD5E1]" : "bg-[#0078A8]";
-  const faceText = secondary ? "gp-text-22 gp-leading-32" : "gp-text-28 gp-leading-36";
+  const faceText = secondary ? "gp-type-button" : "gp-type-h2";
   const faceColour = secondary ? "border-2 border-solid border-[#CBD5E1] bg-white text-[#1a1a1a]" : "bg-[#00A3E0] text-white";
   const autoAdvanceRef = useRef(onAutoAdvance);
   useEffect(() => {
@@ -73,7 +72,7 @@ export default function Button3D({
       {...props}
       disabled={disabled}
       aria-disabled={inactive || undefined}
-      className={`${notoLoopedThai.className} group relative block ${outerSize} w-full shrink-0 cursor-pointer disabled:cursor-not-allowed ${className}`}
+      className={`group relative block ${outerSize} w-full shrink-0 cursor-pointer disabled:cursor-not-allowed ${className}`}
     >
       {/* Base (the dark "side"): its own layer at the bottom, so pressing never swaps colours mid-frame.
           Pressed, it hides only after the face has fully covered it (delay = slide time), so no dark
@@ -86,7 +85,7 @@ export default function Button3D({
       />
       {/* Face: slides down by the base height (× --gp-s): 8px = gp-h-104 − gp-h-96, secondary 6px = gp-h-64 − gp-h-58 */}
       <span
-        className={`absolute inset-x-0 top-0 flex ${faceSize} items-center justify-center overflow-clip ${faceText} font-bold ${
+        className={`absolute inset-x-0 top-0 flex ${faceSize} items-center justify-center overflow-clip ${faceText} ${
           grey ? "bg-[#A5A5A5] text-white" : faceColour
         } ${disabled ? "" : pressFace}`}
       >

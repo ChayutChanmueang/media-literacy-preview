@@ -84,7 +84,7 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Trophy size={26} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
-            <h2 className="text-[22px] font-bold text-[var(--primary-dark)]">เลือกเกมเพื่อแสดงกระดานคะแนน</h2>
+            <h2 className="text-h3 text-[var(--primary-dark)]">เลือกเกมเพื่อแสดงกระดานคะแนน</h2>
           </div>
           <button
             type="button"
@@ -100,18 +100,18 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
           {status === "loading" && (
             <div className="flex min-h-[72px] items-center justify-center gap-3 rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-app)] px-4 py-3">
               <div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--border)] border-t-[var(--primary)]" />
-              <span className="text-[20px] text-[var(--text-secondary)]">กำลังโหลดรายชื่อเกม...</span>
+              <span className="text-body text-[var(--text-secondary)]">กำลังโหลดรายชื่อเกม...</span>
             </div>
           )}
 
           {status === "error" && (
-            <p className="rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-app)] px-4 py-3 text-center text-[20px] text-[var(--text-secondary)]">
+            <p className="rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-app)] px-4 py-3 text-center text-body text-[var(--text-secondary)]">
               โหลดรายชื่อเกมไม่สำเร็จ กรุณาลองใหม่อีกครั้ง
             </p>
           )}
 
           {status === "ready" && games.length === 0 && (
-            <p className="rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-app)] px-4 py-3 text-center text-[20px] text-[var(--text-secondary)]">
+            <p className="rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-app)] px-4 py-3 text-center text-body text-[var(--text-secondary)]">
               ยังไม่มีเกมที่แสดงกระดานคะแนนได้
             </p>
           )}
@@ -133,7 +133,7 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
                     className="h-12 w-12 shrink-0 object-contain"
                   />
                 ) : null}
-                <span className="text-[22px] font-bold text-[var(--text-primary)]">{game.name}</span>
+                <span className="text-button text-[var(--text-primary)]">{game.name}</span>
               </button>
             ))}
         </div>

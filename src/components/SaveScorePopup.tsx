@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { notoLoopedThai } from "@/lib/fonts";
 
 // Figma "เลือกเก็บคะแนนหรือไม่1" (Scammer Game Prototype, node 3157:15321) — asked when a fun game ends:
 // save the score (→ name entry) or not (→ back to the game list, skipping the leaderboard). No close button / backdrop dismiss on
@@ -33,7 +32,7 @@ function PopupButton({
         style={{ top: lift }}
       />
       <span
-        className={`absolute inset-x-0 top-0 flex items-center justify-center rounded-[20px] text-[20px] font-semibold leading-[30px] transition-transform duration-[90ms] ease-out ${pressed} ${face}`}
+        className={`absolute inset-x-0 top-0 flex items-center justify-center rounded-[20px] text-button transition-transform duration-[90ms] ease-out ${pressed} ${face}`}
         style={{ height: 64 - lift }}
       >
         {children}
@@ -44,14 +43,14 @@ function PopupButton({
 
 export default function SaveScorePopup({ onYes, onNo }: { onYes: () => void; onNo: () => void }) {
   return (
-    <div className={`${notoLoopedThai.className} fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4`}>
       <div
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="save-score-popup-title"
         className="w-full max-w-[352px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white px-[20px] pt-[42px] pb-[48px] shadow-[0px_2px_0px_0px_#D9D9D9]"
       >
-        <h2 id="save-score-popup-title" className="text-center text-[20px] font-semibold leading-[30px] text-[#4B4B4B]">
+        <h2 id="save-score-popup-title" className="text-center text-button text-[#4B4B4B]">
           ต้องการเก็บคะแนนหรือไม่?
         </h2>
         <div className="mt-[14px] flex gap-[8px]">

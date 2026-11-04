@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-04
+
+### Added
+- ระบบตัวอักษรหลักจาก Figma ([07-typography.md](./wiki/design/07-typography.md)): Noto Looped Thai ฟอนต์เดียวทั้งโครงการ + 10 text styles (Display, H1–H3, Body Large, Body, Button, Caption, Caption Underlined, Small Text) — utility `text-<style>` ตั้งขนาด + line height + น้ำหนักในตัว และ `gp-type-<style>` สำหรับเกมที่ย่อตามจอ (ไม่ต่ำกว่า 18px) ใน `globals.css`; ข้อยกเว้น (emoji, ตัวเลขคะแนนใหญ่, ของตกแต่งในภาพจำลองแอป, ข้อความ stage popup) ใส่ `data-type-exempt`
+- เทสกันถอยหลัง: `typography-guard.test.ts` (อ่าน JSX — ห้ามขนาดตั้งเอง/`fontSize` inline/Mali นอก `StagePopup`) และ `typography.spec.ts` (หน้าแรก/ลงทะเบียน + 19 เกมใน dev hub ต้องเป็น Noto และขนาดอยู่ในชุด style)
+- ปุ่มสลับโหมดปกติ/วิจัยใน drawer กลับมาชั่วคราวสำหรับทดสอบ (เฉพาะ dev build) — cookie `naplab_ml_dev_app_mode` override `APP_MODE` ทั้งใน layout และ `proxy.ts`
+
+### Changed
+- ฟอนต์: ตั้ง Noto ที่ `<html>` ครั้งเดียว — G2, G4, G5, G7–G11 ที่เคยแสดงฟอนต์ระบบของเครื่องตอนนี้เป็น Noto; Mali เหลือเฉพาะ `StagePopup` (ข้อความจบเกม G20/G20K ย้ายมาใช้ `StagePopup`)
+- ทุกหน้า + เกม G1–G11, G13, G15–G20K ใช้ text styles: หน้าที่สร้างจาก Figma ขนาดเท่าเดิม; กล่องคำแนะนำระหว่างเล่นและเนื้อหาเปลี่ยนจากตัวหนาเป็น Regular; เกมเก่าที่ใช้ `clamp()` (เล็กสุด ~8–13px บนจอ 360px) ตอนนี้อย่างน้อย 18px — บางจอยาวขึ้นจนต้องเลื่อน; เมนูข้าง 17px → Button, เลขเวอร์ชัน 15px → Small Text
+- `AGENT.md`: typography จาก Figma มาก่อนกติกาขนาดตัวอักษรเดิม; utility `text-*`/`gp-type-*` เป็นวิธีเดียวที่ถูก
+
+### Removed
+- ระบบปรับขนาดตัวอักษร 3 ระดับ (`data-size`, `--font-size-*`, การอ่าน cookie `naplab_ml_size`, prop `initialSize`) — UI ถูกซ่อนตั้งแต่ US-CF-01; ขนาดฐาน = Body 20px (`rem` เท่าเดิม); `.text-lead`, `.text-small-legacy`
+
+### Not changed (legacy)
+- G14 (iframe) ยังใช้ฟอนต์/ขนาดเดิมเพราะยังไม่ได้ใช้งาน; คอมโพเนนต์ที่ไม่มีหน้าใดใช้, ต้นแบบ GP และหน้า facilitator ไม่ได้ปรับ
+
+**Bump rationale:** เพิ่มระบบตัวอักษรใหม่ทั้งโครงการ (utility `text-*` / `gp-type-*`, `data-type-exempt`, เทส guard) และปุ่มสลับโหมดสำหรับ dev — เป็นของใหม่ที่เข้ากันได้กับของเดิม ไม่มี API ที่ใช้อยู่เสีย จึงอัปเดต MINOR จาก `0.26.2` เป็น `0.27.0` ตามที่ผู้ใช้กำหนด
+
 ## [0.26.2] - 2026-11-03
 
 ### Changed

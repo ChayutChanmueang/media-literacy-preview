@@ -125,7 +125,7 @@ export default function CertificateScreen({ onBackToDashboard }) {
             </div>
 
             {/* Instruction note */}
-            <p className="text-small text-[var(--text-secondary)] mt-3 italic">
+            <p className="text-small-legacy text-[var(--text-secondary)] mt-3 italic">
               💡 วิธีเซฟเก็บไว้: คุณลุงคุณป้าสามารถ **แคปหน้าจอ** โทรศัพท์มือถือ <br />
               เพื่อบันทึกรูปภาพเกียรติบัตรไว้อวดลูกหลานได้เลยครับ!
             </p>

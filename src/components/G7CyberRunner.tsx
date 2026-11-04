@@ -187,10 +187,10 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
 
   if (phase === "done") {
     return (
-      <div className="flex flex-col flex-1 min-h-0 justify-center items-center gap-4 p-6 text-center">
-        <div className="text-[clamp(45px,13.91vw,64px)] leading-none">🏁</div>
-        <h2 className="text-[clamp(17px,5.22vw,24px)] font-bold text-[var(--primary-dark)]">ถึงเส้นชัยแล้ว!</h2>
-        <p className="text-[clamp(13px,3.91vw,18px)] text-[var(--text-secondary)]">
+      <div className="gp-compact flex flex-col flex-1 min-h-0 justify-center items-center gap-4 p-6 text-center">
+        <div className="text-[clamp(45px,13.91vw,64px)] leading-none" data-type-exempt="emoji">🏁</div>
+        <h2 className="gp-type-h3 text-[var(--primary-dark)]">ถึงเส้นชัยแล้ว!</h2>
+        <p className="gp-type-body text-[var(--text-secondary)]">
           ข้ามภัยได้ {cleared}/{hazards.length} — กำลังสรุปผล...
         </p>
       </div>
@@ -198,7 +198,7 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="gp-compact flex flex-col flex-1 min-h-0">
       <style>{`
         @keyframes g7jump {
           0% { transform: translateY(0); }
@@ -217,10 +217,10 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
 
       {/* Status bar */}
       <div className="flex justify-between items-center px-1 py-2 shrink-0">
-        <span className="flex items-center gap-1.5 text-[clamp(11px,3.48vw,16px)] font-bold text-[var(--primary-dark)]">
+        <span className="flex items-center gap-1.5 gp-type-button text-[var(--primary-dark)]">
           <Shield size={18} /> แต้มความมั่นใจ {cleared}
         </span>
-        <span className="text-[clamp(11px,3.48vw,16px)] font-bold text-[var(--text-secondary)]">
+        <span className="gp-type-button text-[var(--text-secondary)]">
           ภัยที่ข้าม {cleared}/{hazards.length}
         </span>
       </div>
@@ -238,10 +238,10 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
           className="absolute flex flex-col items-center"
           style={{ left: `${hazardX}%`, bottom: "18%", transform: "translateX(-50%)" }}
         >
-          <span className="text-[clamp(39px,12.17vw,56px)] leading-none" aria-hidden="true">
+          <span className="text-[clamp(39px,12.17vw,56px)] leading-none" data-type-exempt="hazard emoji" aria-hidden="true">
             {currentHazard.icon}
           </span>
-          <span className="mt-1 text-[clamp(9px,2.83vw,13px)] font-bold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[var(--accent-error)] text-white whitespace-nowrap">
+          <span className="mt-1 gp-type-caption px-2 py-0.5 rounded-[var(--radius-pill)] bg-[var(--accent-error)] text-white whitespace-nowrap">
             {currentHazard.label}
           </span>
         </div>
@@ -252,7 +252,7 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
           style={{ left: `${CHAR_X}%`, bottom: "18%", transform: "translateX(-50%)" }}
         >
           <span
-            className={`inline-block text-[clamp(36px,11.3vw,52px)] leading-none ${isJumping ? "g7-jump" : ""}`}
+            className={`inline-block text-[clamp(36px,11.3vw,52px)] leading-none ${isJumping ? "g7-jump" : ""}`} data-type-exempt="runner emoji"
             aria-hidden="true"
           >
             🧓
@@ -266,7 +266,7 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
 
         {/* Control hint */}
         <div className="absolute left-0 right-0 bottom-3 text-center">
-          <span className="text-[clamp(10px,3.26vw,15px)] font-semibold text-[var(--text-secondary)] bg-[var(--bg-card)]/70 px-3 py-1 rounded-[var(--radius-pill)]">
+          <span className="gp-type-button text-[var(--text-secondary)] bg-[var(--bg-card)]/70 px-3 py-1 rounded-[var(--radius-pill)]">
             แตะที่ใดก็ได้เพื่อกระโดด 👆
           </span>
         </div>
@@ -275,21 +275,21 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
         {phase === "hit" && hitHazard && (
           <div className="absolute inset-0 bg-slate-900/55 flex items-center justify-center p-4">
             <div className="bg-[var(--bg-card)] rounded-[var(--radius-xl)] w-full max-w-sm p-5 shadow-[var(--shadow-lg)] text-center [animation:fadeIn_0.3s_ease-out]">
-              <div className="text-[clamp(31px,9.57vw,44px)] leading-none mb-1">{hitHazard.icon}</div>
-              <p className="text-[clamp(10px,3.26vw,15px)] font-bold text-[var(--accent-error)] mb-2">
+              <div className="text-[clamp(31px,9.57vw,44px)] leading-none mb-1" data-type-exempt="hazard emoji">{hitHazard.icon}</div>
+              <p className="gp-type-button text-[var(--accent-error)] mb-2">
                 ชน! {hitHazard.label}
               </p>
               <div className="premium-card bg-[var(--primary-light)] p-3.5 text-left mb-4">
-                <strong className="text-[clamp(11px,3.48vw,16px)] block mb-1 text-[var(--primary-dark)]">
+                <strong className="gp-type-button block mb-1 text-[var(--primary-dark)]">
                   วิธีรับมือ:
                 </strong>
-                <p className="text-[clamp(12px,3.7vw,17px)] text-[var(--text-primary)] leading-relaxed">
+                <p className="gp-type-body text-[var(--text-primary)]">
                   {hitHazard.advice}
                 </p>
               </div>
               <button
                 onClick={handleResume}
-                className="btn btn-primary text-[clamp(14px,4.35vw,20px)] min-h-[60px] w-full"
+                className="btn btn-primary gp-type-button min-h-[60px] w-full"
               >
                 <span>เข้าใจแล้ว วิ่งต่อ</span>
                 <ArrowRight size={22} />
@@ -300,7 +300,7 @@ export default function G7CyberRunner({ onFinish, logEvent }: Props) {
       </div>
 
       {/* Positive footer note */}
-      <p className="text-[clamp(9px,2.83vw,13px)] text-[var(--text-secondary)] text-center py-2 shrink-0 flex items-center justify-center gap-1">
+      <p className="gp-type-caption text-[var(--text-secondary)] text-center py-2 shrink-0 flex items-center justify-center gap-1">
         <CheckCircle2 size={14} className="text-[var(--accent-success)]" />
         ชนได้ ไม่มีแพ้ — ภัยออนไลน์คือสิ่งที่เรากระโดดข้าม ไม่เข้าไปยุ่ง
       </p>

@@ -1,5 +1,4 @@
 import React from "react";
-import { notoLoopedThai } from "@/lib/fonts";
 
 /**
  * การ์ดชื่อคลิป (US-CF-22 / US-CF-24) — ใช้ร่วมกันที่ Start Menu และหน้า intro ของวิดีโอ
@@ -21,10 +20,10 @@ export default function ClipTitleCard({
 }: ClipTitleCardProps) {
   return (
     <div
-      className={`${notoLoopedThai.className} flex w-full flex-col items-center gap-[48px] px-[12px] text-center text-[#4B4B4B] ${className}`}
+      className={`flex w-full flex-col items-center gap-[48px] px-[12px] text-center text-[#4B4B4B] ${className}`}
     >
-      <p className="text-[24px] font-semibold leading-[32px]">{topLine}</p>
-      <p className="text-[32px] font-bold leading-[40px] [word-break:break-word]">{`"${clipName}"`}</p>
+      <p className="text-h3">{topLine}</p>
+      <p className="text-h1 [word-break:break-word]">{`"${clipName}"`}</p>
     </div>
   );
 }

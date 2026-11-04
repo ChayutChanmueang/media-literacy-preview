@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
-import { notoLoopedThai } from "@/lib/fonts";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
 import Button3D from "@/components/Button3D";
 import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
@@ -418,6 +417,7 @@ function HintGuide({ from, to, tutorial }: { from: Cell; to: Cell; tutorial: boo
         {/* fingertip of 👆 sits at the ring's centre */}
         <span
           className="g19-guide-finger absolute left-1/2 top-[56%] block leading-none"
+          data-type-exempt="hand emoji"
           style={{ fontSize: "13cqw", filter: "drop-shadow(0 3px 4px rgba(0,0,0,0.35))", ...loop }}
         >
           👆
@@ -541,6 +541,7 @@ function ScoreTicker({ value }: { value: number }) {
         <span
           aria-hidden="true"
           className="pointer-events-none absolute right-full top-1/2 mr-2 whitespace-nowrap gp-text-24 text-[#15803D]"
+          data-type-exempt="floating score gain"
           style={{
             opacity: gain.phase === "show" ? 1 : 0,
             transform: `translateY(-50%) ${
@@ -1126,17 +1127,17 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   if (phase === "result") {
     const newBest = runs > 1 && score > 0 && score === bestScore;
     return (
-      <div ref={stageRootRef} className={`${notoLoopedThai.className} gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
+      <div ref={stageRootRef} className={`gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
             <ResultTrophy />
-            <p className="result-pop gp-text-32 font-bold gp-leading-40 text-black">เก่งมาก!</p>
-            <p className="result-rise gp-text-24 font-semibold gp-leading-32 text-[#4B4B4B]">
+            <p className="result-pop gp-type-h1 text-black">เก่งมาก!</p>
+            <p className="result-rise gp-type-h3 text-[#4B4B4B]">
               ได้คะแนน <CountUp value={score} className="font-bold text-[#B45309]" /> คะแนน
             </p>
-            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-text-24 font-bold gp-leading-32 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
+            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
             {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-              <p className="result-rise gp-text-22 font-semibold gp-leading-32 text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} คะแนน</p>
+              <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} คะแนน</p>
             )}
           </div>
         </div>
@@ -1170,7 +1171,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
   return (
     <div
       ref={setPlayRoot}
-      className={`${notoLoopedThai.className} gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
+      className={`gp-compact relative flex min-h-0 flex-1 flex-col select-none`}
       // wood planks (repeating tile, stretched to the full width) with darker left/right edges
       style={{
         backgroundColor: "#A57650",
@@ -1381,6 +1382,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gp-gap-8 text-center text-white"
+                data-type-exempt="stage popup text"
                 style={{ WebkitTextStroke: "8px #7C2D12", paintOrder: "stroke fill", textShadow: "0 4px 12px rgba(0,0,0,0.35)" }}
               >
                 <p className="gp-text-32 font-bold gp-leading-44">ไม่มีคู่ให้สลับ</p>
@@ -1394,6 +1396,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gp-gap-8 text-center text-white"
+                data-type-exempt="stage popup text"
                 style={{
                   opacity: finishPopup === "show" ? 1 : 0,
                   transform:
@@ -1416,7 +1419,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
           </div>
 
           {SHOW_TIP && (
-            <p className="w-full max-w-[420px] overflow-hidden text-ellipsis whitespace-nowrap gp-px-8 text-center gp-text-20 font-bold gp-leading-32 text-[#1a1a1a]">
+            <p className="w-full max-w-[420px] overflow-hidden text-ellipsis whitespace-nowrap gp-px-8 text-center gp-type-button text-[#1a1a1a]">
               {TIP}
             </p>
           )}
@@ -1458,7 +1461,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
             <p
               role="status"
               // same look as the other games' tutorial boxes (G13/G18/G20): amber border = an instruction
-              className="max-w-[340px] rounded-[16px] border-2 border-solid border-amber-400 bg-white gp-px-16 gp-py-8 text-center gp-text-22 font-bold gp-leading-30 text-amber-950 shadow-md"
+              className="max-w-[340px] rounded-[16px] border-2 border-solid border-amber-400 bg-white gp-px-16 gp-py-8 text-center gp-type-body-lg text-amber-950 shadow-md"
             >
               {/* two unbreakable halves: wraps between them, never mid-phrase */}
               {TUTORIAL_TIP.map((part, i) => (

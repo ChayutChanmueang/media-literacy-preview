@@ -197,7 +197,7 @@ export default function LessonSelector({
                 {/* Title */}
                 <h3 className="text-[22px] font-bold my-1">{lesson.title}</h3>
                 <h4 className="text-[18px] text-[var(--text-secondary)] font-semibold">{lesson.subTitle}</h4>
-                <p className="text-small mt-2 leading-snug">{lesson.desc}</p>
+                <p className="text-small-legacy mt-2 leading-snug">{lesson.desc}</p>
 
                 {/* Star display */}
                 {unlocked && (

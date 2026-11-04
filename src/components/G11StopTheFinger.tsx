@@ -210,19 +210,19 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
   if (!currentItem) return null;
 
   return (
-    <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center p-4 overflow-hidden bg-slate-100/50 rounded-xl">
+    <div className="gp-compact relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center p-4 overflow-hidden bg-slate-100/50 rounded-xl">
       
       {/* Intro Overlay */}
       {phase === "intro" && (
         <Overlay>
           <div className="text-center">
-            <div className="text-6xl mb-4" aria-hidden>👇</div>
-            <h2 className="text-[clamp(20px,6.09vw,28px)] font-bold mb-3 text-[var(--primary-dark)]">หยุดนิ้ว! คิดก่อนกด</h2>
-            <p className="text-[clamp(13px,4.13vw,19px)] mb-6 leading-relaxed">
+            <div className="text-6xl mb-4" data-type-exempt="emoji" aria-hidden>👇</div>
+            <h2 className="gp-type-h2 mb-3 text-[var(--primary-dark)]">หยุดนิ้ว! คิดก่อนกด</h2>
+            <p className="gp-type-body mb-6">
               เมื่อมีข้อความหรือข่าวสารส่งมาที่มือถือ จะมี <strong>&quot;นิ้ว&quot;</strong> ค่อยๆ เลื่อนขึ้นไปกด
             </p>
             <div className="bg-slate-50 p-4 rounded-xl mb-6 text-left border border-slate-200">
-              <ul className="space-y-3 text-[clamp(13px,3.91vw,18px)]">
+              <ul className="space-y-3 gp-type-body">
                 <li className="flex gap-2">
                   <span className="shrink-0 text-red-500">🛑</span> 
                   <span>ถ้าเป็นข้อมูลหลอกลวง <strong>ให้แตะที่มือ</strong> เพื่อหยุดนิ้ว</span>
@@ -248,13 +248,13 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
             
             {/* Phone Header */}
             <div className="border-b border-slate-200 pb-3 mb-4 text-center mt-2">
-              <p className="text-[clamp(10px,3.04vw,14px)] text-slate-500 font-semibold uppercase tracking-wider">{currentItem.type}</p>
-              <p className="text-[clamp(13px,3.91vw,18px)] font-bold text-slate-800 truncate">{currentItem.sender}</p>
+              <p className="gp-type-caption text-slate-500 uppercase tracking-wider">{currentItem.type}</p>
+              <p className="gp-type-button text-slate-800 truncate">{currentItem.sender}</p>
             </div>
             
             {/* Phone Content */}
             <div className="flex-1 overflow-y-auto pb-4">
-              <div className={`p-4 rounded-2xl text-[clamp(13px,3.91vw,18px)] leading-relaxed shadow-sm ${
+              <div className={`p-4 rounded-2xl gp-type-body shadow-sm ${
                 currentItem.type === "line" || currentItem.type === "social" 
                   ? "bg-green-50 border border-green-100" 
                   : "bg-blue-50/50 border border-blue-100"
@@ -265,7 +265,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
                 <div 
                   ref={buttonRef}
                   className={`
-                    mt-5 w-full py-3 rounded-xl text-center font-bold text-[clamp(13px,3.91vw,18px)] text-white
+                    mt-5 w-full py-3 rounded-xl text-center gp-type-button text-white
                     ${phase === "rising" ? "g11-button-pulse bg-blue-600" : "bg-blue-600"}
                     ${isButtonPressed ? "g11-button-press bg-blue-800" : ""}
                   `}
@@ -289,7 +289,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
             >
               {/* Hit area visualizer (invisible in prod) + Hand Image */}
               <div className="relative flex justify-center px-8 pb-32">
-                <div className="text-[clamp(56px,17.39vw,80px)] drop-shadow-xl animate-bounce-slow origin-bottom-right" aria-label="มือที่กำลังจะกด">
+                <div className="text-[clamp(56px,17.39vw,80px)] drop-shadow-xl animate-bounce-slow origin-bottom-right" data-type-exempt="hand emoji" aria-label="มือที่กำลังจะกด">
                   👆
                 </div>
                 {/* A subtle pulse ring to indicate it is tappable */}
@@ -304,7 +304,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
 
       {/* Progress Indicator */}
       {(phase === "showing" || phase === "rising" || phase === "feedback") && (
-        <div className="absolute top-2 right-4 text-slate-500 font-bold bg-white/80 px-3 py-1 rounded-full shadow-sm text-sm">
+        <div className="absolute top-2 right-4 text-slate-500 bg-white/80 px-3 py-1 rounded-full shadow-sm gp-type-caption">
           {round + 1} / {TOTAL_ROUNDS}
         </div>
       )}
@@ -324,7 +324,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
                   <X size={32} strokeWidth={3} />
                 </div>
               )}
-              <h3 className={`text-[clamp(17px,5.22vw,24px)] font-bold ${result.correct ? "text-green-700" : "text-orange-700"}`}>
+              <h3 className={`gp-type-h3 ${result.correct ?"text-green-700":"text-orange-700"}`}>
                 {result.correct 
                   ? (result.action === "stopped" ? "เก่งมาก หยุดได้ทัน!" : "ข้อมูลนี้เชื่อถือได้")
                   : (result.action === "stopped" ? "ช้าก่อน ข้อมูลนี้จริงนะ" : "ระวังนะ! นี่คือมิจฉาชีพ")}
@@ -332,7 +332,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
             </div>
 
             {/* Explanation */}
-            <p className="text-[clamp(13px,4.13vw,19px)] leading-relaxed mb-5 text-slate-700">
+            <p className="gp-type-body mb-5 text-slate-700">
               {currentItem.explain}
             </p>
 
@@ -342,7 +342,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
                 ? "bg-red-50 border-red-100" 
                 : "bg-blue-50 border-blue-100"
             }`}>
-              <h4 className="font-bold flex items-center gap-2 mb-2 text-[clamp(12px,3.7vw,17px)]">
+              <h4 className="flex items-center gap-2 mb-2 gp-type-button">
                 {currentItem.safe_action === "stop" ? (
                   <><AlertTriangle size={18} className="text-red-600"/> จุดสังเกต (Red Flags)</>
                 ) : (
@@ -351,7 +351,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
               </h4>
               
               {currentItem.red_flags.length > 0 ? (
-                <ul className="list-disc pl-5 space-y-1 text-[clamp(12px,3.7vw,17px)]">
+                <ul className="list-disc pl-5 space-y-1 gp-type-body">
                   {currentItem.red_flags.map((flag, idx) => (
                     <li key={idx} className={currentItem.safe_action === "stop" ? "text-red-800" : "text-blue-800"}>
                       {flag}
@@ -359,7 +359,7 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-[clamp(12px,3.7vw,17px)] text-blue-800">มาจากหน่วยงานทางการและไม่ขอข้อมูลส่วนตัว</p>
+                <p className="gp-type-body text-blue-800">มาจากหน่วยงานทางการและไม่ขอข้อมูลส่วนตัว</p>
               )}
             </div>
 
@@ -367,13 +367,13 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
             {currentItem.hotline && (
               <div className="flex items-center justify-center gap-2 text-slate-600 mb-6 bg-slate-100 py-2 rounded-lg">
                 <Phone size={18} />
-                <span className="text-[clamp(11px,3.48vw,16px)]">สงสัยให้โทร: <strong>{currentItem.hotline}</strong></span>
+                <span className="gp-type-caption">สงสัยให้โทร: <strong>{currentItem.hotline}</strong></span>
               </div>
             )}
 
             <button
               onClick={nextRound}
-              className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer hover:bg-[var(--btn-bg-hover)] transition-colors shadow-md"
+              className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white gp-type-button cursor-pointer hover:bg-[var(--btn-bg-hover)] transition-colors shadow-md"
             >
               ข้อต่อไป
             </button>
@@ -385,33 +385,33 @@ export default function G11StopTheFinger({ onFinish, logEvent }: Props) {
       {phase === "summary" && (
         <Overlay slideUp>
           <div className="text-center py-4">
-            <p className="text-6xl text-center mb-4" aria-hidden>🎉</p>
-            <h2 className="text-[clamp(20px,6.09vw,28px)] font-bold mb-3 text-[var(--primary-dark)]">จบการประเมินผล!</h2>
+            <p className="text-6xl text-center mb-4" data-type-exempt="emoji" aria-hidden>🎉</p>
+            <h2 className="gp-type-h2 mb-3 text-[var(--primary-dark)]">จบการประเมินผล!</h2>
             
             <div className="flex justify-center gap-2 mb-6" aria-label={`ได้ ${stars} ดาว`}>
               {[1, 2, 3].map((n) => (
-                <span key={n} className="text-5xl drop-shadow-sm" aria-hidden>
+                <span key={n} className="text-5xl drop-shadow-sm" data-type-exempt="star emoji" aria-hidden>
                   {n <= stars ? "⭐" : "☆"}
                 </span>
               ))}
             </div>
             
             <div className="bg-slate-50 p-5 rounded-2xl mb-6 border border-slate-200">
-              <h3 className="font-bold text-[clamp(14px,4.35vw,20px)] mb-3 text-slate-800 flex justify-center items-center gap-2">
+              <h3 className="gp-type-h3 mb-3 text-slate-800 flex justify-center items-center gap-2">
                 <ShieldAlert className="text-[var(--primary)]" />
                 คาถาป้องกันภัย
               </h3>
-              <p className="text-[clamp(15px,4.78vw,22px)] font-bold text-[var(--primary-dark)] leading-relaxed">
+              <p className="gp-type-button text-[var(--primary-dark)]">
                 &quot;หยุด 🛑 คิด 🧠 ถาม 💬 ทำ ✅&quot;
               </p>
-              <p className="text-[clamp(12px,3.7vw,17px)] mt-3 text-slate-600">
+              <p className="gp-type-body mt-3 text-slate-600">
                 ท่องไว้ให้ขึ้นใจ ก่อนใช้นิ้วกดมือถือทุกครั้งนะ
               </p>
             </div>
             
             <button
               onClick={() => onFinish(stars)}
-              className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer hover:bg-[var(--btn-bg-hover)] transition-colors shadow-md flex justify-center items-center gap-2"
+              className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white gp-type-button cursor-pointer hover:bg-[var(--btn-bg-hover)] transition-colors shadow-md flex justify-center items-center gap-2"
             >
               <Check size={24} strokeWidth={3} /> เสร็จสิ้น
             </button>

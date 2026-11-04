@@ -147,7 +147,7 @@ export default function VideoScreen({ lessonId = 'topic-1', onNext }) {
         </div>
 
         <h2 className="mt-2 mb-2">{videoDetails.title}</h2>
-        <p className="text-small mb-4">
+        <p className="text-small-legacy mb-4">
           *กรุณารับชมคลิปวิดีโอให้จบ เพื่อเปิดทำแบบฝึกหัดทบทวนครับ*
         </p>
 

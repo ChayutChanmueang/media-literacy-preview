@@ -165,7 +165,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 border-4 border-slate-200 border-t-[var(--primary)] rounded-full animate-spin"></div>
-        <span className="text-lg">กำลังโหลดคำถามแบบทดสอบ...</span>
+        <span className="text-body">กำลังโหลดคำถามแบบทดสอบ...</span>
       </div>
     );
   }
@@ -177,7 +177,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
         <div className="content-area flex items-center justify-center p-6">
           <div className="text-center">
             <AlertCircle size={48} className="mx-auto text-amber-500 mb-3" />
-            <h2 className="text-xl font-bold mb-2">ไม่พบรายการแบบทดสอบในระบบ</h2>
+            <h2 className="text-h3 mb-2">ไม่พบรายการแบบทดสอบในระบบ</h2>
             <p className="text-[var(--text-secondary)]">โปรดติดต่อผู้ควบคุมกิจกรรมหรือเจ้าหน้าที่โครงการ</p>
           </div>
         </div>
@@ -191,17 +191,17 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
     return (
       <div className="screen-container p-0 gap-0">
         <div className="content-area my-auto p-6 flex flex-col gap-6 text-center">
-          <div className="w-20 h-20 bg-[var(--primary-light)] rounded-full flex items-center justify-center mx-auto text-4xl text-[var(--primary)]">
+          <div className="w-20 h-20 bg-[var(--primary-light)] rounded-full flex items-center justify-center mx-auto text-4xl text-[var(--primary)]" data-type-exempt="icon emoji">
             📝
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold mb-2">{title}</h1>
-            <p className="text-lead text-lg mt-2 leading-relaxed">
+            <h1 className="text-h1 mb-2">{title}</h1>
+            <p className="text-body-lg text-[var(--text-secondary)] mt-2">
               แบบทดสอบนี้จัดทำขึ้นเพื่อทดสอบทักษะและความเข้าใจในการรู้เท่าทันสื่อดิจิทัลของท่าน
               โดยมีโจทย์คำถามทั้งหมด <strong>{questions.length} ข้อ</strong> ใช้เวลาสั้นๆ ในการทำ
             </p>
           </div>
-          <div className="bg-[var(--bg-app)] border border-[var(--border)] rounded-2xl p-4 text-left text-sm text-[var(--text-secondary)] flex flex-col gap-2">
+          <div className="bg-[var(--bg-app)] border border-[var(--border)] rounded-2xl p-4 text-left text-caption text-[var(--text-secondary)] flex flex-col gap-2">
             <span className="font-bold text-[var(--text-primary)]">💡 คำแนะนำสำหรับผู้สูงอายุ:</span>
             <span>• สัมผัสเลือกคำตอบที่ท่านคิดว่าถูกต้องที่สุด</span>
             <span>• กดปุ่ม 🔊 เพื่อฟังเสียงอ่านโจทย์ช่วยประกอบการทำข้อสอบได้</span>
@@ -233,24 +233,24 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
             </div>
             
             <div>
-              <h1 className="text-3xl font-extrabold text-[var(--primary)]">ทำแบบทดสอบเสร็จแล้ว!</h1>
-              <p className="text-lead text-lg mt-1">ขอบคุณสำหรับความตั้งใจในการตอบคำถาม</p>
+              <h1 className="text-h1 text-[var(--primary)]">ทำแบบทดสอบเสร็จแล้ว!</h1>
+              <p className="text-body-lg text-[var(--text-secondary)] mt-1">ขอบคุณสำหรับความตั้งใจในการตอบคำถาม</p>
             </div>
 
             {/* Score display */}
             <div className="premium-card p-6 flex flex-col items-center gap-1 max-w-[280px] mx-auto w-full">
-              <span className="text-sm font-semibold text-[var(--text-secondary)]">คะแนนที่ท่านทำได้</span>
-              <span className="text-5xl font-black text-[var(--primary-dark)]">
+              <span className="text-caption text-[var(--text-secondary)]">คะแนนที่ท่านทำได้</span>
+              <span className="text-5xl font-black text-[var(--primary-dark)]" data-type-exempt="big score number">
                 {score} <span className="text-2xl font-bold text-[var(--text-secondary)]">/ {questions.length}</span>
               </span>
-              <span className="text-xs text-[var(--text-secondary)] mt-1">
+              <span className="text-caption text-[var(--text-secondary)] mt-1">
                 (คิดเป็น {Math.round(scorePercentage)}% ของข้อสอบ)
               </span>
             </div>
 
             {/* Explanation / Answers Recap */}
             <div className="text-left mt-4 flex flex-col gap-3">
-              <h2 className="text-lg font-bold text-[var(--text-primary)] border-b pb-2">ทบทวนเฉลยข้อสอบ:</h2>
+              <h2 className="text-h3 text-[var(--text-primary)] border-b pb-2">ทบทวนเฉลยข้อสอบ:</h2>
               {questions.map((q, idx) => {
                 const userAns = answers.find(a => a.question_id === q.id);
                 const isCorrect = userAns ? userAns.is_correct : false;
@@ -259,11 +259,11 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
                 return (
                   <div key={q.id} className="p-4 rounded-xl border bg-white flex flex-col gap-2 shadow-sm">
                     <div className="flex items-start gap-2">
-                      <span className="font-bold text-[var(--primary)] text-[16px] shrink-0 mt-0.5">ข้อ {idx + 1}:</span>
-                      <p className="font-bold text-[var(--text-primary)] text-[16px] leading-normal">{q.question_text}</p>
+                      <span className="text-button text-[var(--primary)] shrink-0">ข้อ {idx + 1}:</span>
+                      <p className="text-body text-[var(--text-primary)]">{q.question_text}</p>
                     </div>
 
-                    <div className="flex items-center gap-2 text-[14px]">
+                    <div className="flex items-center gap-2 text-caption">
                       {isCorrect ? (
                         <span className="text-green-600 font-semibold flex items-center gap-1">
                           <CheckCircle size={16} /> ตอบถูก
@@ -275,7 +275,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
                       )}
                     </div>
 
-                    <p className="text-[14px] text-[var(--text-secondary)] bg-[var(--bg-app)] p-2 rounded-lg leading-relaxed">
+                    <p className="text-caption text-[var(--text-secondary)] bg-[var(--bg-app)] p-2 rounded-lg">
                       <strong>คำตอบที่ถูก:</strong> {correctOption?.option_text || "ไม่ระบุ"}
                       {q.explanation && (
                         <>
@@ -306,9 +306,9 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
     <div className="screen-container p-0 gap-0">
       <div className="content-area p-6">
         {/* Progress header */}
-        <div className="flex justify-between items-center text-sm font-bold text-[var(--text-secondary)] mb-1">
+        <div className="flex justify-between items-center text-caption text-[var(--text-secondary)] mb-1">
           <span>{title}</span>
-          <span className="bg-[var(--primary-light)] text-[var(--primary-dark)] px-3 py-1 rounded-full text-xs">
+          <span className="bg-[var(--primary-light)] text-[var(--primary-dark)] px-3 py-1 rounded-full text-caption">
             ข้อ {currentIdx + 1} จาก {questions.length}
           </span>
         </div>
@@ -325,7 +325,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
             {speaking ? <VolumeX size={20} className="text-red-500" /> : <Volume2 size={20} />}
           </button>
 
-          <p className="font-extrabold text-[var(--text-primary)] text-xl pr-12 leading-relaxed">
+          <p className="text-h3 text-[var(--text-primary)] pr-12">
             {currentQuestion.question_text}
           </p>
         </div>
@@ -361,7 +361,7 @@ export default function QuizScreen({ testType, title, onComplete }: QuizScreenPr
                 onChange={() => {}} // parent click sets value
                 className="w-6 h-6 mr-3.5 accent-[var(--primary)]"
               />
-              <span className="text-[18px] font-bold leading-normal text-[var(--text-primary)]">
+              <span className="text-button text-[var(--text-primary)]">
                 {opt.option_text}
               </span>
             </div>

@@ -74,7 +74,7 @@ export default function PosttestPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 border-4 border-slate-200 border-t-[var(--primary)] rounded-full animate-spin"></div>
-        <span className="text-lg">กำลังตรวจสอบความพร้อมสำหรับแบบทดสอบหลังเรียน...</span>
+        <span className="text-body">กำลังตรวจสอบความพร้อมสำหรับแบบทดสอบหลังเรียน...</span>
       </div>
     );
   }

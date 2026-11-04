@@ -255,7 +255,7 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
   const level = LEVELS[levelIndex];
 
   return (
-    <div className="relative flex flex-col flex-1 min-h-0">
+    <div className="gp-compact relative flex flex-col flex-1 min-h-0">
       {/* Status bar — rings and progress, always with a number next to the icon */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 bg-white border-b border-[var(--border)] shrink-0">
         <div className="flex items-center gap-1.5">
@@ -267,9 +267,9 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
               aria-hidden
             />
           ))}
-          <span className="text-[clamp(14px,4.35vw,20px)] font-bold ml-1">ห่วงยาง {rings}</span>
+          <span className="gp-type-button ml-1">ห่วงยาง {rings}</span>
         </div>
-        <span className="text-[clamp(14px,4.35vw,20px)] font-bold text-[var(--text-secondary)]">
+        <span className="gp-type-button text-[var(--text-secondary)]">
           ด่าน {levelIndex + 1}/{TOTAL_LEVELS} · แพ {Math.min(currentRow + 1, ROWS_PER_LEVEL)}/
           {ROWS_PER_LEVEL}
         </span>
@@ -281,10 +281,10 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
         <div key={levelIndex} className="g8-scene-shift flex flex-col-reverse gap-1.5 px-2 py-1 h-full">
           {/* Starting shore sits below row 1 */}
           <div className="flex items-center justify-center gap-2 shrink-0 leading-none">
-            <span className="text-3xl" aria-hidden>
+            <span className="text-3xl" data-type-exempt="emoji" aria-hidden>
               {currentRow === 0 && phase !== "done" ? "🧓" : "🏝️"}
             </span>
-            <span className="text-[clamp(10px,3.26vw,15px)] font-bold text-sky-900/70">
+            <span className="gp-type-caption text-sky-900/70">
               {currentRow === 0 ? "จุดเริ่มต้น" : "ฝั่งที่ออกเดินทาง"}
             </span>
           </div>
@@ -319,11 +319,11 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
                     >
                       <div className="flex items-center gap-1 mb-0.5 text-slate-600 shrink-0">
                         {raft.type === "sms" ? <MessageSquare size={16} /> : <Phone size={16} />}
-                        <span className="text-[clamp(9px,2.83vw,13px)] font-bold truncate">
+                        <span className="gp-type-caption truncate">
                           {raft.type === "sms" ? raft.sender : raft.caller_name}
                         </span>
                       </div>
-                      <p className="text-[clamp(12px,3.7vw,17px)] leading-tight line-clamp-2 text-slate-800">
+                      <p className="gp-type-caption line-clamp-2 text-slate-800">
                         {raft.type === "sms" ? raft.text : raft.phone_number}
                       </p>
 
@@ -333,6 +333,7 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
                             hopping ? "g8-hop" : ""
                           }`}
                           aria-hidden
+                          data-type-exempt="runner emoji"
                         >
                           🧓
                         </span>
@@ -346,16 +347,16 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
 
           {/* Far shore — the goal for this screen */}
           <div className="flex items-center justify-center gap-2 shrink-0 leading-none">
-            <span className="text-2xl" aria-hidden>
+            <span className="text-2xl" data-type-exempt="emoji" aria-hidden>
               🚩
             </span>
-            <span className="text-[clamp(10px,3.26vw,15px)] font-bold text-sky-900/70">ท่าน้ำฝั่งตรงข้าม</span>
+            <span className="gp-type-caption text-sky-900/70">ท่าน้ำฝั่งตรงข้าม</span>
           </div>
         </div>
       </div>
 
       {bonusFlash && (
-        <div className="shrink-0 bg-orange-100 text-orange-800 text-[clamp(13px,3.91vw,18px)] font-bold text-center py-2">
+        <div className="shrink-0 bg-orange-100 text-orange-800 gp-type-button text-center py-2">
           รอบคอบมาก! รับห่วงยางเพิ่ม 🛟
         </div>
       )}
@@ -365,20 +366,20 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
         <Overlay>
           <div className="flex items-center gap-2 mb-3 text-slate-500">
             {inspecting.item.type === "sms" ? <MessageSquare size={20} /> : <Phone size={20} />}
-            <span className="text-[clamp(13px,3.91vw,18px)] font-bold">
+            <span className="gp-type-button">
               {inspecting.item.type === "sms" ? "ข้อความ SMS" : "สายโทรเข้า"}
             </span>
           </div>
 
           {inspecting.item.type === "sms" ? (
             <>
-              <p className="text-[clamp(13px,3.91vw,18px)] text-slate-500 mb-1">จาก: {inspecting.item.sender}</p>
-              <p className="text-[clamp(15px,4.78vw,22px)] leading-relaxed mb-5">{inspecting.item.text}</p>
+              <p className="gp-type-body text-slate-500 mb-1">จาก: {inspecting.item.sender}</p>
+              <p className="gp-type-body-lg mb-5">{inspecting.item.text}</p>
             </>
           ) : (
             <div className="text-center mb-5">
-              <p className="text-[clamp(18px,5.65vw,26px)] font-bold mb-1">{inspecting.item.caller_name}</p>
-              <p className="text-[clamp(17px,5.22vw,24px)] tracking-wide text-slate-600">
+              <p className="gp-type-h2 mb-1">{inspecting.item.caller_name}</p>
+              <p className="gp-type-body-lg tracking-wide text-slate-600">
                 {inspecting.item.phone_number}
               </p>
             </div>
@@ -387,7 +388,7 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
           <div className="flex flex-col gap-2">
             <button
               onClick={jump}
-              className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer"
+              className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white gp-type-button cursor-pointer"
             >
               🦵 กระโดดไปแพนี้
             </button>
@@ -396,7 +397,7 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
                 setInspecting(null);
                 setPhase("playing");
               }}
-              className="w-full min-h-[52px] rounded-xl border-2 border-slate-300 text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer"
+              className="w-full min-h-[52px] rounded-xl border-2 border-slate-300 gp-type-button cursor-pointer"
             >
               👀 ดูแพอื่นก่อน
             </button>
@@ -409,32 +410,32 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
         <Overlay>
           <div className="flex items-center gap-2 mb-2 text-orange-600">
             <X size={26} strokeWidth={3} />
-            <span className="text-[clamp(15px,4.78vw,22px)] font-bold">แพนี้เป็นของมิจฉาชีพ</span>
+            <span className="gp-type-h3">แพนี้เป็นของมิจฉาชีพ</span>
           </div>
-          <p className="text-[clamp(13px,3.91vw,18px)] text-slate-500 mb-3">
+          <p className="gp-type-body text-slate-500 mb-3">
             ตกน้ำนิดหน่อย ห่วงยางรับไว้แล้ว เหลืออีก {rings} ห่วง 🛟
           </p>
 
-          <p className="text-[clamp(14px,4.35vw,20px)] font-bold mb-1.5">จุดสังเกต:</p>
+          <p className="gp-type-button mb-1.5">จุดสังเกต:</p>
           <ul className="mb-4 flex flex-col gap-1.5">
             {wrongItem.red_flags.map((flag) => (
-              <li key={flag} className="flex gap-2 text-[clamp(13px,4.13vw,19px)] leading-snug">
+              <li key={flag} className="flex gap-2 gp-type-body">
                 <span aria-hidden>⚠️</span>
                 <span>{flag}</span>
               </li>
             ))}
           </ul>
 
-          <p className="text-[clamp(13px,4.13vw,19px)] leading-relaxed bg-teal-50 rounded-xl p-3 mb-4">
+          <p className="gp-type-body bg-teal-50 rounded-xl p-3 mb-4">
             {wrongItem.explain}
           </p>
-          <p className="text-[clamp(12px,3.7vw,17px)] text-slate-500 mb-4">
+          <p className="gp-type-body text-slate-500 mb-4">
             เจอแบบนี้แจ้งได้ที่สายด่วนตำรวจไซเบอร์ <strong>1441</strong>
           </p>
 
           <button
             onClick={closeWrongCard}
-            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer"
+            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white gp-type-button cursor-pointer"
           >
             เข้าใจแล้ว ลองใหม่
           </button>
@@ -444,11 +445,11 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
       {/* Rescue boat replaces the game-over screen the mechanic would normally imply */}
       {phase === "rescue" && (
         <Overlay>
-          <p className="text-6xl text-center mb-2" aria-hidden>
+          <p className="text-6xl text-center mb-2" data-type-exempt="emoji" aria-hidden>
             ⛵
           </p>
-          <p className="text-[clamp(17px,5.22vw,24px)] font-bold text-center mb-2">เรือกู้ภัยมารับแล้ว!</p>
-          <p className="text-[clamp(13px,4.13vw,19px)] leading-relaxed mb-4">
+          <p className="gp-type-h3 text-center mb-2">เรือกู้ภัยมารับแล้ว!</p>
+          <p className="gp-type-body mb-4">
             มิจฉาชีพสมัยนี้เนียนมากจริงๆ มาพักที่ศาลาริมน้ำแล้วทบทวนจุดสังเกตกันอีกรอบ
             แล้วค่อยไปต่อนะ
           </p>
@@ -457,10 +458,10 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
             <ul className="mb-4 flex flex-col gap-2">
               {missedInLevel.slice(0, 3).map((item) => (
                 <li key={item.id} className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-[clamp(12px,3.7vw,17px)] font-bold mb-1">
+                  <p className="gp-type-button mb-1">
                     {item.type === "sms" ? item.sender : item.caller_name}
                   </p>
-                  <p className="text-[clamp(12px,3.7vw,17px)] leading-snug">{item.red_flags[0]}</p>
+                  <p className="gp-type-body">{item.red_flags[0]}</p>
                 </li>
               ))}
             </ul>
@@ -468,7 +469,7 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
 
           <button
             onClick={resumeFromRescue}
-            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer"
+            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white gp-type-button cursor-pointer"
           >
             พร้อมลุยต่อ 🛟🛟🛟
           </button>
@@ -478,11 +479,11 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
       {/* End of a level */}
       {phase === "levelEnd" && (
         <Overlay>
-          <p className="text-6xl text-center mb-2" aria-hidden>
+          <p className="text-6xl text-center mb-2" data-type-exempt="emoji" aria-hidden>
             🚩
           </p>
-          <p className="text-[clamp(17px,5.22vw,24px)] font-bold text-center mb-2">ถึงท่าน้ำแล้ว!</p>
-          <p className="text-[clamp(13px,4.13vw,19px)] text-center leading-relaxed mb-5">
+          <p className="gp-type-h3 text-center mb-2">ถึงท่าน้ำแล้ว!</p>
+          <p className="gp-type-body text-center mb-5">
             ผ่าน{level.title}เรียบร้อย
             {levelIndex + 1 < TOTAL_LEVELS
               ? " ด่านต่อไปจะมีโจทย์ที่เนียนขึ้นอีกนิดนะ"
@@ -490,7 +491,7 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
           </p>
           <button
             onClick={nextLevel}
-            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer"
+            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white gp-type-button cursor-pointer"
           >
             {levelIndex + 1 < TOTAL_LEVELS ? "ไปด่านต่อไป" : "ดูผลสรุป"}
           </button>
@@ -500,24 +501,24 @@ export default function G8RaftCrossing({ onFinish, logEvent }: Props) {
       {/* Final summary — always a win, stars computed quietly in the background */}
       {phase === "done" && (
         <Overlay>
-          <p className="text-6xl text-center mb-2" aria-hidden>
+          <p className="text-6xl text-center mb-2" data-type-exempt="emoji" aria-hidden>
             🎉
           </p>
-          <p className="text-[clamp(17px,5.22vw,24px)] font-bold text-center mb-3">ข้ามทะเลสาบสำเร็จ!</p>
+          <p className="gp-type-h3 text-center mb-3">ข้ามทะเลสาบสำเร็จ!</p>
           <div className="flex justify-center gap-1 mb-4" aria-label={`ได้ ${stars} ดาว`}>
             {[1, 2, 3].map((n) => (
-              <span key={n} className="text-4xl" aria-hidden>
+              <span key={n} className="text-4xl" data-type-exempt="emoji" aria-hidden>
                 {n <= stars ? "⭐" : "☆"}
               </span>
             ))}
           </div>
-          <p className="text-[clamp(13px,4.13vw,19px)] text-center leading-relaxed mb-5">
+          <p className="gp-type-body text-center mb-5">
             สุดยอด! คุณข้ามทะเลสาบได้สำเร็จด้วยสายตาที่รู้ทันมิจฉาชีพ
             ทีนี้ SMS หรือเบอร์แปลกๆ ก็หลอกคุณไม่ได้แล้ว
           </p>
           <button
             onClick={() => onFinish(stars)}
-            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white text-[clamp(15px,4.78vw,22px)] font-bold cursor-pointer"
+            className="w-full min-h-[56px] rounded-xl bg-[var(--btn-bg)] text-white gp-type-button cursor-pointer"
           >
             <span className="inline-flex items-center gap-2">
               <Check size={22} strokeWidth={3} /> เสร็จสิ้น
