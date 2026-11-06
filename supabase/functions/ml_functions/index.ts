@@ -1,12 +1,12 @@
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
+import { authorizeExporter } from "./auth.ts";
 import * as readDatabase from "./read-database/actions.ts";
 
 /**
  * Router for the staff data export. Pattern follows the MCI `mci_functions` router
  * (path → service → action). Auth does not: MCI accepts the anon key, this function
- * requires a signed-in user whose app_metadata.role is data_exporter. Research rows
- * are not readable with the anon key.
+ * requires a signed-in, non-anonymous user. Research rows are not readable with the anon key.
  */
 
 console.log("ml_functions started");
@@ -20,8 +20,6 @@ const CORS_HEADERS = {
 const SERVICE_MAP: Record<string, Record<string, (body: unknown) => Promise<Response>>> = {
   "read-database": readDatabase,
 };
-
-const DATA_EXPORTER_ROLE = "data_exporter";
 
 function json(body: unknown, status: number) {
   return new Response(JSON.stringify(body), {
@@ -39,11 +37,8 @@ async function requireExporter(authHeader: string): Promise<Response | null> {
   const supabase = createClient(url, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data, error } = await supabase.auth.getUser(token);
-  const role = data.user?.app_metadata?.role;
-  if (error || !data.user || role !== DATA_EXPORTER_ROLE) {
-    return json({ error: data.user ? "forbidden" : "unauthenticated" }, data.user ? 403 : 401);
-  }
+  const denial = await authorizeExporter(supabase, token);
+  if (denial) return json({ error: denial }, denial === "forbidden" ? 403 : 401);
   return null;
 }
 

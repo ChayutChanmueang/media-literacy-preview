@@ -162,7 +162,7 @@ sequenceDiagram
 - หน้าเปิดได้เมื่อตั้ง `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` ครบ — ขาด → `/admin/*`, `/api/admin/*` ตอบ 404 (ไม่บอกว่ามีหน้านี้อยู่) + log ฝั่ง server ครั้งเดียวว่าตั้งค่าไม่ครบ → **ปิดหน้านี้บนเครื่องใดก็ได้ด้วยการไม่ตั้ง 2 ตัวนี้**
 - **กันตั้งค่าผิดเครื่อง** (เช่น เว็บโหมดวิจัยแต่ `DATABASE_URL` ชี้ DB ของ 202): `meta` ตรวจว่า DB มีหลักฐานของโหมดนั้น — โหมดวิจัยต้องมีตาราง `self_assessment_submissions`; ถ้าไม่ตรง หน้าแสดงคำเตือนสีแดง "ฐานข้อมูลอาจไม่ใช่ของเซิร์ฟเวอร์โหมดวิจัย" และปิดปุ่มดาวน์โหลด
 - **ไม่ใช้** `NEXT_PUBLIC_SUPABASE_*` และ **ไม่ใช้** `SUPABASE_SERVICE_ROLE_KEY` ในเบราว์เซอร์
-- การดึงไฟล์ (ค่าเริ่มต้น) ให้เว็บเรียก Edge Function `POST {SUPABASE_URL}/functions/v1/ml_functions/read-database/exportDataset` ด้วย access token ของผู้ใช้ที่ login แล้ว ฟังก์ชันตรวจ `app_metadata.role = data_exporter` แล้วเปิด transaction อ่านอย่างเดียวผ่าน `SUPABASE_DB_URL`
+- การดึงไฟล์ (ค่าเริ่มต้น) ให้เว็บเรียก Edge Function `POST {SUPABASE_URL}/functions/v1/ml_functions/read-database/exportDataset` ด้วย access token ของผู้ใช้ที่ login แล้ว ฟังก์ชันตรวจบัญชีกับ Auth server และปฏิเสธ anonymous โดยไม่ตรวจ role ก่อนเปิด transaction อ่านอย่างเดียวผ่าน `SUPABASE_DB_URL`
 - `SUPABASE_DB_URL` ตั้งที่ container ของ Edge Function (ไม่ใช่ที่เว็บ) ต้องเป็นการเชื่อมต่อตรง/session ไป Postgres เช่น `postgresql://postgres:<รหัส>@db:5432/postgres` — **อย่าใช้พอร์ต pooler 6543** เพราะการดึงค้าง transaction เดียว
 - `APP_MODE` ของ Edge Function ต้องตรงกับเว็บเครื่องนั้น
 - `DATA_EXPORT_DIRECT=true` ที่เว็บ = ไม่เรียกฟังก์ชัน อ่าน `DATABASE_URL` ในโปรเซส Next แทน ใช้ตอนพัฒนาที่ยังไม่ได้รัน Edge Runtime ผลลัพธ์ชุดเดียวกัน และก็ไม่เขียนตารางรายงาน
@@ -458,7 +458,7 @@ session_id,age_range,province,district,sub_district,sa_item_set,sa_pre_submitted
 
 ### 11.1 ไม่มีตารางเก็บรายงาน
 
-การดึงข้อมูลเป็นคำสั่ง `SELECT` บนตารางที่แอปเขียนอยู่แล้ว (`sessions`, `action_logs`, `lesson_progress`, แบบประเมิน, `player_info`) ผ่าน Edge Function ใน `supabase/functions/ml_functions/` รูปแบบ router เดียวกับโปรเจกต์ MCI (`read-database` + action) แต่ตรวจสิทธิ์ `data_exporter` ก่อนเปิดฐานข้อมูล และไม่ใช้ anon key อ่านข้อมูลวิจัย
+การดึงข้อมูลเป็นคำสั่ง `SELECT` บนตารางที่แอปเขียนอยู่แล้ว (`sessions`, `action_logs`, `lesson_progress`, แบบประเมิน, `player_info`) ผ่าน Edge Function ใน `supabase/functions/ml_functions/` รูปแบบ router เดียวกับโปรเจกต์ MCI (`read-database` + action) แต่ตรวจบัญชีที่ไม่ใช่ anonymous ก่อนเปิดฐานข้อมูล และไม่ใช้ anon key อ่านข้อมูลวิจัย
 
 วิธี deploy ที่รันผ่านบน Supabase Cloud และทาง self-host อยู่ที่ [wiki — Deploy Edge Function](../wiki/deploy-supabase-function.md) เว็บใช้ `SUPABASE_URL` ของโปรเจกต์นั้นเรียก `/functions/v1/ml_functions/...`
 
@@ -558,7 +558,7 @@ CREATE INDEX IF NOT EXISTS player_info_session_id_idx ON public.player_info(sess
 ## 15. สถานะการ implement (2026-11-06)
 
 **ทำแล้วในโค้ด (DX-00 ส่วนโค้ด, DX-10–DX-13, DX-20–DX-25, DX-30, DX-40–DX-42):**
-- ระบบ login (Supabase Auth ฝั่ง server, cookie `httpOnly`, rate limit, ตรวจ `app_metadata.role`), กิ่ง `/admin` ใน `proxy.ts`, ปิดหน้าเมื่อไม่ตั้ง `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`
+- ระบบ login (Supabase Auth ฝั่ง server, cookie `httpOnly`, rate limit, ปฏิเสธ anonymous โดยไม่ตรวจ role), กิ่ง `/admin` ใน `proxy.ts`, ปิดหน้าเมื่อไม่ตั้ง `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`
 - หน้า `/admin/data-export` + API `POST /api/admin/export` ครบทุกชุดข้อมูล, ชุดที่เว็บนั้นไม่มีแสดง checkbox ปิดพร้อมหมายเหตุ; การอ่านข้อมูลอยู่ที่ Edge Function `ml_functions` และไม่เขียนตารางรายงาน
 - `player_info.session_id` (บันทึกคะแนนใหม่พร้อม session), `attempt_uuid` ใน event `leaderboard_score_saved`, `scripts/migrate-data-export.cjs`, `scripts/backfill-leaderboard-session.cjs`
 - package: `@supabase/ssr@0.12.7`, `@supabase/supabase-js@2.118.0`, `fflate@0.8.3` (pin เวอร์ชันตรง)

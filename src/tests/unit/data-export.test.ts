@@ -14,6 +14,7 @@ import { DATASETS } from "@/lib/export/registry";
 import { buildReadme, datasetAvailability, dbMatchesMode, ExportError, runExport } from "@/lib/export/run";
 import { dataExportRequestSchema, type DataExportRequest } from "@/lib/validations";
 import ITEMS from "@/data/self-assessment-items.json";
+import { authorizeExporter } from "../../../supabase/functions/ml_functions/auth";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(__dirname, "../../..");
@@ -196,6 +197,21 @@ describe("request validation", () => {
 
 describe("admin auth helpers", () => {
   afterEach(() => vi.unstubAllEnvs());
+
+  it("authorizes edge exports for real users without a role, but rejects anonymous and invalid sessions", async () => {
+    const getUser = vi.fn();
+    const supabase = { auth: { getUser } } as unknown as SupabaseClient;
+
+    getUser.mockResolvedValueOnce({ data: { user: { id: "staff", app_metadata: {} } }, error: null });
+    expect(await authorizeExporter(supabase, "staff-token")).toBeNull();
+    expect(getUser).toHaveBeenCalledWith("staff-token");
+
+    getUser.mockResolvedValueOnce({ data: { user: { id: "anonymous", is_anonymous: true } }, error: null });
+    expect(await authorizeExporter(supabase, "anonymous-token")).toBe("forbidden");
+
+    getUser.mockResolvedValueOnce({ data: { user: null }, error: new Error("invalid token") });
+    expect(await authorizeExporter(supabase, "invalid-token")).toBe("unauthenticated");
+  });
 
   it("lets any signed-in account in, but never an anonymous session or no session", async () => {
     const fake = (claims: Record<string, unknown> | null, user: Record<string, unknown> | null) =>

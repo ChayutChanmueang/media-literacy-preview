@@ -71,7 +71,7 @@ npx supabase secrets set --remote=oiebsnikzjhzviixuvft \
 
 ถ้ายังไม่ได้ขึ้นฟังก์ชันหรือยังไม่ได้ตั้ง secret ให้ตั้ง `DATA_EXPORT_DIRECT=true` ชั่วคราว เว็บจะอ่าน `DATABASE_URL` เอง ผลไฟล์เหมือนกัน
 
-บัญชีที่ดาวน์โหลดได้ต้องมี `app_metadata.role = data_exporter` สร้างใน Studio ของโปรเจกต์นั้น ตาม [12 ข้อ 5.2](../software/12-data-export-page.md#52-เจ้าหน้าที่เพิ่มบัญชีผู้ใช้-d4)
+บัญชีที่ดาวน์โหลดได้ต้องเป็นบัญชีที่ไม่ใช่ anonymous ใน Supabase Auth ของโปรเจกต์นั้น โดยไม่ต้องกำหนด role ตาม [12 ข้อ 5.2](../software/12-data-export-page.md#52-เจ้าหน้าที่เพิ่มบัญชีผู้ใช้-d4) — **ต้องปิดการสมัครเอง** และจำกัดบัญชีทั้งหมดในโปรเจกต์ให้เป็นผู้ที่ได้รับอนุญาตดึงข้อมูล รวมถึงการเรียก Edge Function โดยตรง
 
 ---
 
