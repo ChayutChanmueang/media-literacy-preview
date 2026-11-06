@@ -43,7 +43,7 @@ export default async function DataExportPage() {
       <main className="mx-auto mt-12 max-w-md rounded-2xl bg-white p-8 shadow-sm">
         <h1 className="text-h2">บัญชีนี้ไม่มีสิทธิ์ดึงข้อมูล</h1>
         <p className="mt-3 text-body">
-          {identity.email ?? "บัญชีนี้"} เข้าสู่ระบบได้ แต่ยังไม่ได้รับสิทธิ์ดึงข้อมูล — ติดต่อเจ้าหน้าที่ผู้ดูแลระบบให้เพิ่มสิทธิ์
+          เซสชันนี้เป็นผู้ใช้แบบไม่ระบุตัวตน — ออกจากระบบแล้วเข้าใหม่ด้วยบัญชีที่เจ้าหน้าที่สร้างให้
         </p>
         <form action={signOut} className="mt-6">
           <button

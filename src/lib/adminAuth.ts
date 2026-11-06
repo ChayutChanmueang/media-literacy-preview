@@ -4,11 +4,9 @@ import type { AppMode } from "@/services/progressService";
  * Staff-only data export (docs/software/12-data-export-page.md). Server code only.
  *
  * Accounts live in the Supabase Auth of the server the site runs on and are created by staff in
- * Supabase Studio. Access needs app_metadata.role = "data_exporter" — app_metadata, never
- * user_metadata, because users can edit their own user_metadata.
+ * Supabase Studio. Any non-anonymous account may export (no role check since 2026-11-06), so
+ * sign-ups must stay disabled in that Supabase Auth.
  */
-
-export const DATA_EXPORTER_ROLE = "data_exporter";
 
 export interface SupabaseAuthConfig {
   url: string;
@@ -40,14 +38,6 @@ export function isDataExportEnabled(): boolean {
  */
 export function getExportMode(): AppMode {
   return process.env.APP_MODE?.trim().toLowerCase() === "research" ? "research" : "normal";
-}
-
-export function hasExporterRole(appMetadata: unknown): boolean {
-  return (
-    typeof appMetadata === "object" &&
-    appMetadata !== null &&
-    (appMetadata as Record<string, unknown>).role === DATA_EXPORTER_ROLE
-  );
 }
 
 /** `next` after login: only paths inside /admin, so the login form can't be used as an open redirect. */

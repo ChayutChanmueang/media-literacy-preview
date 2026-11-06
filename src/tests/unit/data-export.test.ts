@@ -4,7 +4,9 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { getExportMode, hasExporterRole, isDataExportEnabled, safeAdminNext } from "@/lib/adminAuth";
+import { getExportMode, isDataExportEnabled, safeAdminNext } from "@/lib/adminAuth";
+import { getAdminIdentity } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { csvCell, toCsv } from "@/lib/export/csv";
 import { readCounts, readDbFacts, type Queryable } from "@/lib/export/queries";
 import { DATASETS } from "@/lib/export/registry";
@@ -194,10 +196,26 @@ describe("request validation", () => {
 describe("admin auth helpers", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("needs app_metadata.role = data_exporter", () => {
-    expect(hasExporterRole({ role: "data_exporter" })).toBe(true);
-    expect(hasExporterRole({ role: "admin" })).toBe(false);
-    expect(hasExporterRole(undefined)).toBe(false);
+  it("lets any signed-in account in, but never an anonymous session or no session", async () => {
+    const fake = (claims: Record<string, unknown> | null, user: Record<string, unknown> | null) =>
+      ({
+        auth: {
+          getClaims: async () => ({ data: claims ? { claims } : null, error: null }),
+          getUser: async () => ({ data: { user }, error: user ? null : new Error("no session") }),
+        },
+      }) as unknown as SupabaseClient;
+
+    const staff = fake({ sub: "u1", email: "staff@example.com", app_metadata: {} }, { id: "u1", email: "staff@example.com", app_metadata: {} });
+    expect(await getAdminIdentity(staff, { fresh: false })).toEqual({ status: "ok", userId: "u1", email: "staff@example.com" });
+    expect(await getAdminIdentity(staff, { fresh: true })).toEqual({ status: "ok", userId: "u1", email: "staff@example.com" });
+
+    const anon = fake({ sub: "u2", is_anonymous: true }, { id: "u2", is_anonymous: true });
+    expect((await getAdminIdentity(anon, { fresh: false })).status).toBe("forbidden");
+    expect((await getAdminIdentity(anon, { fresh: true })).status).toBe("forbidden");
+
+    const nobody = fake(null, null);
+    expect((await getAdminIdentity(nobody, { fresh: false })).status).toBe("anonymous");
+    expect((await getAdminIdentity(nobody, { fresh: true })).status).toBe("anonymous");
   });
 
   it("only redirects inside /admin after login", () => {

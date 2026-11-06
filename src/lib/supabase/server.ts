@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAuthConfig, hasExporterRole } from "@/lib/adminAuth";
+import { getSupabaseAuthConfig } from "@/lib/adminAuth";
 
 /**
  * Supabase Auth for the staff-only /admin pages (docs/software/12). The browser never talks to
@@ -70,20 +70,24 @@ export type AdminIdentity =
 
 /**
  * Who is signed in. `fresh: false` verifies the JWT (getClaims) — for pages. `fresh: true` asks the
- * Auth server (getUser) so a revoked role or deleted user stops working at once — for the export API.
+ * Auth server (getUser) so a deleted user stops working at once — for the export API.
  * Never getSession(): it does not verify the token.
+ *
+ * Any real account of this server's Supabase Auth may export (the data_exporter role check was dropped
+ * 2026-11-06 — docs/software/12 §5.2), so sign-ups MUST stay disabled in Supabase Auth. Anonymous
+ * Supabase sessions are always refused: with anonymous sign-ins on, anyone could get one without credentials.
  */
 export async function getAdminIdentity(supabase: SupabaseClient, { fresh }: { fresh: boolean }): Promise<AdminIdentity> {
   if (fresh) {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) return { status: "anonymous" };
     const base = { userId: data.user.id, email: data.user.email ?? null };
-    return hasExporterRole(data.user.app_metadata) ? { status: "ok", ...base } : { status: "forbidden", ...base };
+    return data.user.is_anonymous ? { status: "forbidden", ...base } : { status: "ok", ...base };
   }
 
   const { data, error } = await supabase.auth.getClaims();
   const claims = data?.claims;
   if (error || !claims?.sub) return { status: "anonymous" };
   const base = { userId: String(claims.sub), email: typeof claims.email === "string" ? claims.email : null };
-  return hasExporterRole(claims.app_metadata) ? { status: "ok", ...base } : { status: "forbidden", ...base };
+  return claims.is_anonymous === true ? { status: "forbidden", ...base } : { status: "ok", ...base };
 }

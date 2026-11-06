@@ -140,20 +140,14 @@ sequenceDiagram
 ### 5.2 เจ้าหน้าที่เพิ่มบัญชีผู้ใช้ (D4)
 **บัญชีแยกกันต่อเครื่อง** — คนที่ต้องดึงทั้งข้อมูลโหมดปกติและโหมดวิจัยต้องมีบัญชีใน Studio ของทั้ง 202 และ 233 (ใช้อีเมลเดียวกันได้ แต่เป็นคนละบัญชี/รหัสผ่านตั้งแยก)
 
+> **เปลี่ยน 2026-11-06 (quick fix):** ตัดการตรวจ `app_metadata.role = "data_exporter"` ออก — **ทุกบัญชีใน Supabase Auth ของเครื่องนั้นดึงข้อมูลได้** (ยกเว้นเซสชันแบบไม่ระบุตัวตน/anonymous ที่ถูกปฏิเสธเสมอ) เพราะโครงสร้าง Supabase ปัจจุบันยังไม่มีการกำหนด role
+> ⚠️ ผลคือ "มีบัญชี = มีสิทธิ์" → **ต้องปิดการสมัครเอง (ข้อ 5.1 ข้อ 2) บนทุกเครื่องที่เปิดหน้านี้** และห้ามใช้ Supabase Auth เครื่องนั้นกับระบบอื่นที่ให้คนทั่วไปสมัคร — ถ้าภายหลังต้องแยกสิทธิ์ ให้นำการตรวจ role กลับมา (ดู git history ของ `src/lib/supabase/server.ts` ใน `271a762`)
+
 ทำใน Supabase Studio ของเครื่องที่ต้องการให้สิทธิ์:
 1. Authentication → Users → **Add user** → ใส่อีเมล + รหัสผ่านชั่วคราว, ติ๊ก **Auto confirm user**
-2. ตั้งสิทธิ์: SQL Editor
-   ```sql
-   UPDATE auth.users
-   SET raw_app_meta_data = raw_app_meta_data || '{"role": "data_exporter"}'::jsonb
-   WHERE email = 'researcher@example.com';
-   ```
-   (ใช้ `app_metadata` เท่านั้น — **ห้ามใส่สิทธิ์ใน `user_metadata`** เพราะผู้ใช้แก้เองได้; แอปจะไม่ยอมรับ role จาก `user_metadata`)
-3. ส่งอีเมล/รหัสให้ผู้ใช้ทางช่องทางส่วนตัว พร้อมบอกว่าเป็นบัญชีของเว็บไหน
-4. **ถอนสิทธิ์:** ลบ `role` ออกจาก `raw_app_meta_data` แล้ว **Sign out user / ลบ user** ใน Studio — ลบ user อย่างเดียวไม่ทำให้ token ที่ออกไปแล้วหมดอายุทันที
-5. ลืมรหัสผ่าน: เจ้าหน้าที่ตั้งรหัสใหม่ใน Studio (แอปไม่มีหน้ารีเซ็ตรหัส)
-
-บัญชีที่มีแต่ไม่มี `role` = login ได้แต่ไม่เห็นข้อมูล (หน้า "บัญชีนี้ไม่มีสิทธิ์ดึงข้อมูล")
+2. ส่งอีเมล/รหัสให้ผู้ใช้ทางช่องทางส่วนตัว พร้อมบอกว่าเป็นบัญชีของเว็บไหน
+3. **ถอนสิทธิ์:** **Sign out user แล้วลบ user** ใน Studio — ลบ user อย่างเดียวไม่ทำให้ token ที่ออกไปแล้วหมดอายุทันที (API ดึงข้อมูลตรวจกับ Auth server ทุกครั้งจึงหยุดทันที แต่หน้าเว็บอาจยังเปิดค้างได้จน token หมดอายุ)
+4. ลืมรหัสผ่าน: เจ้าหน้าที่ตั้งรหัสใหม่ใน Studio (แอปไม่มีหน้ารีเซ็ตรหัส)
 
 ### 5.3 Environment variables (ฝั่ง server, อ่านตอน runtime — ตั้งใน Portainer แล้ว restart ไม่ต้อง rebuild)
 
@@ -178,7 +172,7 @@ sequenceDiagram
 | จุด | ตรวจอะไร | ใช้ |
 |---|---|---|
 | `proxy.ts` กิ่ง `/admin/*` | `isDataExportEnabled()` (ไม่ใช่ → rewrite 404), refresh token, ไม่มี session และไม่ใช่ `/admin/login` → redirect `/admin/login?next=…` | `getClaims()` |
-| `/admin/data-export` | มี session **และ** `app_metadata.role === "data_exporter"`; มี session แต่ไม่มีสิทธิ์ → หน้าไม่มีสิทธิ์ + ปุ่มออกจากระบบ | `getClaims()` |
+| `/admin/data-export` | มี session ที่ไม่ใช่ anonymous (ไม่ตรวจ role ตั้งแต่ 2026-11-06 — ข้อ 5.2); เซสชัน anonymous → หน้าแจ้ง + ปุ่มออกจากระบบ | `getClaims()` |
 | `POST /api/admin/export` | `isDataExportEnabled()` (ไม่ใช่ → 404) + สิทธิ์สดจาก Auth server + header `Origin` ตรงกับ host (กัน CSRF) + ชุดข้อมูลที่ขอใช้ได้ใน `APP_MODE` นี้ | `getUser()` |
 | `/admin/login` | login อยู่แล้วและมีสิทธิ์ → redirect ไปหน้า export | `getClaims()` |
 
@@ -538,13 +532,13 @@ CREATE INDEX IF NOT EXISTS player_info_session_id_idx ON public.player_info(sess
 - validation ของ request: กลุ่ม/ไฟล์ที่ไม่รู้จัก, session id ไม่ใช่ UUID, field เกิน, ไม่เลือกอะไรเลย, `self_assessment` ในโหมดปกติ → 422, `leaderboard` ในโหมดวิจัย → 422
 - `getExportMode` อ่าน `APP_MODE` ตรง ไม่สนใจ cookie `naplab_ml_dev_app_mode`; โหมดวิจัยแต่ DB ไม่มีตาราง self-assessment → `db_matches_mode = false`
 - `isDataExportEnabled`: ไม่มี `SUPABASE_URL` → false
-- `adminAuth`: ไม่มี session → 401, ไม่มี role → 403, role อยู่ใน `user_metadata` → 403
+- `getAdminIdentity`: ไม่มี session → `anonymous` (401), เซสชัน anonymous → `forbidden` (403), บัญชีปกติไม่มี role ใดๆ → `ok`
 - `POST /api/game-results`: มี/ไม่มี `session_id` บันทึกได้ทั้งคู่
 - guard: ไม่มีลิงก์ไป `/admin` จาก UI ส่วนอื่น
 
 **E2E (Playwright)** — mock Supabase Auth หรือบัญชีทดสอบ, รันทั้ง `APP_MODE=normal` และ `research`
 - ไม่ตั้ง `SUPABASE_URL` → `/admin/data-export`, `POST /api/admin/export` ได้ 404
-- ไม่ login → `/admin/login`; login ผิด → ข้อความกลาง; ไม่มี role → หน้าไม่มีสิทธิ์
+- ไม่ login → `/admin/login`; login ผิด → ข้อความกลาง; login ถูก → เข้าหน้าดึงข้อมูลได้
 - ทั้ง 2 โหมดแสดงรายการชุดข้อมูลครบเท่ากัน
 - โหมดวิจัย: checkbox "คะแนน Leaderboard" กดไม่ได้ + หมายเหตุ "มีเฉพาะเว็บโหมดปกติ (202)" และถูกอ่านผ่าน `aria-describedby`; ติ๊กเฉพาะกลุ่มรายคน → ได้ `participants_research_….csv` ไฟล์เดียว
 - โหมดปกติ: checkbox แบบประเมิน, "รวมคำตอบรายข้อ" และตัวกรอง "ทำแบบประเมินครบ" กดไม่ได้ + หมายเหตุ "มีเฉพาะเว็บโหมดวิจัย (233)"; ติ๊กกลุ่มรายคน + leaderboard → `.zip` มี `participants.csv`, `leaderboard.csv`, `README.txt`
@@ -575,7 +569,7 @@ CREATE INDEX IF NOT EXISTS player_info_session_id_idx ON public.player_info(sess
 ## 15. สถานะการ implement (2026-11-06)
 
 **ทำแล้วในโค้ด (DX-00 ส่วนโค้ด, DX-10–DX-13, DX-20–DX-25, DX-30, DX-40–DX-42):**
-- ระบบ login (Supabase Auth ฝั่ง server, cookie `httpOnly`, rate limit, ตรวจ `app_metadata.role`), กิ่ง `/admin` ใน `proxy.ts`, ปิดหน้าเมื่อไม่ตั้ง `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`
+- ระบบ login (Supabase Auth ฝั่ง server, cookie `httpOnly`, rate limit; ~~ตรวจ `app_metadata.role`~~ ตัดออก 2026-11-06 — ทุกบัญชีที่ไม่ใช่ anonymous เข้าได้), กิ่ง `/admin` ใน `proxy.ts`, ปิดหน้าเมื่อไม่ตั้ง `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`
 - หน้า `/admin/data-export` + API `POST /api/admin/export` ครบทุกชุดข้อมูล, ชุดที่เว็บนั้นไม่มีแสดง checkbox ปิดพร้อมหมายเหตุ, audit ทุกครั้ง
 - `player_info.session_id` (บันทึกคะแนนใหม่พร้อม session), `attempt_uuid` ใน event `leaderboard_score_saved`, `scripts/migrate-data-export.cjs`, `scripts/backfill-leaderboard-session.cjs`
 - package: `@supabase/ssr@0.12.7`, `@supabase/supabase-js@2.118.0`, `fflate@0.8.3` (pin เวอร์ชันตรง)
