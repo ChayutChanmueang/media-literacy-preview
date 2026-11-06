@@ -212,9 +212,14 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
     return <div id="root-container">{children}</div>;
   }
 
-  // Staff-only data export (docs/software/12) — desktop page with its own layout, no learner chrome
+  // Staff-only data export (docs/software/12) — desktop page with its own layout, no learner chrome.
+  // <body> is height:100dvh + overflow:hidden (globals.css), so this wrapper must be the scroll pane itself.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    return <div className="w-full min-h-screen">{children}</div>;
+    return (
+      <div className="h-dvh w-full overflow-y-auto overscroll-contain">
+        <div className="min-h-full">{children}</div>
+      </div>
+    );
   }
 
   // หน้าแรก (Landing) เป็นเหมือนหน้าเริ่มต้น/สแปลชของแอป — ยังไม่มีการนำทางใด ๆ
