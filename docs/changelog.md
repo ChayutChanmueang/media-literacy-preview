@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-11-06
+
+### Added
+- เอกสาร [12 — หน้าดึงข้อมูล (Data Export)](./software/12-data-export-page.md): spec + แผนพัฒนาหน้า `/admin/data-export` (Supabase Auth + สิทธิ์ `app_metadata.role` — เจ้าหน้าที่สร้างบัญชีใน Studio; แต่ละเว็บดึงจาก DB ของตัวเองตาม `APP_MODE` — ปกติ → 202 (มี Leaderboard), วิจัย → 233 (มีแบบประเมินก่อน/หลัง), เจ้าหน้าที่ใช้ได้ทั้ง 2 เว็บ, ชุดที่เว็บนั้นไม่มีแสดงเป็น checkbox กดไม่ได้พร้อมหมายเหตุ; ข้อมูลรายคนรวมเป็น `participants.csv` 1 แถว/คน + ไฟล์แยก Event log / การใช้งานรายวัน-เดือน / Leaderboard; ดึงทุกคน/ราย session id; ตาราง audit) — ตัดสิน D1–D6 แล้ว 2026-11-06 (ตัดเพศออก, ไม่มีตัวกรองวันที่), ยังไม่แก้โค้ด; บันทึกข้อจำกัดที่พบ: `player_info` ไม่มี session id, รหัสผ่าน DB ฝังใน `scripts/export_logs.js`
+- หน้าดึงข้อมูลเจ้าหน้าที่ `/admin/data-export` ตาม [12](./software/12-data-export-page.md) (🔍 In QA — ยังไม่ได้ทดสอบกับ Supabase Auth จริง): login ด้วย Supabase Auth ของเครื่องนั้น (`/admin/login`, cookie `httpOnly`, rate limit, ต้องมี `app_metadata.role = data_exporter`), `POST /api/admin/export` ส่งออก `participants.csv` (1 แถว/คน) + Event log / การใช้งานรายวัน-เดือน / Leaderboard เป็น `.csv` หรือ `.zip`, ตาราง `data_export_audit` — ปิดหน้า (404) เมื่อไม่ตั้ง env `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY`
+- คะแนน Leaderboard ใหม่บันทึก `player_info.session_id` (`session_link = exact`) และ event `leaderboard_score_saved` มี `attempt_uuid`; สคริปต์ `scripts/migrate-data-export.cjs` (**ต้องรันบน DB ทั้ง 202 และ 233 ก่อน deploy**) และ `scripts/backfill-leaderboard-session.cjs` (ผูกคะแนนเก่าแบบไม่กำกวม)
+- อัปเกรด `@supabase/ssr` 0.5.2 → 0.12.7, `@supabase/supabase-js` 2.110.0 → 2.118.0 (pin เวอร์ชันตรง), เพิ่ม `fflate` 0.8.3
+
+### Security
+- เอา connection string + รหัสผ่าน DB ที่ฝังอยู่ออกจาก `scripts/export_logs.js` (ใช้ `DATABASE_URL` แทน), `.env.example` และ `docs/wiki/deploy-camt/docker-portainer-guide.md` — ⚠️ รหัสผ่านนั้นยังอยู่ใน git history: **ต้องเปลี่ยนรหัสผ่าน DB ที่ Supabase**
+
+### Changed
+- GitLab CI เหลือ 2 stage: `build` (`next-build`) → `deploy` (build + push container image ไป GitLab Container Registry แล้วเรียก Portainer webhook) — `development` และ `main` ได้ branch pipeline เสมอแม้มี MR เปิดอยู่ เพื่อให้ job push image ได้รัน (เดิม MR !1 ทำให้ไม่มี image `dev` ใหม่)
+
+### Removed
+- job `lint`, `typecheck`, `unit-test`, `e2e` และ `build-sonar` ออกจาก CI; ลบ `sonar-project.properties` เพราะโปรเจกต์ไม่ใช้ SonarQube แล้ว — ให้รัน lint / typecheck / test ในเครื่องก่อน push
+
+**Bump rationale:** เพิ่มความสามารถใหม่ (หน้าดึงข้อมูลเจ้าหน้าที่ `/admin/data-export` + API `POST /api/admin/export`, ระบบ login ด้วย Supabase Auth, คอลัมน์ `player_info.session_id` และตาราง `data_export_audit`) โดยไม่ทำให้ของเดิมเสีย (client รุ่นเก่ายังบันทึกคะแนนได้) จึงอัปเดต MINOR จาก `0.27.1` เป็น `0.28.0` ตามที่ผู้ใช้กำหนด — ⚠️ ต้องรัน `scripts/migrate-data-export.cjs` บน DB ทั้ง 2 เครื่องก่อน deploy
+
+## [0.27.1] - 2026-11-06
+
+### Changed
+- G17 โล่กันโกง เพิ่มความ "juicy": หางความเร็วหนาเท่าความสูงโล่ตลอดเส้น ยาว 0.25 วินาที (เดิม 0.1 วินาที บางกว่าโล่และเรียวลง) จางไปที่ปลาย; 🪄 โล่แยกมีแสงวาบเล็กๆ ที่โล่ทั้ง 3 อัน; ประกายไฟพุ่งออกจากจุดที่โล่ชนทุกครั้ง (ผนัง เพดาน แถบรับ บล็อก) — ถ้าเปิด reduced motion แค่กะพริบอยู่กับที่
+- G17 🐢 ลดความเร็วได้ไม่ต่ำกว่าความเร็วเริ่มต้น (เดิมไม่ต่ำกว่าครึ่งหนึ่ง) — ลดได้แค่ส่วนที่เร่งขึ้นจากการเด้ง และไม่ดรอปถ้าโล่ยังเร็วเท่าตอนเริ่ม
+
+**Bump rationale:** ปรับเอฟเฟกต์และสมดุลของเกมที่มีอยู่ ไม่มีของใหม่ที่เป็น API/ความสามารถใหม่ของระบบ จึงอัปเดต PATCH จาก `0.27.0` เป็น `0.27.1` ตามที่ผู้ใช้กำหนด
+
 ## [0.27.0] - 2026-11-04
 
 ### Added

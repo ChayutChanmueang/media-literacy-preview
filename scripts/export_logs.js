@@ -1,10 +1,14 @@
 import pg from 'pg';
 import fs from 'fs';
 import path from 'path';
+import 'dotenv/config';
 
-const pool = new pg.Pool({ 
-  connectionString: 'postgres://postgres.oiebsnikzjhzviixuvft:Z0ZN77MbTYIwLtPc@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true' 
-});
+if (!process.env.DATABASE_URL) {
+  console.error('Error: DATABASE_URL is not defined in environment variables.');
+  process.exit(1);
+}
+
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 function escapeCsvField(field) {
   if (field === null || field === undefined) return '';

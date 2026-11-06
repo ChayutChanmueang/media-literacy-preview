@@ -5,6 +5,7 @@ import {
   isSupportedLeaderboardGid,
   type LeaderboardEntry,
 } from "@/lib/leaderboard";
+import { ensureSessionRow } from "@/lib/sessionRows";
 import { leaderboardResultSchema } from "@/lib/validations";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { attempt_uuid, player_uuid, name, gid, score } = parsedResult.data;
+  const { attempt_uuid, player_uuid, name, gid, score, session_id } = parsedResult.data;
   const maxScore = getLeaderboardMaxScore(gid);
   if (!isSupportedLeaderboardGid(gid) || maxScore === null || score > maxScore) {
     return NextResponse.json({ error: "คะแนนหรือรหัสเกมอยู่นอกช่วงที่กำหนด" }, { status: 400 });
@@ -59,12 +60,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await getDatabasePool().query<LeaderboardEntry>(
-      `INSERT INTO player_info (attempt_uuid, player_uuid, name, gid, score)
-       VALUES ($1, $2, $3, $4, $5)
+    const pool = getDatabasePool();
+    // session_id (docs/software/12 §11.2) needs the sessions row for its FK; older clients don't send it
+    if (session_id) await ensureSessionRow(pool, session_id);
+    const result = await pool.query<LeaderboardEntry>(
+      `INSERT INTO player_info (attempt_uuid, player_uuid, name, gid, score, session_id, session_link)
+       VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $6::uuid IS NULL THEN NULL ELSE 'exact' END)
        ON CONFLICT (attempt_uuid) DO NOTHING
        RETURNING id, name, gid, score, created_at`,
-      [attempt_uuid, player_uuid, name, gid, score],
+      [attempt_uuid, player_uuid, name, gid, score, session_id ?? null],
     );
 
     if (result.rowCount === 0) {

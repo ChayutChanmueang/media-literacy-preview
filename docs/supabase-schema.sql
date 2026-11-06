@@ -137,6 +137,37 @@ ALTER TABLE public.quiz_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quiz_answers ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
+-- Staff data export (docs/software/12-data-export-page.md)
+-- Run on BOTH databases (normal 202 + research 233) before deploying the image
+-- that writes player_info.session_id: scripts/migrate-data-export.cjs
+-- ============================================================================
+
+-- Ties each leaderboard play to its session. NULL for old rows the backfill
+-- (scripts/backfill-leaderboard-session.cjs) could not match.
+ALTER TABLE public.player_info
+    ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES public.sessions(id),
+    ADD COLUMN IF NOT EXISTS session_link TEXT CHECK (session_link IN ('exact', 'matched'));
+CREATE INDEX IF NOT EXISTS player_info_session_id_idx ON public.player_info(session_id);
+
+-- Who exported whose data and when (PDPA). Written by POST /api/admin/export.
+CREATE TABLE IF NOT EXISTS public.data_export_audit (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    auth_user_id UUID NOT NULL,                   -- auth.users.id (no FK across into the auth schema)
+    auth_email TEXT,
+    app_mode TEXT NOT NULL CHECK (app_mode IN ('normal', 'research')),
+    scope TEXT NOT NULL CHECK (scope IN ('all', 'session')),
+    session_id UUID,
+    request JSONB NOT NULL,                       -- groups, files, row_filter, group_options
+    row_counts JSONB NOT NULL DEFAULT '{}'::jsonb,
+    client_ip TEXT,
+    user_agent TEXT,
+    CHECK ((scope = 'session') = (session_id IS NOT NULL))
+);
+ALTER TABLE public.data_export_audit ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.data_export_audit FROM anon, authenticated;
+
+-- ============================================================================
 -- Research mode: pre/post self-assessment
 -- Reuses public.sessions (participant, demographics, pre<->post key) and
 -- public.action_logs (behaviour events, backfill source) unchanged.

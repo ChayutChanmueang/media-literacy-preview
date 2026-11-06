@@ -205,17 +205,21 @@ function LeaderboardPageInner() {
         } else if (pendingScore && player) {
           latestScore = pendingScore.score;
           setPlayerScore(pendingScore.score);
+          // session_id ties the score to its player for the staff data export (docs/software/12 §11.2)
+          const sessionId = progressService.getOrCreateSession()?.sessionId;
           await apiClient.saveGameResult({
             ...player,
             attempt_uuid: pendingScore.attempt_uuid,
             gid: targetGid,
             score: pendingScore.score,
+            ...(sessionId ? { session_id: sessionId } : {}),
           });
           leaderboardScoreService.clearPendingScore(targetGid);
           loggingService.logEvent("leaderboard_score_saved", {
             game_id: targetGid,
             lesson_id: lessonId,
             score: pendingScore.score,
+            attempt_uuid: pendingScore.attempt_uuid,
           });
         }
 

@@ -63,7 +63,38 @@ export const leaderboardResultSchema = leaderboardPlayerSchema.extend({
   attempt_uuid: z.string().uuid(),
   gid: z.string().trim().toUpperCase().min(1),
   score: z.number().int().min(0),
+  // Ties the score to its player for the staff data export (docs/software/12 §11.2). Optional so
+  // clients still running an older cached build can keep saving scores.
+  session_id: z.string().uuid().optional(),
 });
+
+// Staff data export request (docs/software/12 §7.2)
+export const dataExportRequestSchema = z
+  .object({
+    scope: z.discriminatedUnion("type", [
+      z.object({ type: z.literal("all") }).strict(),
+      z.object({ type: z.literal("session"), session_id: z.string().trim().uuid() }).strict(),
+    ]),
+    row_filter: z
+      .object({
+        registered_only: z.boolean().default(false),
+        self_assessment_pair_only: z.boolean().default(false),
+      })
+      .strict()
+      .default({}),
+    groups: z
+      .array(z.enum(["age", "location", "self_assessment", "usage_summary", "event_breakdown", "completion_funnel", "lesson_progress"]))
+      .default([]),
+    group_options: z.object({ self_assessment_items: z.boolean().default(true) }).strict().default({}),
+    files: z.array(z.enum(["event_log", "usage_detail", "leaderboard"])).default([]),
+  })
+  .strict()
+  .refine((value) => value.groups.length + value.files.length > 0, { message: "เลือกข้อมูลอย่างน้อย 1 ชุด" })
+  .refine((value) => new Set(value.groups).size === value.groups.length && new Set(value.files).size === value.files.length, {
+    message: "เลือกชุดข้อมูลซ้ำ",
+  });
+
+export type DataExportRequest = z.infer<typeof dataExportRequestSchema>;
 
 // Research-mode self-assessment (pre/post) submission — see docs/software/10-research-pre-post-backend.md.
 // Whether answers/item_order cover exactly the item set is checked by findItemSetProblem().

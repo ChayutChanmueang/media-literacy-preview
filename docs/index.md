@@ -54,6 +54,7 @@
 - [09 — การเก็บข้อมูลแบบทดสอบก่อน/หลังเรียน (โหมดวิจัย)](./software/09-research-pre-post-data-collection.md) — 🏗 In Progress (schema + backend เสร็จ): ตาราง `self_assessment_*`, `POST /api/self-assessment`, คิวส่งใหม่ที่ไม่ทิ้งข้อมูล, backfill จาก `action_logs`, สคริปต์ export + checklist งานที่ต้องทำ [NEW]
 - [10 — Backend แบบทดสอบก่อน/หลังเรียน + คู่มือต่องาน Frontend](./software/10-research-pre-post-backend.md) — 🟢 API `POST/GET /api/self-assessment`, `selfAssessmentService` (คิวไม่ทิ้งข้อมูล), สคริปต์ migrate/backfill/export, test บน PGlite + ขั้นตอนที่ frontend ต้องต่อ [NEW]
 - [11 — ระบบเสียง (Audio System)](./software/11-audio-system.md) — 🔍 In QA: ระบบเสียงกลางระบบเดียว (Howler.js + wrapper `src/lib/audio/`, 2 ช่อง BGM/SFX, crossfade ตาม route, ducking ตอน TTS/วิดีโอ, ปุ่มปิดเสียง, PWA cache) — โค้ดลงแล้ว ผ่าน unit/E2E, ยังไม่มีไฟล์ BGM และยังไม่ได้ทดสอบบนมือถือจริง [NEW]
+- [12 — หน้าดึงข้อมูล (Data Export) สำหรับทีมวิจัย](./software/12-data-export-page.md) — 🔍 In QA (โค้ดลงแล้ว ผ่าน unit/build, ยังไม่ได้ทดสอบกับ Supabase Auth จริงและยังไม่ได้ migrate 2 เครื่อง): หน้า `/admin/data-export` (เข้าทาง URL เท่านั้น) login ด้วย Supabase Auth (เจ้าหน้าที่สร้างบัญชีใน Studio), แต่ละเว็บดึงจาก DB ของตัวเองตาม `APP_MODE` (ปกติ → 202 + Leaderboard, วิจัย → 233 + แบบประเมินก่อน/หลัง), ข้อมูลรายคนรวมเป็น `participants.csv` ไฟล์เดียว (1 แถว/คน) + ไฟล์แยกสำหรับ Event log / การใช้งานรายวัน-เดือน / Leaderboard, ดึงทุกคนหรือราย session id [NEW]
 
 ## 🚀 Agile Management
 

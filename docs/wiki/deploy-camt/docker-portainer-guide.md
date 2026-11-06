@@ -74,7 +74,8 @@ docker push naplabstudio/media-literacy:latest
    | --- | --- | --- |
    | `DOCKERHUB_IMAGE` | `naplabstudio/media-literacy:latest` | ชื่ออิมเมจบน Docker Hub |
    | `HOST_PORT` | `10980` (หรือตามพอร์ตภายใน `109XX` ที่จัดสรร) | พอร์ตภายในเครื่องโฮสต์ (Internal Host Port) |
-   | `DATABASE_URL` | `postgres://postgres.oiebsnikzjhzviixuvft:Z0ZN77MbTYIwLtPc@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true` | Connection String ของ Supabase IPv4 Connection Pooler (พอร์ต 6543) |
+   | `DATABASE_URL` | `postgres://<user>:<รหัสผ่าน>@<host>:6543/postgres?pgbouncer=true` (ค่าจริงขอจากผู้ดูแลระบบ — **ห้ามเขียนค่าจริงลงเอกสาร**) | Connection String ของ Supabase IPv4 Connection Pooler (พอร์ต 6543) |
+   | `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` | URL ของ Supabase เครื่องนี้ที่ container เรียกได้ / publishable หรือ anon key | เปิดหน้าดึงข้อมูลเจ้าหน้าที่ `/admin/data-export` — ไม่ตั้ง = ปิดหน้า ([docs/software/12](../../software/12-data-export-page.md)) |
    | `ENABLE_DEV_HUB` | `false` (ตั้ง `true` เฉพาะตอน QA/demo) | เปิดหน้ารวมเกม `/dev/games` — อ่านตอน runtime ไม่ต้อง rebuild image ⚠️ ห้ามเปิดบนเครื่องที่ผู้สูงอายุใช้จริงหน้างาน |
 
    > 💡 **เงื่อนไขข้อกำหนดเรื่องพอร์ตของ CAMT:**

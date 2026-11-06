@@ -34,6 +34,9 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       # เปิด /dev/games บน production ได้โดยไม่ต้อง rebuild (อ่านฝั่ง server ตอน runtime)
       - APP_MODE=${APP_MODE:-normal}
+      # หน้าดึงข้อมูลเจ้าหน้าที่ /admin (docs/software/12) — Supabase Auth ของเครื่องนี้; ไม่ตั้ง = ปิดหน้า
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-}
       - ENABLE_DEV_HUB=${ENABLE_DEV_HUB:-false}
       - NEXT_PUBLIC_ENABLE_DEV_HUB=${NEXT_PUBLIC_ENABLE_DEV_HUB:-false}
     healthcheck:

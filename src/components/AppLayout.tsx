@@ -66,7 +66,8 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
   useEffect(() => {
     // The dev game hub (US-03-R4) must not create a session — testing a game should
     // leave no trace in the data the research team reads
-    if (pathname.startsWith("/dev")) return;
+    // Same for the staff-only data export pages (/admin, docs/software/12): staff must not become a "participant"
+    if (pathname.startsWith("/dev") || pathname === "/admin" || pathname.startsWith("/admin/")) return;
 
     const initializedSession = progressService.getOrCreateSession();
     setSession(initializedSession);
@@ -209,6 +210,11 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
   // progress bar never implies a lesson is in progress while testing games
   if (pathname.startsWith("/dev")) {
     return <div id="root-container">{children}</div>;
+  }
+
+  // Staff-only data export (docs/software/12) — desktop page with its own layout, no learner chrome
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return <div className="w-full min-h-screen">{children}</div>;
   }
 
   // หน้าแรก (Landing) เป็นเหมือนหน้าเริ่มต้น/สแปลชของแอป — ยังไม่มีการนำทางใด ๆ

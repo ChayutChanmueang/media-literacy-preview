@@ -56,7 +56,8 @@ type Phase = "intro" | "playing" | "levelClear";
 type ItemType = "split" | "grow" | "slow" | "wide";
 
 // trail = where the shield was over the last TRAIL_SECS (t = world.clock then), drawn as its speed tail
-type Ball = { x: number; y: number; vx: number; vy: number; trail?: { x: number; y: number; t: number }[] };
+// flash = seconds into the 🪄 split flash (FLASH_SECS), unset when none is playing
+type Ball = { x: number; y: number; vx: number; vy: number; trail?: { x: number; y: number; t: number }[]; flash?: number };
 // Positions are in grid cells, so the layout survives a resize.
 // Each brick shows the part of the stage picture that sits under it.
 type Brick = { col: number; row: number; alive: boolean; item?: ItemType }; // item: dropped when broken (placeItems)
@@ -80,6 +81,8 @@ type Shard = {
   life: number; // seconds in all — the last `fade` of them fading out
   fade: number;
 };
+// Hit VFX: one spark thrown off the surface a shield just hit — a short bright streak along its velocity
+type Spark = { x: number; y: number; vx: number; vy: number; age: number; life: number; size: number };
 
 type World = {
   levelIdx: number;
@@ -93,6 +96,7 @@ type World = {
   bricks: Brick[];
   items: Item[];
   shards: Shard[];
+  sparks: Spark[];
   // last brick broken: seconds left before the level-clear screen, so its pieces can fall and fade first
   clearDelay: number | null;
   shake: number; // hit shake strength (addShake), 0 = still
@@ -141,12 +145,35 @@ const GROW_STEP = 6; // 🍄: shield radius + this (× small-phone scale), up to
 // (drawing only — collisions use the new size at once)
 const GROW_FLICKER_SECS = 0.6;
 const GROW_FLICKER_STEP = 0.08;
-// Speed tail behind each moving shield: its path over the last TRAIL_SECS, so a faster shield leaves a longer
-// tail. Kept faint and narrower than the shield on purpose — a hint of speed, not an effect to look at.
-const TRAIL_SECS = 0.1;
-const TRAIL_WIDTH = 1.1; // × shield radius at the shield end, tapering to nothing
-const TRAIL_ALPHA = 0.3; // at the shield end, fading to nothing
+// Shield sprite size (drawShield) as × the collision radius
+const SHIELD_W = 1.8;
+const SHIELD_H = 2.1;
+// Speed tail behind each moving shield: its path over the last TRAIL_SECS, so the tip is where the shield was
+// TRAIL_SECS ago and a faster shield leaves a longer tail. As thick as the shield is tall the whole way (follows
+// the 🍄 size too), fading from TRAIL_ALPHA at the shield to nothing at the tip.
+const TRAIL_SECS = 0.25;
+const TRAIL_ALPHA = 0.4;
+const TRAIL_BANDS = 16; // the fade is drawn in this many steps (one stroke each) — not visible as steps
 const TRAIL_COLOR = "125, 211, 252"; // #7DD3FC, the shield face's light blue (as r, g, b)
+// 🪄 split: each shield (the old one and both new ones) gives a small flash — a glow that swells and fades
+const FLASH_SECS = 0.35;
+const FLASH_RADIUS = 2.6; // × shield radius at its widest
+// Hit sparks: every bounce (walls, ceiling, bar, bricks) throws SPARK_MIN–SPARK_MAX sparks off the surface hit,
+// in a fan around the way the surface faces. Speeds in shield radii per s so a bigger shield throws bigger sparks.
+const SPARK_MIN = 6;
+const SPARK_MAX = 9;
+const SPARK_SPREAD = (70 * Math.PI) / 180; // either side of the surface's facing
+const SPARK_SPEED_MIN = 14;
+const SPARK_SPEED_MAX = 30;
+const SPARK_LIFE_MIN = 0.18;
+const SPARK_LIFE_MAX = 0.32;
+const SPARK_SIZE_MIN = 0.168; // spark thickness, × shield radius
+const SPARK_SIZE_MAX = 0.288;
+const SPARK_DRAG = 6; // speed lost per s, as a share
+const SPARK_STREAK = 0.05; // streak length = this many seconds of travel
+const SPARK_CAP = 240; // with many shields, oldest sparks go first past this
+const SPARK_CORE = "#FFFBEB";
+const SPARK_EDGE = "245, 158, 11"; // #F59E0B amber (as r, g, b) — shows on the light page and on the picture
 const ITEM_SIZE = 32;
 
 // Small-phone scaling (.gp-compact in globals.css): the canvas can't use the gp-* classes,
@@ -228,7 +255,8 @@ const baseSpeed = (height: number) => clamp(height * 0.38, 200, 340);
 const BOUNCE_SPEEDUP = 1.02;
 const MAX_BOOST = 1.5;
 const SLOW_MULTIPLIER = 0.75; // 🐢: −25% of the current speed
-const SLOW_FLOOR = 0.5; // several 🐢 in a row can't take it below half the start speed
+// 🐢 only takes back speed gained from bar bounces — never below the start speed (so it only drops when faster)
+const SLOW_FLOOR = 1;
 const currentSpeed = (world: World) => baseSpeed(world.height) * world.speedFactor * world.boost;
 // ↔️ item: each one widens the bar by PADDLE_WIDE_STEP, up to PADDLE_WIDE_MAX × and never past PADDLE_WIDE_CAP of the screen
 const PADDLE_WIDE_STEP = 1.3;
@@ -405,8 +433,8 @@ const shieldPath = (ctx: CanvasRenderingContext2D, x: number, y: number, w: numb
 };
 
 const drawShield = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
-  const w = r * 1.8;
-  const h = r * 2.1;
+  const w = r * SHIELD_W;
+  const h = r * SHIELD_H;
   ctx.save();
   // rim: silver, lit from the top left, with a dark outline
   shieldPath(ctx, x, y, w, h);
@@ -571,20 +599,134 @@ const drawShards = (ctx: CanvasRenderingContext2D, world: World, picture: HTMLIm
   }
 };
 
-/** Faint tapered tail along the shield's recent path — wide and most visible at the shield, gone at the end. */
-const drawTrail = (ctx: CanvasRenderingContext2D, ball: Ball, r: number) => {
-  const pts = ball.trail;
-  if (!pts || pts.length < 2) return;
+/**
+ * Speed tails along each shield's path, as thick as the shield is tall, fading out towards the tip.
+ * Drawn on their own layer (`layer`, same size and transform as `ctx`): each band first erases what is under it,
+ * so where bands overlap (round ends, bounce corners, crossing tails) the newer band's alpha wins instead of the
+ * two adding up into bright blotches. Then the layer goes onto the canvas in one go.
+ */
+const drawTrails = (ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext2D, balls: Ball[], r: number) => {
+  if (!balls.some((b) => b.trail && b.trail.length > 1)) return;
+  const { canvas } = ctx;
+  if (layer.canvas.width !== canvas.width || layer.canvas.height !== canvas.height) {
+    layer.canvas.width = canvas.width;
+    layer.canvas.height = canvas.height;
+  }
+  layer.setTransform(1, 0, 0, 1, 0, 0);
+  layer.clearRect(0, 0, canvas.width, canvas.height);
+  layer.setTransform(ctx.getTransform());
+  layer.lineCap = "round";
+  layer.lineJoin = "round";
+  layer.lineWidth = r * SHIELD_H;
+  for (const ball of balls) {
+    const pts = ball.trail;
+    if (!pts || pts.length < 2) continue;
+    const last = pts.length - 1;
+    // oldest band first, so each newer (brighter) one replaces it where they overlap
+    for (let band = 0; band < TRAIL_BANDS; band++) {
+      const from = Math.floor((band * last) / TRAIL_BANDS);
+      const to = Math.floor(((band + 1) * last) / TRAIL_BANDS);
+      if (to <= from) continue;
+      layer.beginPath();
+      layer.moveTo(pts[from].x, pts[from].y);
+      for (let i = from + 1; i <= to; i++) layer.lineTo(pts[i].x, pts[i].y);
+      layer.globalCompositeOperation = "destination-out";
+      layer.strokeStyle = "#000";
+      layer.stroke();
+      layer.globalCompositeOperation = "source-over";
+      layer.strokeStyle = `rgba(${TRAIL_COLOR}, ${(TRAIL_ALPHA * (band + 1)) / TRAIL_BANDS})`;
+      layer.stroke();
+    }
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(layer.canvas, 0, 0);
+  ctx.restore();
+};
+
+const createLayer = () => document.createElement("canvas").getContext("2d") as CanvasRenderingContext2D;
+
+/** 🪄 split flash on a shield: a warm glow swelling out from it and fading, with a thin ring at its edge. */
+const drawFlash = (ctx: CanvasRenderingContext2D, ball: Ball, r: number) => {
+  if (ball.flash === undefined) return;
+  const t = Math.min(1, ball.flash / FLASH_SECS);
+  const alpha = 1 - t;
+  const radius = r * (1 + (FLASH_RADIUS - 1) * (1 - (1 - t) ** 3)); // ease-out
+  ctx.save();
+  const glow = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, radius);
+  glow.addColorStop(0, `rgba(255, 255, 255, ${0.95 * alpha})`);
+  glow.addColorStop(0.45, `rgba(254, 240, 138, ${0.7 * alpha})`); // #FEF08A
+  glow.addColorStop(1, "rgba(250, 204, 21, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = Math.max(1.5, r * 0.15);
+  ctx.strokeStyle = `rgba(${SPARK_EDGE}, ${0.8 * alpha})`;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, radius * 0.9, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+};
+
+/** Throw sparks off a surface at (x, y) facing (nx, ny) — the side the shield bounced off. */
+const addSparks = (world: World, x: number, y: number, nx: number, ny: number) => {
+  const still = prefersReducedMotion(); // reduced motion: sparks just blink where the hit was
+  const facing = Math.atan2(ny, nx);
+  const r = world.radius;
+  const count = SPARK_MIN + Math.floor(Math.random() * (SPARK_MAX - SPARK_MIN + 1));
+  for (let i = 0; i < count; i++) {
+    const angle = facing + (Math.random() * 2 - 1) * SPARK_SPREAD;
+    const speed = still ? 0 : r * between(SPARK_SPEED_MIN, SPARK_SPEED_MAX);
+    world.sparks.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      age: 0,
+      life: between(SPARK_LIFE_MIN, SPARK_LIFE_MAX),
+      size: Math.max(1.8, r * between(SPARK_SIZE_MIN, SPARK_SIZE_MAX)),
+    });
+  }
+  if (world.sparks.length > SPARK_CAP) world.sparks.splice(0, world.sparks.length - SPARK_CAP);
+};
+
+const updateSparks = (world: World, dt: number) => {
+  const drag = Math.max(0, 1 - SPARK_DRAG * dt);
+  for (let i = world.sparks.length - 1; i >= 0; i--) {
+    const s = world.sparks[i];
+    s.age += dt;
+    if (s.age >= s.life) {
+      world.sparks.splice(i, 1);
+      continue;
+    }
+    s.vx *= drag;
+    s.vy *= drag;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+  }
+};
+
+/** Each spark: an amber streak with a pale core, shrinking and fading over its life. */
+const drawSparks = (ctx: CanvasRenderingContext2D, world: World) => {
+  if (!world.sparks.length) return;
   ctx.save();
   ctx.lineCap = "round";
-  for (let i = 1; i < pts.length; i++) {
-    const f = i / (pts.length - 1); // 0 at the oldest point, 1 at the shield
+  for (const s of world.sparks) {
+    const left = 1 - s.age / s.life;
+    const tailX = s.x - s.vx * SPARK_STREAK;
+    const tailY = s.y - s.vy * SPARK_STREAK;
     ctx.beginPath();
-    ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
-    ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.lineWidth = r * TRAIL_WIDTH * f;
-    ctx.strokeStyle = `rgba(${TRAIL_COLOR}, ${TRAIL_ALPHA * f})`;
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(s.x, s.y);
+    ctx.lineWidth = s.size * (0.5 + 0.5 * left) * 2;
+    ctx.strokeStyle = `rgba(${SPARK_EDGE}, ${left})`;
     ctx.stroke();
+    ctx.lineWidth = s.size * (0.5 + 0.5 * left);
+    ctx.strokeStyle = SPARK_CORE;
+    ctx.globalAlpha = left;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
   ctx.restore();
 };
@@ -636,6 +778,7 @@ const createWorld = (levelIdx: number, seed = ""): World => {
     bricks: [],
     items: [],
     shards: [],
+    sparks: [],
     clearDelay: null,
     shake: 0,
     attached: true,
@@ -666,6 +809,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
   const [toast, setToast] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const trailLayerRef = useRef<CanvasRenderingContext2D | null>(null); // off-screen layer for drawTrails
   const worldRef = useRef<World>(createWorld(0));
   const frameRef = useRef<number | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -749,12 +893,13 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     if (type === "split") {
       const source = world.balls[0];
       if (source && world.balls.length < MAX_BALLS) {
+        source.flash = 0;
         for (const turn of [-0.45, 0.45]) {
           const cos = Math.cos(turn);
           const sin = Math.sin(turn);
           let vy = source.vx * sin + source.vy * cos;
           if (vy > 0) vy = -vy; // new balls always head up, away from the floor
-          world.balls.push({ x: source.x, y: source.y, vx: source.vx * cos - source.vy * sin, vy });
+          world.balls.push({ x: source.x, y: source.y, vx: source.vx * cos - source.vy * sin, vy, flash: 0 });
         }
       }
     } else if (type === "grow") {
@@ -770,7 +915,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       const half = paddleWidth(world) / 2;
       world.paddleX = clamp(world.paddleX, half, world.width - half);
     } else if (type === "slow") {
-      // 25% off the speed right now (bounce speed-up included), never below SLOW_FLOOR of the start speed;
+      // 25% off the speed right now (bounce speed-up included), never below the start speed (SLOW_FLOOR);
       // the bounce speed-up keeps building from the new, slower speed
       const multiplier = world.speedFactor * world.boost;
       const slowed = Math.max(SLOW_FLOOR, multiplier * SLOW_MULTIPLIER);
@@ -816,11 +961,16 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
     if (world.ended || world.layoutPending) return;
     updateShards(world, dt);
+    updateSparks(world, dt);
     world.shake = Math.max(0, world.shake - SHAKE_DECAY * dt);
     // tails: drop path points older than TRAIL_SECS (also while frozen at level clear, so they shrink away)
     world.clock += dt;
     for (const b of world.balls) {
       while (b.trail?.length && world.clock - b.trail[0].t > TRAIL_SECS) b.trail.shift();
+      if (b.flash !== undefined) {
+        b.flash += dt;
+        if (b.flash >= FLASH_SECS) b.flash = undefined;
+      }
     }
     if (world.growFlicker) {
       world.growFlicker.elapsed += dt;
@@ -853,17 +1003,20 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         ball.vx = Math.abs(ball.vx);
         audio.playSfx("g17.paddleBounce", WALL_BOUNCE_SFX);
         addShake(world, SHAKE_WALL);
+        addSparks(world, 0, ball.y, 1, 0);
       } else if (ball.x > width - r) {
         ball.x = width - r;
         ball.vx = -Math.abs(ball.vx);
         audio.playSfx("g17.paddleBounce", WALL_BOUNCE_SFX);
         addShake(world, SHAKE_WALL);
+        addSparks(world, width, ball.y, -1, 0);
       }
       if (ball.y < r) {
         ball.y = r;
         ball.vy = Math.abs(ball.vy);
         audio.playSfx("g17.paddleBounce", WALL_BOUNCE_SFX);
         addShake(world, SHAKE_WALL);
+        addSparks(world, ball.x, 0, 0, 1);
       }
 
       // paddle — bounce angle depends on where the ball lands; each bounce nudges the speed up
@@ -881,6 +1034,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
         ball.y = py - r;
         audio.playSfx("g17.paddleBounce");
         addShake(world, SHAKE_PADDLE);
+        addSparks(world, clamp(ball.x, world.paddleX - pw / 2, world.paddleX + pw / 2), py, 0, -1);
       }
 
       // one brick per ball per frame; bounce off the side the ball came in from
@@ -891,6 +1045,11 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
 
         brick.alive = false;
         breakBrick(world, rect, ball.x, ball.y);
+        // sparks from the point of the brick the shield touched, thrown back towards the shield
+        const hitX = clamp(ball.x, rect.x, rect.x + rect.w);
+        const hitY = clamp(ball.y, rect.y, rect.y + rect.h);
+        const away = Math.hypot(ball.x - hitX, ball.y - hitY) || 1;
+        addSparks(world, hitX, hitY, (ball.x - hitX) / away, (ball.y - hitY) / away);
         audio.playSfx("g17.blockBreak");
         addShake(world, SHAKE_BRICK);
 
@@ -1011,8 +1170,10 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
     const flicker = world.growFlicker;
     const shieldR =
       flicker && Math.floor(flicker.elapsed / GROW_FLICKER_STEP) % 2 === 1 ? flicker.from : world.radius;
-    for (const ball of world.balls) drawTrail(ctx, ball, shieldR); // under every shield
+    drawTrails(ctx, (trailLayerRef.current ??= createLayer()), world.balls, shieldR); // under every shield
     for (const ball of world.balls) drawShield(ctx, ball.x, ball.y, shieldR);
+    for (const ball of world.balls) drawFlash(ctx, ball, shieldR);
+    drawSparks(ctx, world);
 
     if (world.attached) {
       const label = "แตะจอเพื่อปล่อยโล่";
@@ -1072,6 +1233,7 @@ export default function G17ScamBreaker({ onFinish, logEvent }: Props) {
       world.height = height;
       // pieces carry their old wall position (their picture cut), which a resize moves — just drop them
       world.shards = [];
+      world.sparks = [];
       if (world.layoutPending) {
         layoutLevel(world);
         onLayoutRef.current();

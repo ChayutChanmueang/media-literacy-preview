@@ -11,6 +11,11 @@ const withPWA = withPWAInit({
   extendDefaultRuntimeCaching: true,
   workboxOptions: {
     runtimeCaching: [
+      // หน้าดึงข้อมูลเจ้าหน้าที่ (docs/software/12) — ห้ามเก็บใน cache ของ Service Worker เด็ดขาด
+      {
+        urlPattern: /^https?:\/\/[^/]+\/(?:api\/)?admin(?:[/?#]|$)/,
+        handler: "NetworkOnly",
+      },
       // cacheName เดียวกับกฎ default จึงแทนที่กฎนั้น (32 ไฟล์ / 1 วัน) และอยู่ลำดับแรก
       // ชื่อไฟล์เสียงมีเวอร์ชัน (ห้ามแก้เนื้อหาใต้ชื่อเดิม) จึงเก็บนานได้
       {
@@ -36,6 +41,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/audio/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      // หน้าดึงข้อมูลเจ้าหน้าที่ (docs/software/12) — ไม่ cache, ไม่ index
+      ...["/admin", "/admin/:path*", "/api/admin/:path*"].map((source) => ({
+        source,
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      })),
     ];
   },
 };

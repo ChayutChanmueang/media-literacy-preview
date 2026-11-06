@@ -1,9 +1,50 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isDataExportEnabled } from "@/lib/adminAuth";
 import { DEV_APP_MODE_COOKIE, getServerAppMode } from "@/lib/appMode";
+import { createSupabaseProxyClient } from "@/lib/supabase/server";
 
-export function proxy(request: NextRequest) {
+const withAdminHeaders = (response: NextResponse) => {
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return response;
+};
+
+/**
+ * Staff-only /admin (docs/software/12): refresh the Supabase session and send signed-out visitors to
+ * the login page. Role checks happen in the pages and API; when Supabase isn't configured the pages
+ * answer 404 themselves. Learner cookies are never read or written here.
+ */
+async function adminProxy(request: NextRequest): Promise<NextResponse> {
+  if (!isDataExportEnabled()) return withAdminHeaders(NextResponse.next());
+
+  let response = NextResponse.next({ request });
+  let signedIn = false;
+  try {
+    const supabase = createSupabaseProxyClient(request, () => (response = NextResponse.next({ request })));
+    const { data } = await supabase.auth.getClaims();
+    signedIn = Boolean(data?.claims?.sub);
+  } catch (error) {
+    console.error("[DataExport] Session check failed in proxy:", error);
+  }
+
   const { pathname } = request.nextUrl;
+  if (!signedIn && pathname !== "/admin/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/login";
+    url.search = "";
+    url.searchParams.set("next", pathname);
+    const redirect = NextResponse.redirect(url);
+    for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+    return withAdminHeaders(redirect);
+  }
+  return withAdminHeaders(response);
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return adminProxy(request);
+
   const isResearch = getServerAppMode(request.cookies.get(DEV_APP_MODE_COOKIE)?.value) === "research";
 
   // Let public pages, APIs, static files, and assets pass through without checks
