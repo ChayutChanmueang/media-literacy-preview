@@ -1,0 +1,8 @@
+# Local serve/deploy of the staff export function. The app itself stays on Next.js.
+project_id = "media-literacy"
+
+[functions.ml_functions]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ml_functions/deno.json"
+entrypoint = "./functions/ml_functions/index.ts"

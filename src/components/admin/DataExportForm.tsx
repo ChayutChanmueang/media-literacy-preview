@@ -32,7 +32,7 @@ const ERROR_TEXT: Record<string, string> = {
   session_not_found: "ไม่พบ session นี้บนเซิร์ฟเวอร์นี้ (อาจอยู่บนเว็บอีกโหมด)",
   dataset_unavailable: "มีชุดข้อมูลที่เว็บนี้ไม่มี — รีเฟรชหน้าแล้วเลือกใหม่",
   db_mode_mismatch: "ฐานข้อมูลไม่ตรงกับโหมดของเว็บนี้ — แจ้งผู้ดูแลระบบ",
-  not_migrated: "ฐานข้อมูลยังไม่ได้เตรียมสำหรับการดึงข้อมูล — แจ้งผู้ดูแลระบบ",
+  edge_function_unavailable: "ยังเรียกตัวดึงข้อมูลไม่สำเร็จ — แจ้งผู้ดูแลระบบให้ตรวจ Edge Function",
   forbidden: "บัญชีนี้ไม่มีสิทธิ์ดึงข้อมูล",
   export_failed: "ดึงข้อมูลไม่สำเร็จ กรุณาลองใหม่",
 };
@@ -161,7 +161,7 @@ export default function DataExportForm({ mode, email, meta }: { mode: AppMode; e
   const files = fileCount(effective);
   const trimmedSession = sessionId.trim();
   const sessionInvalid = scope === "session" && !UUID.test(trimmedSession);
-  const blocked = !meta || !meta.dbMatchesMode || !meta.migrated;
+  const blocked = !meta || !meta.dbMatchesMode;
   const canDownload = !busy && !blocked && files > 0 && !sessionInvalid;
 
   const previewColumns = useMemo(() => {
@@ -270,12 +270,6 @@ export default function DataExportForm({ mode, email, meta }: { mode: AppMode; e
           ✗ ฐานข้อมูลอาจไม่ใช่ของเซิร์ฟเวอร์โหมดวิจัย (ไม่พบตารางแบบประเมิน) — ปิดการดาวน์โหลดไว้ แจ้งผู้ดูแลระบบให้ตรวจ DATABASE_URL
         </p>
       )}
-      {meta && meta.dbMatchesMode && !meta.migrated && (
-        <p role="alert" className="rounded-xl bg-[#fef2f2] p-4 text-body text-[#991b1b]">
-          ✗ ฐานข้อมูลยังไม่ได้เตรียมสำหรับการดึงข้อมูล (ไม่มีตาราง data_export_audit) — แจ้งผู้ดูแลระบบให้รัน scripts/migrate-data-export.cjs
-        </p>
-      )}
-
       <section className="rounded-2xl bg-white p-6 shadow-sm">
         <h2 className="text-h3">1) ข้อมูลของใคร</h2>
         <fieldset className="mt-3 flex flex-col gap-1">

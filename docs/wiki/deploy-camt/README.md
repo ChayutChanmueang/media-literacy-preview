@@ -21,6 +21,7 @@
 | [request-form-guide.md](./request-form-guide.md) | คู่มือกรอกฟอร์มทีละช่อง พร้อมค่าที่แนะนำ/ร่างข้อความ |
 | [attachment-checklist.md](./attachment-checklist.md) | เช็คลิสต์เอกสารแนบที่ควรเตรียมก่อนกดส่งคำขอ |
 | [docker-portainer-guide.md](./docker-portainer-guide.md) | ขั้นตอน package ขึ้น Docker Hub (public ชั่วคราว) + deploy ผ่าน Portainer บนเครื่องแม่ข่ายที่ขอ พร้อมไฟล์ `Dockerfile`/`docker-compose.portainer.yml` ในโฟลเดอร์ `docker/` ที่ root repo — เตรียมไว้ล่วงหน้า รอคำขอได้รับอนุมัติก่อนรันจริง |
+| [deploy-supabase-function.md](../deploy-supabase-function.md) | Deploy Edge Function `ml_functions` สำหรับหน้าดึงข้อมูล — คนละงานกับการยื่นขอเครื่อง CAMT |
 
 ## ก่อนยื่นจริง ต้องกรอก/ยืนยันเองด้วย
 

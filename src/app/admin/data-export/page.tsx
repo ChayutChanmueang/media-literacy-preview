@@ -23,7 +23,6 @@ async function loadMeta(mode: ReturnType<typeof getExportMode>): Promise<ExportP
       eventCount: counts.eventCount,
       datasets,
       dbMatchesMode: dbMatchesMode(mode, facts),
-      migrated: facts.hasAuditTable,
       leaderboardWithoutSession: leaderboardOn ? await countLeaderboardWithoutSession(pool) : null,
     };
   } catch (error) {

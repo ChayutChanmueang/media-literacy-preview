@@ -1,6 +1,6 @@
-import { FLOW_SEQUENCE } from "@/lib/flow";
-import type { AppMode } from "@/services/progressService";
-import type { CsvRow } from "./csv";
+import { FLOW_SEQUENCE } from "../flow.ts";
+import type { CsvRow } from "./csv.ts";
+import type { AppMode } from "./mode.ts";
 
 /**
  * SQL behind the staff data export (docs/software/12 §8–9). Every function takes the session ids
@@ -30,18 +30,16 @@ export const columnSlug = (value: string) =>
 export interface DbFacts {
   hasSelfAssessment: boolean;
   hasLeaderboardSessionColumn: boolean;
-  hasAuditTable: boolean;
 }
 
 export async function readDbFacts(db: Queryable): Promise<DbFacts> {
-  const [row] = await rowsOf<{ sa: boolean; lb: boolean; audit: boolean }>(
+  const [row] = await rowsOf<{ sa: boolean; lb: boolean }>(
     db,
     `SELECT to_regclass('public.self_assessment_submissions') IS NOT NULL AS sa,
-            to_regclass('public.data_export_audit') IS NOT NULL AS audit,
             EXISTS (SELECT 1 FROM information_schema.columns
                     WHERE table_schema = 'public' AND table_name = 'player_info' AND column_name = 'session_id') AS lb`,
   );
-  return { hasSelfAssessment: row.sa, hasLeaderboardSessionColumn: row.lb, hasAuditTable: row.audit };
+  return { hasSelfAssessment: row.sa, hasLeaderboardSessionColumn: row.lb };
 }
 
 // ---------------------------------------------------------------------------------------------

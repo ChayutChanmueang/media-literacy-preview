@@ -1,6 +1,4 @@
-import type { AppMode } from "@/services/progressService";
-import type { DataExportRequest } from "@/lib/validations";
-import { toCsv, type CsvRow } from "./csv";
+import { toCsv, type CsvRow } from "./csv.ts";
 import {
   COLUMN_DICTIONARY,
   DATASETS,
@@ -10,8 +8,10 @@ import {
   TIME_NOTE,
   type DatasetAvailability,
   type DatasetId,
+  type FileId,
   type GroupId,
-} from "./registry";
+} from "./registry.ts";
+import type { AppMode } from "./mode.ts";
 import {
   readCompletionFunnel,
   readEventBreakdown,
@@ -29,7 +29,16 @@ import {
   type GroupResult,
   type Queryable,
   type SelfAssessmentItem,
-} from "./queries";
+} from "./queries.ts";
+
+/** What runExport reads. Matches the zod request after defaults are applied. */
+export interface ExportRequest {
+  scope: { type: "all" } | { type: "session"; session_id: string };
+  row_filter: { registered_only: boolean; self_assessment_pair_only: boolean };
+  groups: readonly GroupId[];
+  group_options: { self_assessment_items: boolean };
+  files: readonly FileId[];
+}
 
 /** Which datasets this site can export, and why not (docs/software/12 §6, §7.1). */
 export function datasetAvailability(mode: AppMode, facts: DbFacts): DatasetAvailability[] {
@@ -75,7 +84,7 @@ export class ExportError extends Error {
  */
 export async function runExport(
   db: Queryable,
-  request: DataExportRequest,
+  request: ExportRequest,
   { mode, facts }: { mode: AppMode; facts: DbFacts },
 ): Promise<ExportResult> {
   const availability = new Map(datasetAvailability(mode, facts).map((a) => [a.id, a]));

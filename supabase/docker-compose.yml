@@ -1,0 +1,33 @@
+# Self-hosted edge runtime for the staff export, same shape as the MCI functions stack.
+# Run beside the Supabase containers (network `supabase_default`). Do not put real secrets in this file.
+#
+# SUPABASE_DB_URL must be a direct/session connection the function container can open
+# (for example postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/postgres).
+# Do not point it at the transaction pooler on port 6543: the export holds one read-only transaction.
+
+networks:
+  supabase_default:
+    external: true
+
+name: supabase
+
+services:
+  functions:
+    build:
+      context: ..
+      dockerfile: supabase/Dockerfile
+    container_name: media-literacy-edge-functions
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}
+      APP_MODE: ${APP_MODE:-normal}
+      VERIFY_JWT: ${FUNCTIONS_VERIFY_JWT:-true}
+    command:
+      [
+        "start",
+        "--main-service",
+        "/home/deno/supabase/functions/main",
+      ]

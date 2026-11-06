@@ -1,5 +1,5 @@
-// Prepare a database for the staff data export page (docs/software/12-data-export-page.md):
-// adds player_info.session_id / session_link and the data_export_audit table.
+// Adds player_info.session_id / session_link so new leaderboard scores can store the session that played them.
+// The staff export does not use a report table — it reads existing tables through the edge function.
 // Runs the "Staff data export" block of docs/supabase-schema.sql in one transaction; every statement is
 // IF NOT EXISTS, so re-running is safe. Run on BOTH databases (normal 202 + research 233) BEFORE deploying
 // the image that writes player_info.session_id.

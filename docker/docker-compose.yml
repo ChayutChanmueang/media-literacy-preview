@@ -34,6 +34,7 @@ services:
       # หน้าดึงข้อมูลเจ้าหน้าที่ /admin (docs/software/12) — ไม่ตั้ง = ปิดหน้า
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-}
+      - DATA_EXPORT_DIRECT=${DATA_EXPORT_DIRECT:-}
       - ENABLE_DEV_HUB=${ENABLE_DEV_HUB:-false}
       - NEXT_PUBLIC_ENABLE_DEV_HUB=${NEXT_PUBLIC_ENABLE_DEV_HUB:-false}
       - NODE_ENV=production

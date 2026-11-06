@@ -1,6 +1,6 @@
 # 12 — หน้าดึงข้อมูล (Data Export) สำหรับทีมวิจัย: Spec + แผนพัฒนา
 
-**Status:** 🔍 In QA — โค้ดลงแล้ว 2026-11-06 (ผ่าน unit test บน PGlite, `tsc`, `next build`, smoke test การปิด/เปิดหน้า + 401/403/404) **แต่ยังไม่ได้ทดสอบกับ Supabase Auth จริง** และยังไม่ได้ migrate/deploy ที่ 202, 233 — ดู [ข้อ 15](#15-สถานะการ-implement-2026-11-06) | **เขียนเมื่อ:** 2026-11-06 (ฉบับแก้ 5) | **อ้างอิงโค้ด ณ เวอร์ชัน:** `0.27.1` (`development`)
+**Status:** 🔍 In QA — ดึงข้อมูลโดยอ่านตารางที่มีอยู่แล้วผ่าน Edge Function `ml_functions` (ไม่สร้างตารางเก็บรายงาน) โค้ดลงแล้ว 2026-11-06 **แต่ยังไม่ได้ทดสอบกับ Supabase Auth / Edge Runtime จริง** และยังไม่ได้ deploy ที่ 202, 233 — ดู [ข้อ 15](#15-สถานะการ-implement-2026-11-06) | **เขียนเมื่อ:** 2026-11-06 (ฉบับแก้ 6) | **อ้างอิงโค้ด ณ เวอร์ชัน:** `0.28.0` (`development`)
 **เกี่ยวข้อง:** [09 — เก็บข้อมูลก่อน/หลังเรียน](./09-research-pre-post-data-collection.md) (§9.5 ใครเข้าถึงข้อมูลได้) · [10 — Backend แบบทดสอบก่อน/หลังเรียน](./10-research-pre-post-backend.md) · [03 — Data Schema](./03-data-schema.md) · [08 — เพิ่มเกมเข้า Leaderboard](./08-leaderboard-add-game.md) · `docs/supabase-schema.sql`
 
 ---
@@ -91,7 +91,7 @@ sequenceDiagram
     X->>A: getUser() (สิทธิ์สด)
     X->>X: ชุดข้อมูลที่ขอมีในโหมดนี้ไหม (APP_MODE)
     X->>D: query (READ ONLY transaction)
-    X->>D: INSERT data_export_audit
+    X->>D: SELECT จากตารางที่มีอยู่ (ไม่เขียนตารางรายงาน)
     X-->>R: .csv หรือ .zip
 ```
 
@@ -125,7 +125,8 @@ sequenceDiagram
 | `next.config.ts` (แก้) | header `no-store` + `X-Robots-Tag` ให้ `/admin`, `/api/admin`; Service Worker ใช้ `NetworkOnly` กับ `/admin` |
 | `src/lib/validations.ts` (แก้) | zod schema ของ request export; `player_info` รับ `session_id` (optional) |
 | `src/app/api/game-results/route.ts`, `src/services/apiClient.ts`, `src/app/lessons/[id]/leaderboard/page.tsx` (แก้) | ส่ง/บันทึก `session_id` กับคะแนน + `attempt_uuid` ใน log (ข้อ [11.2](#112-player_infosession_id--backfill-ทั้ง-2-db)) |
-| `docs/supabase-schema.sql` + `scripts/migrate-data-export.cjs` + `scripts/backfill-leaderboard-session.cjs` (ใหม่) | ตาราง `data_export_audit`, คอลัมน์ `player_info.session_id` |
+| `supabase/functions/ml_functions/` | Edge Function อ่านตารางที่มีอยู่แล้ว แล้วคืนไฟล์ให้ `POST /api/admin/export` |
+| `docs/supabase-schema.sql` + `scripts/migrate-data-export.cjs` + `scripts/backfill-leaderboard-session.cjs` | คอลัมน์ `player_info.session_id` เท่านั้น — ไม่มีตารางเก็บรายงาน |
 
 ---
 
@@ -160,7 +161,11 @@ sequenceDiagram
 
 - หน้าเปิดได้เมื่อตั้ง `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` ครบ — ขาด → `/admin/*`, `/api/admin/*` ตอบ 404 (ไม่บอกว่ามีหน้านี้อยู่) + log ฝั่ง server ครั้งเดียวว่าตั้งค่าไม่ครบ → **ปิดหน้านี้บนเครื่องใดก็ได้ด้วยการไม่ตั้ง 2 ตัวนี้**
 - **กันตั้งค่าผิดเครื่อง** (เช่น เว็บโหมดวิจัยแต่ `DATABASE_URL` ชี้ DB ของ 202): `meta` ตรวจว่า DB มีหลักฐานของโหมดนั้น — โหมดวิจัยต้องมีตาราง `self_assessment_submissions`; ถ้าไม่ตรง หน้าแสดงคำเตือนสีแดง "ฐานข้อมูลอาจไม่ใช่ของเซิร์ฟเวอร์โหมดวิจัย" และปิดปุ่มดาวน์โหลด
-- **ไม่ใช้** `NEXT_PUBLIC_SUPABASE_*` และ **ไม่ใช้** `SUPABASE_SERVICE_ROLE_KEY`
+- **ไม่ใช้** `NEXT_PUBLIC_SUPABASE_*` และ **ไม่ใช้** `SUPABASE_SERVICE_ROLE_KEY` ในเบราว์เซอร์
+- การดึงไฟล์ (ค่าเริ่มต้น) ให้เว็บเรียก Edge Function `POST {SUPABASE_URL}/functions/v1/ml_functions/read-database/exportDataset` ด้วย access token ของผู้ใช้ที่ login แล้ว ฟังก์ชันตรวจ `app_metadata.role = data_exporter` แล้วเปิด transaction อ่านอย่างเดียวผ่าน `SUPABASE_DB_URL`
+- `SUPABASE_DB_URL` ตั้งที่ container ของ Edge Function (ไม่ใช่ที่เว็บ) ต้องเป็นการเชื่อมต่อตรง/session ไป Postgres เช่น `postgresql://postgres:<รหัส>@db:5432/postgres` — **อย่าใช้พอร์ต pooler 6543** เพราะการดึงค้าง transaction เดียว
+- `APP_MODE` ของ Edge Function ต้องตรงกับเว็บเครื่องนั้น
+- `DATA_EXPORT_DIRECT=true` ที่เว็บ = ไม่เรียกฟังก์ชัน อ่าน `DATABASE_URL` ในโปรเซส Next แทน ใช้ตอนพัฒนาที่ยังไม่ได้รัน Edge Runtime ผลลัพธ์ชุดเดียวกัน และก็ไม่เขียนตารางรายงาน
 - เพิ่มตัวแปรใหม่ใน `.env.example` (ค่าตัวอย่างปลอม), `docker/docker-compose.yml`, `docker/docker-compose.portainer.yml`
 
 ### 5.4 Package
@@ -276,12 +281,11 @@ sequenceDiagram
     …
   ],
   dbMatchesMode: true,              // false = เว็บวิจัยแต่ DB ไม่มีตารางแบบประเมิน
-  migrated: true,                   // false = ยังไม่ได้รัน scripts/migrate-data-export.cjs
   leaderboardWithoutSession: null   // เว็บปกติ: จำนวนคะแนนเก่าที่ผูก session ไม่ได้
 }
 ```
 - `reason`: `other_mode` (มีเฉพาะอีกโหมด — ตาม `onlyIn` ใน registry) หรือ `missing_in_db` (โหมดถูกแต่ไม่พบตาราง/คอลัมน์)
-- `dbMatchesMode = false` หรือ `migrated = false` → หน้าแสดงคำเตือนสีแดงและปิดปุ่มดาวน์โหลด; API ตอบ 422 `db_mode_mismatch` / 503 `not_migrated`
+- `dbMatchesMode = false` → หน้าแสดงคำเตือนสีแดงและปิดปุ่มดาวน์โหลด; API ตอบ 422 `db_mode_mismatch`
 
 ### 7.2 `POST /api/admin/export`
 Request (zod, `.strict()`):
@@ -320,8 +324,8 @@ Headers: `Cache-Control: no-store`, `X-Robots-Tag: noindex`; สำเร็จ�
 1. `isDataExportEnabled()` → ตรวจสิทธิ์ (`getUser`) + `Origin` + validate + ชุดข้อมูลตรงโหมด
 2. ยืม 1 connection จาก pool เดิม → `BEGIN READ ONLY ISOLATION LEVEL REPEATABLE READ`, `SET LOCAL statement_timeout = '60s'` → ตรวจ DB ตรงโหมด → ทุกไฟล์มาจาก snapshot เดียวกัน
 3. หาชุด session (ข้อ [8.1](#81-แถวมีใครบ้าง)) → รันทุกกลุ่ม/ไฟล์ที่เลือก กรองด้วยชุดนั้น
-4. สร้าง `participants.csv` + ไฟล์แยก → `.csv` หรือ `.zip`
-5. INSERT `data_export_audit` — ถ้า audit เขียนไม่ได้ → **ไม่ส่งไฟล์** (500)
+4. สร้าง `participants.csv` + ไฟล์แยก → `.csv` หรือ `.zip` (จัดไฟล์ที่เว็บ หลังได้ผลจาก Edge Function)
+5. ไม่บันทึกสำเนารายงานและไม่เขียนตาราง audit — ใครดึงดูจาก log ของ Edge Runtime / access log ของเว็บ
 - `export const runtime = "nodejs"`, `export const dynamic = "force-dynamic"`
 
 ---
@@ -452,26 +456,11 @@ session_id,age_range,province,district,sub_district,sa_item_set,sa_pre_submitted
 
 `scripts/migrate-data-export.cjs` (idempotent แบบ `migrate-self-assessment.cjs`) รันกับ **DB ทั้ง 2 เครื่อง** + อัปเดต `docs/supabase-schema.sql` — **ต้อง migrate ก่อน deploy image ใหม่** เพราะ `POST /api/game-results` รุ่นใหม่เขียนคอลัมน์ `player_info.session_id` (image เดียวกันทั้ง 2 เครื่อง — ข้อ 3.4)
 
-### 11.1 ตาราง `data_export_audit` (ทั้ง 2 DB)
-```sql
-CREATE TABLE IF NOT EXISTS public.data_export_audit (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    auth_user_id UUID NOT NULL,          -- auth.users.id (ไม่ทำ FK ข้าม schema auth)
-    auth_email TEXT,
-    app_mode TEXT NOT NULL CHECK (app_mode IN ('normal', 'research')),
-    scope TEXT NOT NULL CHECK (scope IN ('all', 'session')),
-    session_id UUID,
-    request JSONB NOT NULL,               -- groups, files, row_filter, group_options
-    row_counts JSONB NOT NULL DEFAULT '{}'::jsonb,
-    client_ip TEXT,
-    user_agent TEXT,
-    CHECK ((scope = 'session') = (session_id IS NOT NULL))
-);
-ALTER TABLE public.data_export_audit ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.data_export_audit FROM anon, authenticated;
-```
-ใช้ตอบคำถาม PDPA "ใครดึงข้อมูลของใครไปเมื่อไร" — ดูผ่าน Studio ของแต่ละเครื่อง (ไม่ทำหน้าดู audit รอบนี้)
+### 11.1 ไม่มีตารางเก็บรายงาน
+
+การดึงข้อมูลเป็นคำสั่ง `SELECT` บนตารางที่แอปเขียนอยู่แล้ว (`sessions`, `action_logs`, `lesson_progress`, แบบประเมิน, `player_info`) ผ่าน Edge Function ใน `supabase/functions/ml_functions/` รูปแบบ router เดียวกับโปรเจกต์ MCI (`read-database` + action) แต่ตรวจสิทธิ์ `data_exporter` ก่อนเปิดฐานข้อมูล และไม่ใช้ anon key อ่านข้อมูลวิจัย
+
+วิธี deploy ที่รันผ่านบน Supabase Cloud และทาง self-host อยู่ที่ [wiki — Deploy Edge Function](../wiki/deploy-supabase-function.md) เว็บใช้ `SUPABASE_URL` ของโปรเจกต์นั้นเรียก `/functions/v1/ml_functions/...`
 
 ### 11.2 `player_info.session_id` + backfill (ทั้ง 2 DB)
 ```sql
@@ -554,7 +543,7 @@ CREATE INDEX IF NOT EXISTS player_info_session_id_idx ON public.player_info(sess
 - [ ] ดึงรายคนด้วย session id ที่รู้ว่ามีข้อมูล → ทุกไฟล์มีเฉพาะคนนั้น
 - [ ] คะแนน `sa_pre_total`/`sa_post_total` ตรงกับ `scripts/export-self-assessment.cjs --shape=wide` บน 233
 - [ ] คะแนน leaderboard ใหม่หลัง deploy มี `session_link = exact`
-- [ ] มีแถวใน `data_export_audit` ทุกครั้งที่ดึงสำเร็จ
+- [ ] ดึงไฟล์ได้โดยไม่ต้องมีตาราง `data_export_audit` (ฟังก์ชันอ่านตารางเดิม)
 - [ ] เจ้าหน้าที่เพิ่ม/ถอนบัญชีตามข้อ 5.2 ได้เองโดยไม่ต้องแก้โค้ด
 
 ---
@@ -569,13 +558,13 @@ CREATE INDEX IF NOT EXISTS player_info_session_id_idx ON public.player_info(sess
 ## 15. สถานะการ implement (2026-11-06)
 
 **ทำแล้วในโค้ด (DX-00 ส่วนโค้ด, DX-10–DX-13, DX-20–DX-25, DX-30, DX-40–DX-42):**
-- ระบบ login (Supabase Auth ฝั่ง server, cookie `httpOnly`, rate limit; ~~ตรวจ `app_metadata.role`~~ ตัดออก 2026-11-06 — ทุกบัญชีที่ไม่ใช่ anonymous เข้าได้), กิ่ง `/admin` ใน `proxy.ts`, ปิดหน้าเมื่อไม่ตั้ง `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`
-- หน้า `/admin/data-export` + API `POST /api/admin/export` ครบทุกชุดข้อมูล, ชุดที่เว็บนั้นไม่มีแสดง checkbox ปิดพร้อมหมายเหตุ, audit ทุกครั้ง
+- ระบบ login (Supabase Auth ฝั่ง server, cookie `httpOnly`, rate limit, ตรวจ `app_metadata.role`), กิ่ง `/admin` ใน `proxy.ts`, ปิดหน้าเมื่อไม่ตั้ง `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`
+- หน้า `/admin/data-export` + API `POST /api/admin/export` ครบทุกชุดข้อมูล, ชุดที่เว็บนั้นไม่มีแสดง checkbox ปิดพร้อมหมายเหตุ; การอ่านข้อมูลอยู่ที่ Edge Function `ml_functions` และไม่เขียนตารางรายงาน
 - `player_info.session_id` (บันทึกคะแนนใหม่พร้อม session), `attempt_uuid` ใน event `leaderboard_score_saved`, `scripts/migrate-data-export.cjs`, `scripts/backfill-leaderboard-session.cjs`
 - package: `@supabase/ssr@0.12.7`, `@supabase/supabase-js@2.118.0`, `fflate@0.8.3` (pin เวอร์ชันตรง)
 - เอา connection string + รหัสผ่าน DB ที่ฝังอยู่ออกจาก `scripts/export_logs.js`, `.env.example` และ `docs/wiki/deploy-camt/docker-portainer-guide.md` — **รหัสผ่านนี้ยังอยู่ใน git history ต้องเปลี่ยนรหัสผ่านที่ Supabase (DX-00)**
 
-**ตรวจแล้ว:** `src/tests/unit/data-export.test.ts` (31 test บน PGlite 2 fixture: DB วิจัย/DB ปกติ — คอลัมน์ตามข้อ 8, ทุกแถวมีเจ้าของ, ตัวกรองตรงกันทุกไฟล์, คะแนนตรงกับสคริปต์เดิม, formula injection, migration รันซ้ำได้, backfill จับคู่เฉพาะกรณีไม่กำกวม, ไม่มีลิงก์ไป `/admin`), unit test ทั้งหมด 190 ผ่าน, `tsc` ผ่าน, `next build` ผ่าน, smoke test บน production build: ไม่ตั้ง env → `/admin/*` และ API 404; ตั้ง env → ไม่ login ถูกพาไป `/admin/login`, API ไม่มี `Origin`/`Origin` อื่น → 403, ไม่มี session → 401, header `no-store` + `noindex` ครบ
+**ตรวจแล้ว:** `src/tests/unit/data-export.test.ts` 32 tests ผ่านหลังตัดตาราง audit (PGlite) — ยังไม่ได้ยิง Edge Function จริงกับ GoTrue/Postgres
 
 **ยังไม่ได้ทำ / ยังไม่ได้ตรวจ:**
 - [ ] DX-00: เปลี่ยนรหัสผ่าน DB ที่หลุด (ผู้ดูแล Supabase)

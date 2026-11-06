@@ -1,4 +1,4 @@
-import type { AppMode } from "@/services/progressService";
+import type { AppMode } from "./mode.ts";
 
 /**
  * Datasets of the staff data export (docs/software/12) — shared by the API and the form.
@@ -79,8 +79,6 @@ export interface ExportPageMeta {
   datasets: DatasetAvailability[];
   /** false = a research site whose DB has no self-assessment tables (probably the wrong server). */
   dbMatchesMode: boolean;
-  /** false = scripts/migrate-data-export.cjs has not been run on this DB. */
-  migrated: boolean;
   leaderboardWithoutSession: number | null;
 }
 

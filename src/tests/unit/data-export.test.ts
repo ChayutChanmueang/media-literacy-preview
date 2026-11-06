@@ -8,6 +8,7 @@ import { getExportMode, isDataExportEnabled, safeAdminNext } from "@/lib/adminAu
 import { getAdminIdentity } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { csvCell, toCsv } from "@/lib/export/csv";
+import { exportFunctionUrl } from "@/lib/export/edge";
 import { readCounts, readDbFacts, type Queryable } from "@/lib/export/queries";
 import { DATASETS } from "@/lib/export/registry";
 import { buildReadme, datasetAvailability, dbMatchesMode, ExportError, runExport } from "@/lib/export/run";
@@ -226,6 +227,15 @@ describe("admin auth helpers", () => {
     expect(safeAdminNext(undefined)).toBe("/admin/data-export");
   });
 
+  it("builds the edge function URL from the Supabase origin", () => {
+    expect(exportFunctionUrl("http://kong:8000")).toBe(
+      "http://kong:8000/functions/v1/ml_functions/read-database/exportDataset",
+    );
+    expect(exportFunctionUrl("http://kong:8000/")).toBe(
+      "http://kong:8000/functions/v1/ml_functions/read-database/exportDataset",
+    );
+  });
+
   it("is enabled only when Supabase Auth is configured", () => {
     vi.stubEnv("SUPABASE_URL", "");
     vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "key");
@@ -257,7 +267,7 @@ describe("export on a research DB (PGlite)", () => {
 
   it("knows what this DB has", async () => {
     const facts = await readDbFacts(q);
-    expect(facts).toEqual({ hasSelfAssessment: true, hasLeaderboardSessionColumn: true, hasAuditTable: true });
+    expect(facts).toEqual({ hasSelfAssessment: true, hasLeaderboardSessionColumn: true });
     expect(dbMatchesMode("research", facts)).toBe(true);
     const availability = Object.fromEntries(datasetAvailability("research", facts).map((a) => [a.id, a]));
     expect(availability.self_assessment.available).toBe(true);
@@ -479,14 +489,17 @@ describe("export on a normal-mode DB (PGlite, no self-assessment tables)", () =>
 describe("migration + leaderboard backfill", () => {
   it("the data-export block runs on an existing DB and is re-runnable", async () => {
     const db = new PGlite();
-    await db.exec("CREATE ROLE anon; CREATE ROLE authenticated;");
     const block = readMigrationSql(schema);
     expect(block).toMatch(/^-- =+\r?\n-- Staff data export/);
     expect(block).not.toMatch(/Research mode/);
+    expect(block).not.toContain("data_export_audit");
     await db.exec(schemaWithoutResearch.slice(0, schemaWithoutResearch.indexOf(block)));
     await db.exec(block);
     await db.exec(block);
-    expect((await readDbFacts({ query: (t, v) => db.query(t, v as unknown[]) })).hasAuditTable).toBe(true);
+    const facts = await readDbFacts({ query: (t, v) => db.query(t, v as unknown[]) });
+    expect(facts.hasLeaderboardSessionColumn).toBe(true);
+    const audit = await db.query("SELECT to_regclass('public.data_export_audit') AS name");
+    expect(audit.rows[0].name).toBeNull();
   });
 
   it("links only unambiguous matches", () => {

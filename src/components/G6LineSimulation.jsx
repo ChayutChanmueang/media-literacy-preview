@@ -11,6 +11,10 @@ import GameSolutionCard from './GameSolutionCard';
 // US-CF-26 (feedback #9): ปิดหน้า "สถานการณ์" คั่นก่อนเข้าแชทชั่วคราว — ไม่ลบโค้ด เผื่อเปิดใช้ภายหลัง
 const SHOW_SCENARIO_INTRO = false;
 
+// US-CF-11: ข้อความเตือนเมื่อผู้เล่นเผลอกด Scam Element (สุ่มนอก component เพื่อไม่ให้ React Compiler มองว่าเรียกฟังก์ชันไม่บริสุทธิ์ระหว่าง render)
+const SCAM_WARNINGS = ['กดไม่ได้นะ!', 'อย่ากดนะ!'];
+const pickScamWarning = () => SCAM_WARNINGS[Math.floor(Math.random() * SCAM_WARNINGS.length)];
+
 // ตัวเลือกตอบกลับใช้ร่วมกันทุกสถานการณ์ (ทุกสถานการณ์เป็นแชทหลอกลวง — "หยุดคิด" คือคำตอบที่ปลอดภัยเสมอ)
 const RESPONSES = {
   reply_now: {
@@ -273,9 +277,7 @@ export default function G6LineSimulation({ onFinish, logEvent }) {
 
   // US-CF-11: จัดการเมื่อผู้เล่นเผลอกด Scam Element ก่อนเลือกคำตอบ
   const handleScamClick = (bubble) => {
-    const warnings = ['กดไม่ได้นะ!', 'อย่ากดนะ!'];
-    const text = warnings[Math.floor(Math.random() * warnings.length)];
-    setScamWarning(text);
+    setScamWarning(pickScamWarning());
     logEvent('click_scam_element', { game_id: 'G6', scenario_id: scenario.id, bubble_id: bubble.id, type: bubble.type });
   };
 

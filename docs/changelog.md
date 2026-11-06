@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.28.3] - 2026-11-06
+
+### Changed
+- หน้าดึงข้อมูลไม่สร้างตาราง `data_export_audit` อีกต่อไป — `POST /api/admin/export` ให้ Edge Function `ml_functions` (`supabase/functions/ml_functions/`) อ่านตารางที่มีอยู่แล้วแล้วส่งไฟล์กลับ ตั้ง `DATA_EXPORT_DIRECT=true` เมื่อยังไม่ได้รัน Edge Runtime คอลัมน์ `player_info.session_id` ยังต้อง migrate ก่อน deploy image ที่บันทึกคะแนนใหม่
+
+### Added
+- [wiki — Deploy Edge Function ดึงข้อมูล](./wiki/deploy-supabase-function.md): คำสั่ง `npx supabase functions deploy ml_functions` ที่ใช้ได้กับ CLI รุ่น 3 (ขึ้นบน Cloud โปรเจกต์ ML Project แล้ว 2026-11-06) รวมข้อที่ทำให้คำสั่งล้ม (`supabase` ไม่อยู่ใน PATH, ชื่อฟังก์ชัน, ธง `--remote=`), การตั้ง secret พอร์ต 5432, และทาง self-host 202/233
+- เว็บเรียกฟังก์ชันนั้นจาก `POST /api/admin/export` เมื่อไม่ได้ตั้ง `DATA_EXPORT_DIRECT=true` และตั้ง `APP_MODE=research` เป็น secret ของฟังก์ชันบนโปรเจกต์ ML Project แล้ว
+
+**Bump rationale:** เปลี่ยนทางเชื่อมต่อ backend ของหน้าดึงข้อมูลที่มีอยู่ (ผ่าน Edge Function `ml_functions` แทนการ query ในโปรเซส Next และเลิกใช้ตาราง audit) โดยหน้าเว็บ/รูปแบบไฟล์ที่ผู้ใช้เห็นเหมือนเดิม จึงอัปเดต PATCH จาก `0.28.2` เป็น `0.28.3` ตามที่ผู้ใช้กำหนด
+
 ## [0.28.2] - 2026-11-06
 
 ### Fixed

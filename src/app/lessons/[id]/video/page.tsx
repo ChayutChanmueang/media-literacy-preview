@@ -69,6 +69,8 @@ export default function VideoLessonPage() {
   // อ่านโหมดการเรียนตอน mount → กำหนดปลายทางปุ่ม + ตัดสินใจว่าจะแสดงหน้าชื่อคลิปก่อนไหม
   useEffect(() => {
     const mode = progressService.getProgress()?.learningMode || "manual";
+    // Learning mode is only available in browser storage after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLearningMode(mode);
     setPhase(mode === "flow" && video.showClipIntro ? "intro" : "video");
   }, [lessonId, video.showClipIntro]);

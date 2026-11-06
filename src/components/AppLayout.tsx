@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Home, RotateCcw, Trophy, X, SkipForward, FlaskConical } from "lucide-react";
 import { DEV_APP_MODE_COOKIE } from "@/lib/appMode";
-import { progressService, type AppMode } from "@/services/progressService";
+import { progressService, type AppMode, type UserSession } from "@/services/progressService";
 import { loggingService } from "@/services/loggingService";
 // Imported for its side effect: the pending pre/post queue syncs on load and on "online" from every page.
 import "@/services/selfAssessmentService";
@@ -50,7 +50,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
   const pathname = usePathname();
   const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<UserSession | null>(null);
   const [menuOpen, setMenuOpen] = useState(false); // US-CF-01B: navigation drawer
   const [pickerOpen, setPickerOpen] = useState(false); // US-CF-52: popup เลือกเกมดูกระดานคะแนน
   // US-FLOW-02: ตำแหน่งในสาย flow (จาก progress) + ความคืบหน้าภายในสเตปปัจจุบัน (ต่อโจทย์)
@@ -70,6 +70,8 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
     if (pathname.startsWith("/dev") || pathname === "/admin" || pathname.startsWith("/admin/")) return;
 
     const initializedSession = progressService.getOrCreateSession();
+    // Session data is only available in browser storage after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSession(initializedSession);
     progressService.clearLegacyAppMode();
 

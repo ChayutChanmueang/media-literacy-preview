@@ -181,15 +181,17 @@ export const selfAssessmentService = {
     if (typeof window === "undefined") return false;
     const progress = progressService.getProgress();
     if (progress.selfAssessment?.[phase]) return true;
-    const sessionId = progressService.getOrCreateSession().sessionId;
+    const sessionId = progressService.getOrCreateSession()?.sessionId;
     return readPending().some((item) => item.phase === phase && item.session_id === sessionId);
   },
 
   /** The server's view of this session's phases, or null when it can't be reached. */
   async fetchServerStatus(): Promise<SelfAssessmentStatus | null> {
     if (typeof window === "undefined") return null;
+    const sessionId = progressService.getOrCreateSession()?.sessionId;
+    if (!sessionId) return null;
     try {
-      return await apiClient.getSelfAssessmentStatus(progressService.getOrCreateSession().sessionId);
+      return await apiClient.getSelfAssessmentStatus(sessionId);
     } catch {
       return null;
     }

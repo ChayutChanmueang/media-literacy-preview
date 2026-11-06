@@ -59,7 +59,7 @@ export interface UserProgress {
 let configuredAppMode: AppMode = "normal";
 
 // Helper to set cookie (also used by selfAssessmentService)
-export function setCookie(name: string, value: any, days: number) {
+export function setCookie(name: string, value: unknown, days: number) {
   const date = new Date();
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
   const expires = "; expires=" + date.toUTCString();
@@ -132,7 +132,7 @@ export const progressService = {
     if (typeof window === "undefined") return null;
 
     // 1. Try to load from LocalStorage
-    let session: any = null;
+    let session: UserSession | null = null;
     try {
       const stored = localStorage.getItem(SESSION_KEY);
       if (stored) session = JSON.parse(stored);
@@ -183,7 +183,7 @@ export const progressService = {
   /**
    * Saves session details.
    */
-  async saveSession(session: any) {
+  async saveSession(session: UserSession) {
     if (typeof window === "undefined") return;
 
     // Save to LocalStorage
@@ -220,7 +220,7 @@ export const progressService = {
       };
     }
 
-    let progress: any = null;
+    let progress: UserProgress | null = null;
     try {
       const stored = localStorage.getItem(PROGRESS_KEY);
       if (stored) progress = JSON.parse(stored);
@@ -254,7 +254,7 @@ export const progressService = {
   /**
    * Saves progress details.
    */
-  saveProgress(progress: any) {
+  saveProgress(progress: UserProgress) {
     if (typeof window === "undefined") return;
     progress.lastUpdated = new Date().toISOString();
     try {

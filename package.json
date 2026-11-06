@@ -1,7 +1,7 @@
 {
   "name": "media-literacy",
   "private": true,
-  "version": "0.28.2",
+  "version": "0.28.3",
   "type": "module",
   "scripts": {
     "dev": "node -e \"console.log('\\x1b[36m  - Dev Game Hub: http://localhost:3000/dev/games\\x1b[0m\\n')\" && next dev --webpack",
@@ -25,6 +25,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.54.2",
+    "supabase": "^3.0.0",
     "ua-parser-js": "^2.0.10",
     "zod": "^3.24.1"
   },
