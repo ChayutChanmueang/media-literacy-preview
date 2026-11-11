@@ -5,7 +5,8 @@
     "s3: ลิงก์ไฟล์จาก MinIO / AWS S3 / cloud storage ที่เล่นเป็น MP4 ได้ (ลงท้าย .mp4 หรือ presigned URL)",
     "play: \"youtube\" หรือ \"s3\" — เลือกแหล่งที่ให้เล่นจริง ถ้าไม่ใส่ ระบบเลือก s3 ก่อนเมื่อมีลิงก์ s3 ไม่เช่นนั้นใช้ youtube",
     "skip: true = ข้ามคลิปแล้วไปเกมเลย (ใช้ตอนคลิปยังไม่พร้อม)",
-    "showClipIntro: true = โชว์หน้าชื่อคลิปก่อนเล่น (โหมด Flow) — บทแรกใช้หน้า Start Menu อยู่แล้วจึงเป็น false"
+    "showClipIntro: true = โชว์หน้าชื่อคลิปก่อนเล่น (โหมด Flow) — บทแรกใช้หน้า Start Menu อยู่แล้วจึงเป็น false",
+    "thumbnail: (ไม่บังคับ) ภาพปกคลิปในรายการวิดีโอโหมดอิสระ — path ใต้ public/ เช่น /images/lessons/thumbnails/topic-1.jpg หรือ URL เต็ม; ถ้าไม่ใส่/โหลดไม่ได้ ใช้ภาพปกจาก YouTube แล้วค่อยไอคอนวิดีโอกลาง"
   ],
   "fallbackLessonId": "topic-1",
   "videos": [

@@ -122,21 +122,33 @@ function ModeCard({
 }
 
 // Figma node "อิสระ" (หมวดหมู่) — การ์ดหมวดหมู่แถวเดียว ไอคอน+ชื่อ (Component 30/31/32)
+// fallbackIcons: ลองทีละรูปเมื่อรูปก่อนหน้าโหลดไม่ได้ (เช่น ภาพปกคลิป → ภาพปก YouTube → ไอคอนวิดีโอกลาง)
 function CategoryCard({
   icon,
+  fallbackIcons,
   label,
   onClick,
 }: {
   icon: string;
+  fallbackIcons?: string[];
   label: string;
   onClick: () => void;
 }) {
+  const candidates = [icon, ...(fallbackIcons ?? [])];
+  const [iconIndex, setIconIndex] = useState(0);
+  const src = candidates[Math.min(iconIndex, candidates.length - 1)];
   return (
     <Press3D onClick={onClick} className="w-full" baseRadius="rounded-[24px]">
       {/* min-h, not h: some labels (video titles) run longer than the short category names this card was designed around */}
       <div className="flex min-h-[96px] items-center gap-[28px] rounded-[24px] border-2 border-solid border-[#D9D9D9] bg-white py-[8px] pl-[20px] pr-[18px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={icon} alt="" aria-hidden="true" className="size-[60px] shrink-0 rounded-[12px] object-cover" />
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          className="size-[60px] shrink-0 rounded-[12px] object-cover"
+          onError={() => setIconIndex((i) => (i < candidates.length - 1 ? i + 1 : i))}
+        />
         <p className="min-w-0 flex-1 text-h3 text-[#4B4B4B]">{label}</p>
       </div>
     </Press3D>
@@ -184,12 +196,18 @@ const LEARNING_GAMES = [
 ];
 
 // รายการวิดีโอ — ดึงจาก videos.json แหล่งเดียวกับหน้าคลิปจริง ไม่พิมพ์ชื่อซ้ำเอง กันข้อมูลสองที่ไม่ตรงกัน
-// ไม่มีภาพปกต่อคลิปในโปรเจกต์ จึงใช้ไอคอนกล้องเดียวกับหมวด "วิดีโอ" ซ้ำทุกแถวไปก่อน
+// ภาพปกต่อคลิป: field "thumbnail" ใน videos.json → ภาพปกจาก YouTube → ไอคอนกล้องเดียวกับหมวด "วิดีโอ"
 // บทที่ตั้ง skip (ยังไม่มีคลิปจริง) ไม่แสดงในรายการ เพราะกดเข้าไปจะข้ามไปเกมทันที
+const VIDEO_FALLBACK_ICON = "/images/lessons/category-video.png";
 const VIDEOS = getOrderedLessonIds()
   .map((lessonId) => getVideoByLessonId(lessonId))
   .filter((video) => !video.skip)
-  .map((video) => ({ id: video.lessonId, icon: "/images/lessons/category-video.png", label: video.clipIntro }));
+  .map((video) => {
+    // ภาพปกของคลิปเอง (videos.json → YouTube) ก่อน แล้วถอยไปไอคอนวิดีโอกลางเมื่อไม่มี/โหลดไม่ได้
+    const [icon = VIDEO_FALLBACK_ICON, ...rest] = video.thumbnailUrls;
+    const fallbackIcons = video.thumbnailUrls.length ? [...rest, VIDEO_FALLBACK_ICON] : [];
+    return { id: video.lessonId, icon, fallbackIcons, label: video.clipIntro };
+  });
 
 // แสดง dashboard ได้เมื่อยินยอมแล้ว และไม่ใช่โหมดวิจัย (ซึ่ง effect ด้านล่างพาเข้าสายเนื้อเรื่องอัตโนมัติ)
 function canShowDashboard() {
@@ -461,6 +479,7 @@ function LessonSelector() {
                 <CategoryCard
                   key={video.id}
                   icon={video.icon}
+                  fallbackIcons={video.fallbackIcons}
                   label={video.label}
                   onClick={() => handleGameClick(video.id)}
                 />

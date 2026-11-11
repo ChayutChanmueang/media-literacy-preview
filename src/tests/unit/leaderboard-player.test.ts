@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   BROWSABLE_LEADERBOARD_GAMES,
   getLeaderboardGame,
   getLeaderboardMaxScore,
+  isLocalhost,
   isSupportedLeaderboardGid,
   LOCAL_BROWSABLE_LEADERBOARD_GAMES,
+  usesLocalLeaderboard,
 } from "@/lib/leaderboard";
 import { leaderboardNameSchema } from "@/lib/validations";
 import {
@@ -77,6 +79,7 @@ describe("leaderboard game routing", () => {
       lessonId: "flow-g13",
       gid: "G13",
       icon: "/assets/icons/g13-ice-cream.jpg",
+      name: "ต่อไอติมฝึกสมอง", // only shown on a local board (localhost) — the live site reads game_id
     });
   });
 
@@ -87,12 +90,12 @@ describe("leaderboard game routing", () => {
     expect(getLeaderboardMaxScore("G13")).toBe(500);
   });
 
-  it("puts G18–G20 on the database leaderboard with names from game_id", () => {
+  it("puts G18–G20 on the database leaderboard (config names are only for local boards)", () => {
     for (const [lessonId, gid] of [["g18", "G18"], ["g19", "G19"], ["g20", "G20"]]) {
       const game = getLeaderboardGame(lessonId);
       expect(game).toMatchObject({ lessonId, gid });
       expect(game?.localOnly).toBeUndefined();
-      expect(game?.name).toBeUndefined();
+      expect(game?.name).toBeTruthy();
       expect(isSupportedLeaderboardGid(gid)).toBe(true);
       expect(getLeaderboardMaxScore(gid)).toBeGreaterThan(0);
       expect(BROWSABLE_LEADERBOARD_GAMES.map((browsable) => browsable.gid)).toContain(gid);
@@ -110,5 +113,30 @@ describe("leaderboard game routing", () => {
     expect(getLeaderboardMaxScore("G18")).toBe(100);
     expect(getLeaderboardMaxScore("G19")).toBe(20_000);
     expect(getLeaderboardMaxScore("G20")).toBe(15);
+  });
+});
+
+describe("local leaderboard on localhost", () => {
+  const setHost = (hostname: string) => {
+    Object.defineProperty(window, "location", { value: { ...window.location, hostname }, configurable: true, writable: true });
+  };
+  const original = window.location;
+  afterEach(() => {
+    Object.defineProperty(window, "location", { value: original, configurable: true, writable: true });
+  });
+
+  it("uses the on-device board for every game on localhost", () => {
+    for (const host of ["localhost", "127.0.0.1"]) {
+      setHost(host);
+      expect(isLocalhost()).toBe(true);
+      expect(usesLocalLeaderboard(getLeaderboardGame("flow-g13"))).toBe(true);
+    }
+  });
+
+  it("uses the database board on a deployed host", () => {
+    setHost("media-literacy.example.org");
+    expect(isLocalhost()).toBe(false);
+    expect(usesLocalLeaderboard(getLeaderboardGame("flow-g13"))).toBe(false);
+    expect(usesLocalLeaderboard({ lessonId: "x", gid: "X", localOnly: true })).toBe(true);
   });
 });

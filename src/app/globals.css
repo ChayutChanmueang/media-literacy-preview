@@ -959,6 +959,25 @@ h2 {
 .result-num-hit {
   animation: result-num-pop 0.5s cubic-bezier(0.3, 1.8, 0.5, 1);
 }
+/* fun-game popups (GamePopupShell, LeaderboardPopup): the dim layer over the frozen scene fades in, the card rises in */
+.result-backdrop {
+  animation: result-fade-in 0.3s ease-out both;
+}
+.result-card {
+  animation: result-card-in 0.45s cubic-bezier(0.3, 1.3, 0.5, 1) both;
+}
+/* the badge pops in like the praise line (.result-pop), just ahead of it: card → badge → text */
+.result-badge {
+  opacity: 0;
+  transform: scale(0.3);
+  animation: result-pop 0.7s cubic-bezier(0.3, 1.6, 0.5, 1) 0.35s forwards;
+}
+@keyframes result-fade-in {
+  from { opacity: 0; }
+}
+@keyframes result-card-in {
+  from { opacity: 0; transform: translateY(32px) scale(0.92); }
+}
 @keyframes result-rays-in {
   to { opacity: 1; }
 }
@@ -1001,7 +1020,10 @@ h2 {
   .result-trophy,
   .result-pop,
   .result-rise,
-  .result-actions {
+  .result-actions,
+  .result-backdrop,
+  .result-card,
+  .result-badge {
     animation: none;
     opacity: 1;
     transform: none;

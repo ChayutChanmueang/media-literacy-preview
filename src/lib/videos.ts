@@ -13,6 +13,8 @@ export type VideoRecord = {
   youtube?: string;
   s3?: string;
   script?: string;
+  /** ภาพปกคลิป (path ใต้ public/ เช่น /images/lessons/thumbnails/topic-1.jpg หรือ URL เต็ม) */
+  thumbnail?: string;
 };
 
 export type ResolvedVideo = {
@@ -29,6 +31,11 @@ export type ResolvedVideo = {
   s3Url?: string;
   /** ค่าที่ใช้ log / analytics — YouTube ID หรือ URL ของไฟล์ S3 */
   logId: string;
+  /**
+   * ภาพปกที่ลองตามลำดับ: thumbnail ใน videos.json ก่อน แล้วค่อยภาพปกจาก YouTube
+   * (อาจว่าง — ผู้เรียกต้องมีไอคอนสำรองของตัวเองต่อท้ายเสมอ)
+   */
+  thumbnailUrls: string[];
 };
 
 type VideoCatalogJson = {
@@ -90,6 +97,19 @@ function pickPlay(entry: VideoRecord): VideoPlaySource {
   return "youtube";
 }
 
+/** ภาพปกที่ YouTube สร้างให้ทุกคลิป — hqdefault มีเสมอ (maxresdefault ไม่มีในบางคลิป) */
+export function youtubeThumbnailUrl(youtubeId: string): string {
+  return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+}
+
+function thumbnailUrlsOf(entry: VideoRecord, youtubeId: string | undefined): string[] {
+  const urls: string[] = [];
+  const own = entry.thumbnail?.trim();
+  if (own) urls.push(own);
+  if (youtubeId) urls.push(youtubeThumbnailUrl(youtubeId));
+  return urls;
+}
+
 export function resolveVideo(entry: VideoRecord): ResolvedVideo {
   const play = pickPlay(entry);
   const youtubeId = youtubeIdOf(entry) ?? undefined;
@@ -109,6 +129,7 @@ export function resolveVideo(entry: VideoRecord): ResolvedVideo {
     youtubeId,
     s3Url,
     logId: play === "s3" ? (s3Url || entry.lessonId) : (youtubeId || youtubeUrl || entry.lessonId),
+    thumbnailUrls: thumbnailUrlsOf(entry, youtubeId),
   };
 }
 
@@ -138,6 +159,7 @@ export function getVideoByLessonId(lessonId: string): ResolvedVideo {
       script: "",
       play: "youtube",
       logId: lessonId,
+      thumbnailUrls: [],
     };
   }
 

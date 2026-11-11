@@ -84,3 +84,29 @@ describe("videos.json catalog", () => {
     expect(getVideoByLessonId("unknown-lesson").lessonId).toBe("topic-1");
   });
 });
+
+describe("resolveVideo thumbnails", () => {
+  const base: VideoRecord = {
+    lessonId: "topic-x",
+    lessonNum: "บทที่ X",
+    title: "ตัวอย่าง",
+    youtube: "https://www.youtube.com/shorts/9l5Ro9NEoeg",
+  };
+
+  it("tries the thumbnail from videos.json first, then the YouTube thumbnail", () => {
+    const resolved = resolveVideo({ ...base, thumbnail: " /images/lessons/thumbnails/topic-x.jpg " });
+    expect(resolved.thumbnailUrls).toEqual([
+      "/images/lessons/thumbnails/topic-x.jpg",
+      "https://i.ytimg.com/vi/9l5Ro9NEoeg/hqdefault.jpg",
+    ]);
+  });
+
+  it("uses only the YouTube thumbnail when no thumbnail is set", () => {
+    expect(resolveVideo(base).thumbnailUrls).toEqual(["https://i.ytimg.com/vi/9l5Ro9NEoeg/hqdefault.jpg"]);
+  });
+
+  it("is empty for an S3-only clip without a thumbnail", () => {
+    const resolved = resolveVideo({ ...base, youtube: "", s3: "https://minio.example.com/bucket/clip.mp4" });
+    expect(resolved.thumbnailUrls).toEqual([]);
+  });
+});

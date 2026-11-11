@@ -13,6 +13,9 @@ import { useDevSkip } from "@/lib/devSkip";
 import { TEMP_AWARDED_STARS } from "@/lib/gameScore";
 import { getLeaderboardGame } from "@/lib/leaderboard";
 import SaveScorePopup from "@/components/SaveScorePopup";
+import NameEntryPopup from "@/components/NameEntryPopup";
+import LeaderboardPopup from "@/components/LeaderboardPopup";
+import { finishFunGame } from "@/lib/funGameFinish";
 
 // Dynamic imports with SSR disabled to prevent window/speechSynthesis undefined crashes
 const G1FactCheck = dynamic(() => import("@/components/G1FactCheck"), { ssr: false });
@@ -60,6 +63,10 @@ export default function GameShellPage() {
   // เกมสนุกที่มีกระดานคะแนน (G13, G18–G20K): จบเกมแล้วถามก่อนว่าจะเก็บคะแนนไหม (Figma 3157:15321)
   // คะแนนรอไว้เป็น pending score — "ใช่" ไปหน้ากรอกชื่อ, "ไม่" ทิ้งคะแนนแล้วไปกระดานคะแนนของเกมนี้
   const [scorePrompt, setScorePrompt] = useState<{ gid: string; score: number } | null>(null);
+  // G13 (trial): "ใช่" opens the name entry popup over the game instead of the leaderboard's ?step=save page
+  const [nameEntryOpen, setNameEntryOpen] = useState(false);
+  // G13 (trial): after the name, the leaderboard opens as a popup too (LeaderboardPopup) instead of the page
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
 
   useEffect(() => {
     // Verification of session
@@ -179,7 +186,11 @@ export default function GameShellPage() {
       lesson_id: lessonId,
       score: scorePrompt.score,
     });
-    if (save) {
+    if (save && lessonId === FLOW_G13_ID) {
+      // trial: G13 asks for the name in a popup over the game (NameEntryPopup) instead of the ?step=save page —
+      // stacked on top: the game-over and "เก็บคะแนนไหม?" popups stay open underneath
+      setNameEntryOpen(true);
+    } else if (save) {
       router.push(`/lessons/${lessonId}/leaderboard?step=save`);
     } else {
       leaderboardScoreService.clearPendingScore(scorePrompt.gid);
@@ -188,6 +199,18 @@ export default function GameShellPage() {
       progressService.saveProgress({ ...progress, currentStep: manual ? "lessons" : "complete", currentLessonId: undefined });
       router.push(manual ? "/lessons" : "/lessons/complete");
     }
+  };
+
+  // NameEntryPopup "ยืนยัน" (G13): the profile is saved — the leaderboard popup opens on top and saves the
+  // pending score for it as it loads (same as the leaderboard page)
+  const handleNameSaved = (reusedProfile: boolean) => {
+    loggingService.logEvent("leaderboard_name_saved", { lesson_id: lessonId, reused_profile: reusedProfile, via: "popup" });
+    setLeaderboardOpen(true);
+  };
+
+  // LeaderboardPopup "กดเพื่อเสร็จสิ้น": same as the page's button — free mode → game list, Flow → course complete
+  const handleLeaderboardFinish = () => {
+    router.push(finishFunGame(getLeaderboardGame(lessonId)?.gid));
   };
 
   const renderGameContent = () => {
@@ -204,7 +227,14 @@ export default function GameShellPage() {
       case "topic-6":
         return <G6LineSimulation onFinish={handleFinishGame} logEvent={logEventBound} />;
       case FLOW_G13_ID:
-        return <G13ScoopStacker onFinish={handleFinishGame} logEvent={logEventBound} learningMode={learningMode} />;
+        return (
+          <G13ScoopStacker
+            onFinish={handleFinishGame}
+            logEvent={logEventBound}
+            learningMode={learningMode}
+            resultPopupCovered={Boolean(scorePrompt) || nameEntryOpen}
+          />
+        );
       case "g15":
         return <G15AIChatSimulator onFinish={handleFinishGame} logEvent={logEventBound} />;
       case "g16":
@@ -240,8 +270,15 @@ export default function GameShellPage() {
         {renderGameContent()}
       </div>
       {scorePrompt && (
-        <SaveScorePopup onYes={() => handleSaveScoreChoice(true)} onNo={() => handleSaveScoreChoice(false)} />
+        // only the topmost popup dims: the popups under it (G13: game-over, then this one) sit beneath its dim
+        <SaveScorePopup
+          onYes={() => handleSaveScoreChoice(true)}
+          onNo={() => handleSaveScoreChoice(false)}
+          dim={!nameEntryOpen}
+        />
       )}
+      {nameEntryOpen && <NameEntryPopup onSaved={handleNameSaved} dim={!leaderboardOpen} />}
+      {leaderboardOpen && <LeaderboardPopup lessonId={lessonId} onFinish={handleLeaderboardFinish} />}
     </div>
   );
 }

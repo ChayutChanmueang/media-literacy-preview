@@ -1,104 +1,25 @@
 "use client";
 
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RefreshCw, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import {
-  getLeaderboardGame,
-  type LeaderboardEntry,
-} from "@/lib/leaderboard";
+import { getLeaderboardGame, usesLocalLeaderboard } from "@/lib/leaderboard";
+import { useLeaderboardBoard } from "@/lib/useLeaderboardBoard";
 import {
   leaderboardNameSchema,
   type LeaderboardNameInput,
   type LeaderboardPlayer,
 } from "@/lib/validations";
-import { apiClient } from "@/services/apiClient";
 import { leaderboardPlayerService } from "@/services/leaderboardPlayerService";
-import { leaderboardScoreService } from "@/services/leaderboardScoreService";
-import { localLeaderboardService } from "@/services/localLeaderboardService";
 import Button3D from "@/components/Button3D";
 import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
+import { BOARD_BAR, BoardEmpty, BoardError, BoardRow, BoardRowSkeleton } from "@/components/LeaderboardRows";
+import { finishFunGame } from "@/lib/funGameFinish";
 import { loggingService } from "@/services/loggingService";
-import { progressService } from "@/services/progressService";
 
 type ViewState = "loading" | "name-entry" | "leaderboard";
-type BoardStatus = "loading" | "ready" | "error";
-// Figma "Leaderboard" (Scammer Game Prototype, node 3157:15491): title + game name (trophy dropped), a purple
-// column bar, white rows (rank badge · name · score pill), and the player's own row pinned in yellow under
-// the list. Ranks 1–3 show a medal instead of the number badge (🥇🥈🥉, as in the design's rows).
-const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
-const BOARD_BAR = "#A855D4"; // Figma "Primary Purple"
-const OWN_ROW = { bg: "#F0AE03", border: "#C38D00" }; // Figma "Primary Yellow" / "Yellow Pressed"
-// white on yellow is below 4.5:1 on its own — same dark text shadow the old podium rows used
-const ON_YELLOW_SHADOW = "0px 2px 4px rgba(0, 0, 0, 0.5)";
-
-// New personal best: the player's score counts up from their old best to the new one, and their row
-// (yellow while it climbs) moves up past each row it overtakes — rows only move while the number runs.
-// Skipped with prefers-reduced-motion (the final board shows straight away).
-const CLIMB_DELAY_MS = 700; // let the board settle before the count starts
-const CLIMB_MS_PER_POINT = 60;
-const CLIMB_MIN_MS = 1200;
-const CLIMB_MAX_MS = 3000;
-const ROW_MOVE_MS = 320; // a row sliding into its new place
-
-type ClimbPlan = { rowId: string | null; from: number; to: number };
-
-// 52px white circle with a grey ring (rank) — medals for 1–3
-function RankBadge({ rank }: { rank: number }) {
-  const medal = MEDALS[rank];
-  if (medal) {
-    return (
-      <span className="flex size-[52px] shrink-0 items-center justify-center text-[40px] leading-none" aria-label={`อันดับ ${rank}`} data-type-exempt="medal emoji">
-        {medal}
-      </span>
-    );
-  }
-  return (
-    <span
-      className="flex size-[52px] shrink-0 items-center justify-center rounded-full border-4 border-solid border-[#D9D9D9] bg-white text-button text-black tabular-nums"
-      aria-label={`อันดับ ${rank}`}
-    >
-      {rank}
-    </span>
-  );
-}
-
-// 52px tall white pill with a grey ring, at least 56px wide (grows with longer scores)
-function ScorePill({ score }: { score: number }) {
-  return (
-    <span className="flex h-[52px] min-w-[56px] shrink-0 items-center justify-center rounded-[24px] border-4 border-solid border-[#D9D9D9] bg-white px-[6px] text-button text-black tabular-nums">
-      {score.toLocaleString("th-TH")}
-    </span>
-  );
-}
-
-// own = the pinned row under the list · climbing = the player's row in the list while their new best counts up
-// (yellow like the pinned row, but the list rows' size so the list doesn't jump)
-function BoardRow({ entry, own = false, climbing = false }: { entry: LeaderboardEntry; own?: boolean; climbing?: boolean }) {
-  const yellow = own || climbing;
-  return (
-    <article
-      data-row-id={entry.id}
-      className={`relative flex shrink-0 items-center gap-[24px] rounded-[24px] border-solid ${
-        own ? "h-[80px] border-4 pl-[8px] pr-[12px]" : `h-[84px] border-2 pl-[12px] pr-[16px] ${climbing ? "z-10" : "bg-white"}`
-      }`}
-      style={yellow ? { backgroundColor: OWN_ROW.bg, borderColor: OWN_ROW.border } : { borderColor: "#D9D9D9" }}
-      aria-label={own ? `อันดับของคุณ ${entry.rank} ${entry.name} ${entry.score} คะแนน` : undefined}
-    >
-      <RankBadge rank={entry.rank} />
-      <p
-        className={`min-w-0 flex-1 truncate text-body ${yellow ? "text-white" : "text-black"}`}
-        style={yellow ? { textShadow: ON_YELLOW_SHADOW } : undefined}
-        title={entry.name}
-      >
-        {entry.name}
-      </p>
-      <ScorePill score={entry.score} />
-    </article>
-  );
-}
 
 function LeaderboardPageInner() {
   const params = useParams<{ id: string }>();
@@ -113,24 +34,13 @@ function LeaderboardPageInner() {
   const lessonId = params.id;
   const game = getLeaderboardGame(lessonId);
   const gid = game?.gid;
-  // เกม localOnly: กระดานคะแนนในเครื่อง ไม่ส่ง/ดึงจากฐานข้อมูล (ดู LOCAL_LEADERBOARD_GAMES — ตอนนี้ยังไม่มีเกมในกลุ่มนี้)
-  const localOnly = Boolean(game?.localOnly);
+  // กระดานคะแนนในเครื่อง ไม่ส่ง/ดึงจากฐานข้อมูล: เกม localOnly หรือทุกเกมตอนรันบน localhost (usesLocalLeaderboard)
+  const localOnly = usesLocalLeaderboard(game);
   const localName = game?.name ?? "";
   const [player, setPlayer] = useState<LeaderboardPlayer | null | undefined>(undefined);
-  const [boardStatus, setBoardStatus] = useState<BoardStatus>("loading");
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<LeaderboardEntry | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false); // US-CF-52: popup เลือกเกมบนหน้า browse
-  const [gameName, setGameName] = useState(""); // ชื่อเกมมาจาก DB (response.game.name) เสมอ ไม่ hardcode
-  const [reloadKey, setReloadKey] = useState(0);
   // empty name on "ยืนยัน": the name field shakes (gp1-shake) instead of showing a message
   const [nameShaking, setNameShaking] = useState(false);
-  const [playerScore, setPlayerScore] = useState<number | null>(null);
-  // new personal best: which row climbs, from/to (set by the loader) and the running number
-  const [climbPlan, setClimbPlan] = useState<ClimbPlan | null>(null);
-  const [climbValue, setClimbValue] = useState(0);
-  const listRef = useRef<HTMLElement | null>(null);
-  const rowTopsRef = useRef<Map<string, number>>(new Map());
   const viewState: ViewState = isBrowse
     ? "leaderboard"
     : player === undefined
@@ -138,6 +48,9 @@ function LeaderboardPageInner() {
       : isSaveStep
         ? "name-entry"
         : "leaderboard";
+
+  const { boardStatus, entries, displayEntries, gameName, climbPlan, listRef, ownEntry, retry: handleRetry } =
+    useLeaderboardBoard({ gid, lessonId, player, enabled: viewState === "leaderboard", isBrowse, skipped, localOnly, localName });
 
   const {
     register,
@@ -165,169 +78,6 @@ function LeaderboardPageInner() {
     });
   }, [lessonId, reset]);
 
-  useEffect(() => {
-    const activeGid = gid;
-    if (viewState !== "leaderboard" || !activeGid) return;
-
-    let cancelled = false;
-
-    async function loadLeaderboard(targetGid: string) {
-      try {
-        const pendingScore = !isBrowse && player
-          ? leaderboardScoreService.getPendingScore(targetGid)
-          : null;
-        let latestScore: number | null = null;
-
-        // the player's best before this round (for the personal-best animation); a failed read just skips it
-        let previousBest: number | null = null;
-        if (pendingScore && player) {
-          try {
-            const before = localOnly
-              ? localLeaderboardService.getLeaderboard(targetGid, localName, 10, player.player_uuid)
-              : await apiClient.getLeaderboard(targetGid, 10, player.player_uuid);
-            previousBest = before.currentPlayer?.score ?? null;
-          } catch {
-            previousBest = null;
-          }
-        }
-
-        if (pendingScore && player && localOnly) {
-          latestScore = pendingScore.score;
-          setPlayerScore(pendingScore.score);
-          localLeaderboardService.saveScore(targetGid, player, pendingScore.score);
-          leaderboardScoreService.clearPendingScore(targetGid);
-          loggingService.logEvent("leaderboard_score_saved", {
-            game_id: targetGid,
-            lesson_id: lessonId,
-            score: pendingScore.score,
-            local_only: true,
-          });
-        } else if (pendingScore && player) {
-          latestScore = pendingScore.score;
-          setPlayerScore(pendingScore.score);
-          // session_id ties the score to its player for the staff data export (docs/software/12 §11.2)
-          const sessionId = progressService.getOrCreateSession()?.sessionId;
-          await apiClient.saveGameResult({
-            ...player,
-            attempt_uuid: pendingScore.attempt_uuid,
-            gid: targetGid,
-            score: pendingScore.score,
-            ...(sessionId ? { session_id: sessionId } : {}),
-          });
-          leaderboardScoreService.clearPendingScore(targetGid);
-          loggingService.logEvent("leaderboard_score_saved", {
-            game_id: targetGid,
-            lesson_id: lessonId,
-            score: pendingScore.score,
-            attempt_uuid: pendingScore.attempt_uuid,
-          });
-        }
-
-        const viewerUuid = isBrowse ? undefined : player?.player_uuid;
-        const response = localOnly
-          ? localLeaderboardService.getLeaderboard(targetGid, localName, 10, viewerUuid)
-          : await apiClient.getLeaderboard(targetGid, 10, viewerUuid);
-        if (cancelled) return;
-
-        // beat their own best → count up from the old best; the climbing row is this round's entry (local boards
-        // keep one row per player; the server keeps every play, so pick the newest row with this score)
-        const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-        if (latestScore !== null && previousBest !== null && latestScore > previousBest && !reducedMotion) {
-          const newScore = latestScore;
-          const mine = response.entries
-            .filter((entry) => entry.is_current_player && entry.score === newScore)
-            .sort((a, b) => b.created_at.localeCompare(a.created_at));
-          setClimbValue(previousBest);
-          setClimbPlan({ rowId: mine[0]?.id ?? null, from: previousBest, to: newScore });
-          loggingService.logEvent("leaderboard_personal_best", {
-            game_id: targetGid,
-            lesson_id: lessonId,
-            previous_best: previousBest,
-            score: newScore,
-          });
-        }
-        setEntries(response.entries);
-        setCurrentPlayer(response.currentPlayer ?? null);
-        setGameName(response.game.name);
-        setBoardStatus("ready");
-        if (!isBrowse && latestScore === null) {
-          const currentPlayerEntry =
-            response.entries.find((entry) => entry.is_current_player) ?? response.currentPlayer;
-          if (currentPlayerEntry) setPlayerScore(currentPlayerEntry.score);
-        }
-      } catch (error) {
-        if (cancelled) return;
-        console.error("[Leaderboard] Unable to load scores:", error);
-        setBoardStatus("error");
-      }
-    }
-
-    void loadLeaderboard(activeGid);
-    return () => {
-      cancelled = true;
-    };
-  }, [gid, lessonId, player, reloadKey, viewState, isBrowse, localOnly, localName]);
-
-  // Count from the old best to the new score (ease-out), then hand back to the final board
-  useEffect(() => {
-    if (!climbPlan) return;
-    const { from, to } = climbPlan;
-    const duration = Math.min(CLIMB_MAX_MS, Math.max(CLIMB_MIN_MS, (to - from) * CLIMB_MS_PER_POINT));
-    let raf = 0;
-    let start = 0;
-    const tick = (now: number) => {
-      if (!start) start = now;
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - (1 - t) ** 3;
-      setClimbValue(Math.round(from + (to - from) * eased));
-      if (t < 1) raf = requestAnimationFrame(tick);
-      else window.setTimeout(() => setClimbPlan(null), ROW_MOVE_MS);
-    };
-    const delay = window.setTimeout(() => {
-      raf = requestAnimationFrame(tick);
-    }, CLIMB_DELAY_MS);
-    return () => {
-      window.clearTimeout(delay);
-      cancelAnimationFrame(raf);
-    };
-  }, [climbPlan]);
-
-  // While counting: the climbing row sits below every row with a score ≥ the running number (ties stay
-  // with whoever got there first, as on the real board), ranks follow the order. At the end this is the
-  // board as loaded, so nothing jumps when the animation hands over.
-  const climbingRow = climbPlan?.rowId ? entries.find((entry) => entry.id === climbPlan.rowId) ?? null : null;
-  const displayEntries = useMemo(() => {
-    if (!climbPlan || !climbingRow) return entries;
-    const others = entries.filter((entry) => entry.id !== climbingRow.id);
-    const above = others.filter((entry) => entry.score >= climbValue).length;
-    const ordered = [...others.slice(0, above), { ...climbingRow, score: climbValue }, ...others.slice(above)];
-    return ordered.map((entry, index) => ({ ...entry, rank: index + 1 }));
-  }, [entries, climbPlan, climbingRow, climbValue]);
-
-  // FLIP: when the order changes, slide each moved row from where it was to its new place, and keep the
-  // climbing row in view
-  const orderKey = displayEntries.map((entry) => entry.id).join("|");
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const tops = new Map<string, number>();
-    list.querySelectorAll<HTMLElement>("[data-row-id]").forEach((row) => {
-      const id = row.dataset.rowId ?? "";
-      const top = row.offsetTop;
-      tops.set(id, top);
-      const before = rowTopsRef.current.get(id);
-      if (!climbPlan || before === undefined || before === top) return;
-      row.style.transition = "none";
-      row.style.transform = `translateY(${before - top}px)`;
-      void row.offsetHeight; // apply the offset before animating it away
-      row.style.transition = `transform ${ROW_MOVE_MS}ms ease-out`;
-      row.style.transform = "";
-      if (id === climbPlan.rowId) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    });
-    rowTopsRef.current = tops;
-  }, [orderKey, climbPlan]);
-
-  // "ยืนยัน": keep the profile if the name is unchanged (a new name = a new player), then show the board —
   // its loader saves the pending score for this player, so the board appears once the score is saved
   const handleSaveName = (data: LeaderboardNameInput) => {
     const reused = Boolean(player && player.name === data.name);
@@ -350,48 +100,10 @@ function LeaderboardPageInner() {
     void handleSubmit(handleSaveName)();
   };
 
-  const handleRetry = () => {
-    setBoardStatus("loading");
-    setReloadKey((currentKey) => currentKey + 1);
-  };
-
   // ปุ่มจบของเกมสนุกที่มาหน้านี้ตรงจากเกม (G13 + G18–G20K)
   const handleFinishFunGame = () => {
-    // nothing should be left pending once the player leaves (the popup's "ไม่" already dropped it)
-    if (gid) leaderboardScoreService.clearPendingScore(gid);
-    const progress = progressService.getProgress();
-    // โหมดอิสระ: เกมสนุกเป็นหมวดเดี่ยว ไม่ใช่ปลายทาง Flow จึงกลับหน้าหมวดหมู่แทนหน้าจบคอร์ส
-    if (progress?.learningMode === "manual") {
-      progressService.saveProgress({
-        ...progress,
-        currentStep: "lessons",
-        currentLessonId: undefined,
-      });
-      router.push("/lessons");
-      return;
-    }
-    progressService.saveProgress({
-      ...progress,
-      currentStep: "complete",
-      currentLessonId: undefined,
-    });
-    router.push("/lessons/complete");
+    router.push(finishFunGame(gid));
   };
-
-  // the player's own row, pinned under the list: the entry for this round's score if it's on the board,
-  // else their best row on the board, else their rank from outside the top 10 — not in browse mode or
-  // after "ไม่" (skipped)
-  const ownEntries = entries.filter((entry) => entry.is_current_player);
-  const finalOwnEntry =
-    !isBrowse && player && !skipped
-      ? ownEntries.find((entry) => entry.score === playerScore) ?? ownEntries[0] ?? currentPlayer
-      : null;
-  // while the new best counts up, the pinned row shows the running number (and the climbing row's rank)
-  const climbingDisplay = climbPlan?.rowId ? displayEntries.find((entry) => entry.id === climbPlan.rowId) : undefined;
-  const ownEntry =
-    finalOwnEntry && climbPlan
-      ? { ...finalOwnEntry, score: climbValue, rank: climbingDisplay?.rank ?? finalOwnEntry.rank }
-      : finalOwnEntry;
 
   if (viewState === "loading") {
     return (
@@ -453,38 +165,11 @@ function LeaderboardPageInner() {
             className="mt-[4px] flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto"
           >
             {boardStatus === "loading" &&
-              Array.from({ length: 4 }, (_, index) => (
-                <div
-                  key={index}
-                  className="flex h-[84px] shrink-0 animate-pulse items-center gap-[24px] rounded-[24px] border-2 border-solid border-[#D9D9D9] pl-[12px] pr-[16px]"
-                >
-                  <div className="size-[52px] rounded-full bg-[#D9D9D9]" />
-                  <div className="h-6 flex-1 rounded-full bg-[#D9D9D9]" />
-                  <div className="h-[52px] w-[56px] rounded-[24px] bg-[#D9D9D9]" />
-                </div>
-              ))}
+              Array.from({ length: 4 }, (_, index) => <BoardRowSkeleton key={index} />)}
 
-            {boardStatus === "error" && (
-              <div className="rounded-[24px] border-2 border-solid border-[#D9D9D9] px-5 py-8 text-center">
-                <p className="text-h3 text-[#4B4B4B]">โหลดกระดานคะแนนไม่สำเร็จ</p>
-                <p className="mt-2 text-body text-[#4B4B4B]">กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง</p>
-                <button
-                  type="button"
-                  onClick={handleRetry}
-                  className="mt-5 inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[20px] border-2 border-solid border-[#00A3E0] bg-white px-6 text-button text-[#0078A8]"
-                >
-                  <RefreshCw size={24} aria-hidden="true" />
-                  ลองใหม่
-                </button>
-              </div>
-            )}
+            {boardStatus === "error" && <BoardError onRetry={handleRetry} />}
 
-            {boardStatus === "ready" && entries.length === 0 && (
-              <div className="rounded-[24px] border-2 border-dashed border-[#D9D9D9] px-5 py-8 text-center">
-                <p className="text-h3 text-[#4B4B4B]">ยังไม่มีคะแนนในเกมนี้</p>
-                <p className="mt-2 text-body text-[#4B4B4B]">มาเป็นผู้เล่นคนแรกบนกระดานคะแนนกันเลย</p>
-              </div>
-            )}
+            {boardStatus === "ready" && entries.length === 0 && <BoardEmpty />}
 
             {boardStatus === "ready" &&
               displayEntries.map((entry) => (

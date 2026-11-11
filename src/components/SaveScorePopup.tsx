@@ -41,9 +41,11 @@ function PopupButton({
   );
 }
 
-export default function SaveScorePopup({ onYes, onNo }: { onYes: () => void; onNo: () => void }) {
+// dim=false: clear backdrop (still blocks taps) while another popup is open on top (G13's name entry) — only the
+// topmost popup dims, so this card sits under that one dim layer; the colour fades so the hand-over doesn't flash
+export default function SaveScorePopup({ onYes, onNo, dim = true }: { onYes: () => void; onNo: () => void; dim?: boolean }) {
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4`}>
+    <div className={`result-backdrop fixed inset-0 z-50 flex items-center justify-center px-4 transition-colors duration-300 ${dim ? "bg-black/40" : "bg-transparent"}`}>
       <div
         role="alertdialog"
         aria-modal="true"

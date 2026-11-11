@@ -14,6 +14,9 @@ interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   inactive?: boolean;
   /** "secondary": smaller white face with a light-grey side (e.g. "เล่นอีกครั้ง" under a primary "จบเกม") — same press motion */
   variant?: "primary" | "secondary";
+  /** "md": the 64px buttons of the result popup (GameResultPopup, Figma "Component 30/31") — Button text,
+   *  20px corners, 4px side; the secondary gets the G1 grey (#A5A5A5) border/side */
+  size?: "lg" | "md";
 }
 
 // Figma "Component 24": variant "1"/"2" = enabled/pressed, "Def-def" = disabled.
@@ -27,15 +30,26 @@ export default function Button3D({
   autoAdvancePaused = false,
   inactive = false,
   variant = "primary",
+  size = "lg",
   ...props
 }: Button3DProps) {
   const secondary = variant === "secondary";
-  // side = outer − face height (primary 8px, secondary 6px); the face's press slide below must match it
-  const outerSize = secondary ? "gp-h-64 rounded-[16px]" : "gp-h-104 rounded-[24px]";
-  const faceSize = secondary ? "gp-h-58 rounded-[16px]" : "gp-h-96 rounded-[24px]";
-  const baseColour = secondary ? "bg-[#CBD5E1]" : "bg-[#0078A8]";
-  const faceText = secondary ? "gp-type-button" : "gp-type-h2";
-  const faceColour = secondary ? "border-2 border-solid border-[#CBD5E1] bg-white text-[#1a1a1a]" : "bg-[#00A3E0] text-white";
+  const md = size === "md";
+  // side = outer − face height (primary 8px, secondary 6px, md 4px); the face's press slide below must match it
+  // md: 64px scaled with the stage but floored at the 48px tap target; fixed 4px side so face + press stay in step
+  const outerSize = md
+    ? "h-[max(48px,calc(64px*var(--gp-s,1)))] rounded-[20px]"
+    : secondary
+      ? "gp-h-64 rounded-[16px]"
+      : "gp-h-104 rounded-[24px]";
+  const faceSize = md
+    ? "h-[calc(max(48px,calc(64px*var(--gp-s,1)))-4px)] rounded-[20px]" : secondary ? "gp-h-58 rounded-[16px]" : "gp-h-96 rounded-[24px]";
+  const baseColour = secondary ? (md ? "bg-[#A5A5A5]" : "bg-[#CBD5E1]") : "bg-[#0078A8]";
+  const faceText = secondary || md ? "gp-type-button" : "gp-type-h2";
+  // md secondary text stays #4B4B4B, not Figma's #7F7F7F (3.9:1 on white — under the 4.5:1 rule)
+  const faceColour = secondary
+    ? `border-2 border-solid bg-white ${md ? "border-[#A5A5A5] text-[#4B4B4B]" : "border-[#CBD5E1] text-[#1a1a1a]"}`
+    : "bg-[#00A3E0] text-white";
   const autoAdvanceRef = useRef(onAutoAdvance);
   useEffect(() => {
     autoAdvanceRef.current = onAutoAdvance;
@@ -46,7 +60,11 @@ export default function Button3D({
   const grey = disabled || inactive;
   const pressBase = "transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]";
   const pressFace = `transition-transform duration-[90ms] ease-out ${
-    secondary ? "group-active:translate-y-[calc(6px*var(--gp-s,1))]" : "group-active:translate-y-[calc(8px*var(--gp-s,1))]"
+    md
+      ? "group-active:translate-y-[4px]"
+      : secondary
+        ? "group-active:translate-y-[calc(6px*var(--gp-s,1))]"
+        : "group-active:translate-y-[calc(8px*var(--gp-s,1))]"
   }`;
 
   // Time left, kept across pauses so the countdown resumes where it stopped

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Menu, Home, RotateCcw, Trophy, X, SkipForward, FlaskConical } from "lucide-react";
 import { DEV_APP_MODE_COOKIE } from "@/lib/appMode";
 import { progressService, type AppMode, type UserSession } from "@/services/progressService";
@@ -48,6 +48,7 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
   // และบางหน้าอ่าน getAppMode() ใน effect ตั้งแต่ mount (เช่น /lessons)
   progressService.configureAppMode(appMode);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
   const [session, setSession] = useState<UserSession | null>(null);
@@ -231,7 +232,12 @@ export default function AppLayout({ children, initialTheme, appMode }: AppLayout
   // หน้าเล่นเกม (ทั้งเกมเรียนรู้ topic-* และเกมสนุก g13/g15–g20 ใช้ route เดียวกัน) — ซ่อน top bar
   // ให้เกมได้พื้นที่เต็มจอและไม่มีปุ่ม ☰ ให้กดหลุดออกกลางเกม
   const isGamePlay = /^\/lessons\/[^/]+\/game$/.test(pathname);
-  const hideHeader = isLanding || isGamePlay;
+
+  // หน้ากรอกชื่อ + กระดานคะแนนที่มาต่อจากการเล่นเกม (?step=save → หลังบันทึก / ?skipped=1) — ซ่อน top bar
+  // เหมือนหน้าเกม ให้จบด้วยปุ่ม "กดเพื่อเสร็จสิ้น" เท่านั้น ส่วนการเปิดดูเองจากเมนู (?view=browse) ยังแสดง header ตามปกติ
+  const isPostGameLeaderboard =
+    /^\/lessons\/[^/]+\/leaderboard$/.test(pathname) && searchParams.get("view") !== "browse";
+  const hideHeader = isLanding || isGamePlay || isPostGameLeaderboard;
 
   // หน้าคลิปเรียนเท่านั้นที่มีปุ่ม "ข้าม" มุมขวาบนของ header
   const isLessonVideo = /^\/lessons\/[^/]+\/video$/.test(pathname);

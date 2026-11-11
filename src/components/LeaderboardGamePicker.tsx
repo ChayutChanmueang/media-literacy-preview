@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, X } from "lucide-react";
 import { loggingService } from "@/services/loggingService";
-import { LOCAL_BROWSABLE_LEADERBOARD_GAMES } from "@/lib/leaderboard";
+import { BROWSABLE_LEADERBOARD_GAMES, LOCAL_BROWSABLE_LEADERBOARD_GAMES, isLocalhost, type LeaderboardGame } from "@/lib/leaderboard";
 
 // เกม localOnly (ยังไม่ต่อ DB) ไม่มาจาก API — ต่อท้ายจาก config (กระดานของเกมเหล่านี้เก็บในเครื่อง; ตอนนี้ยังไม่มี)
-const LOCAL_GAMES: BrowsableGame[] = LOCAL_BROWSABLE_LEADERBOARD_GAMES.map((game) => ({
+const toBrowsable = (game: LeaderboardGame): BrowsableGame => ({
   gid: game.gid,
   lessonId: game.lessonId,
   name: game.name ?? game.gid,
   icon: game.icon ?? null,
-}));
+});
+const LOCAL_GAMES: BrowsableGame[] = LOCAL_BROWSABLE_LEADERBOARD_GAMES.map(toBrowsable);
 
 interface LeaderboardGamePickerProps {
   open: boolean;
@@ -46,6 +47,12 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
 
     void (async () => {
       setStatus("loading");
+      // บน localhost กระดานทุกเกมอยู่ในเครื่อง (usesLocalLeaderboard) — รายชื่อเกมก็มาจาก config ไม่ยิง API
+      if (isLocalhost()) {
+        setGames([...BROWSABLE_LEADERBOARD_GAMES, ...LOCAL_BROWSABLE_LEADERBOARD_GAMES].map(toBrowsable));
+        setStatus("ready");
+        return;
+      }
       try {
         const res = await fetch("/api/leaderboard/games", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

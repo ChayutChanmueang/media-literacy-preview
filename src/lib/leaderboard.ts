@@ -5,7 +5,8 @@ export interface LeaderboardGame {
   icon?: string;
   // เกมที่ยังไม่ต่อฐานข้อมูล: คะแนนเก็บ/อ่านจากเครื่องผู้เล่นเท่านั้น (localLeaderboardService) ไม่ยิง API
   localOnly?: boolean;
-  // ชื่อเกม — ใส่เฉพาะเกม localOnly (ยังไม่มีแถวในตาราง game_id); เกมที่ต่อ DB แล้วต้องดึงชื่อจาก DB
+  // ชื่อเกม — ใช้เฉพาะตอนกระดานอยู่ในเครื่อง (เกม localOnly หรือทุกเกมตอนรันบน localhost — usesLocalLeaderboard)
+  // บนเว็บจริง เกมที่ต่อ DB แล้วดึงชื่อจากตาราง game_id เสมอ
   name?: string;
 }
 // หมายเหตุ: ชื่อเกมของเกมที่ต่อ DB ไม่เก็บใน config (กัน hardcode หลุดจาก DB) — ดึงจากตาราง game_id เสมอ
@@ -39,14 +40,15 @@ const LEADERBOARD_GAMES: Record<string, LeaderboardGame> = {
     lessonId: "flow-g13",
     gid: "G13",
     icon: "/assets/icons/g13-ice-cream.jpg",
+    name: "ต่อไอติมฝึกสมอง",
   },
   // เกมสนุก G18–G20 (โหมดอิสระ) — เดิมเป็นกระดานในเครื่อง (localOnly) ย้ายมาใช้ DB แล้ว ชื่อเกมดึงจาก game_id
-  g18: { lessonId: "g18", gid: "G18", icon: "/assets/icons/g18-simon.png" },
-  g19: { lessonId: "g19", gid: "G19", icon: "/assets/icons/g19-fruit-match.png" },
-  g20: { lessonId: "g20", gid: "G20", icon: "/assets/icons/g20-veggie-tross.png" },
+  g18: { lessonId: "g18", gid: "G18", icon: "/assets/icons/g18-simon.png", name: "จำให้ขึ้นใจ" },
+  g19: { lessonId: "g19", gid: "G19", icon: "/assets/icons/g19-fruit-match.png", name: "เรียงผลไม้" },
+  g20: { lessonId: "g20", gid: "G20", icon: "/assets/icons/g20-veggie-tross.png", name: "ผักบุ้งลอยฟ้า" },
   // G20K = อีกรุ่นของ G20 (ของจริงจะเหลือรุ่นเดียว) จึงใช้กระดานเดียวกับ G20 (gid "G20")
   // ไม่อยู่ใน BROWSABLE_LEADERBOARD_GAMES — เมนูเลือกเกมเปิดกระดาน G20 ผ่าน g20 อยู่แล้ว
-  g20k: { lessonId: "g20k", gid: "G20", icon: "/assets/icons/g20-veggie-tross.png" },
+  g20k: { lessonId: "g20k", gid: "G20", icon: "/assets/icons/g20-veggie-tross.png", name: "ผักบุ้งลอยฟ้า" },
 };
 
 // เกมที่ยังไม่ต่อฐานข้อมูล: มีกระดานคะแนนแต่เก็บในเครื่องอย่างเดียว ไม่ส่ง/ไม่ดึงจาก DB (ใส่ localOnly + name)
@@ -83,6 +85,20 @@ const MAX_SCORE_BY_GID: Record<string, number> = {
 
 export function getLeaderboardGame(lessonId: string): LeaderboardGame | null {
   return LEADERBOARD_GAMES[lessonId] ?? LOCAL_LEADERBOARD_GAMES[lessonId] ?? null;
+}
+
+// รันบนเครื่องตัวเอง (localhost / 127.0.0.1 / ::1): ทุกเกมใช้กระดานคะแนนในเครื่อง (localLeaderboardService)
+// ไม่ส่งคะแนนเข้า/ไม่ดึงจากฐานข้อมูล — กันคะแนนทดสอบปนกับข้อมูลจริง และเล่นได้แม้ไม่ได้ต่อ DB
+// เช็คจาก hostname ตอน runtime (ฝั่ง browser เท่านั้น) เว็บที่ deploy จริงจึงไม่โดน
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+export function isLocalhost(): boolean {
+  return typeof window !== "undefined" && LOCAL_HOSTNAMES.has(window.location.hostname);
+}
+
+/** กระดานของเกมนี้อยู่ในเครื่อง: เกม localOnly หรือกำลังรันบน localhost */
+export function usesLocalLeaderboard(game: LeaderboardGame | null | undefined): boolean {
+  return Boolean(game?.localOnly) || isLocalhost();
 }
 
 export function isSupportedLeaderboardGid(gid: string): boolean {

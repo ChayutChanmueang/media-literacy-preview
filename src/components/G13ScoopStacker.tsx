@@ -4,8 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { notoLoopedThai } from "@/lib/fonts";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
-import Button3D from "./Button3D";
-import { CountUp, ResultTrophy } from "./ResultCelebration";
+import { CountUp } from "./ResultCelebration";
+import GameResultPopup from "./GameResultPopup";
 import StagePopup, { STAGE_POPUP_MS, type StagePopupStage } from "./StagePopup";
 import {
   clampToRange,
@@ -33,6 +33,9 @@ type Props = {
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
   // โหมดอิสระ: ปุ่มจบเกมในหน้าสรุปคะแนนใช้ข้อความ "จบเกม" (แบบ G18–G20) แทน "เสร็จสิ้นบทเรียน" (ค่าเริ่มต้น "flow" กันไม่ให้ Dev Hub เปลี่ยนพฤติกรรม)
   learningMode?: "flow" | "manual";
+  /** The page has opened its own popup (save-score question / name entry) on top of the result popup —
+   *  the result popup drops its dim so it sits under the top popup's dim with the game */
+  resultPopupCovered?: boolean;
 };
 
 type GamePhase = "intro" | "playing" | "summary";
@@ -547,7 +550,7 @@ function drawSky(context: CanvasRenderingContext2D, world: GameWorld, top: numbe
   }
 }
 
-export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "flow" }: Props) {
+export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "flow", resultPopupCovered = false }: Props) {
   const [phase, setPhase] = useState<GamePhase>("intro");
   const [timeLeft, setTimeLeft] = useState(SESSION_TIME_SECONDS);
   const [height, setHeight] = useState(0);
@@ -1554,7 +1557,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         />
       )}
 
-      {phase === "playing" && (
+      {/* the scene stays mounted (frozen on its last frame) under the result popup */}
+      {(phase === "playing" || phase === "summary") && (
         <div ref={playAreaRef} className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* sky continued up behind the header card (drawn with the game canvas, see drawSky) */}
           <canvas ref={backdropRef} aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 block w-full" />
@@ -1657,38 +1661,26 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
               className="absolute inset-x-0 bottom-0 z-10 h-[34%] min-h-24 touch-none cursor-grab active:cursor-grabbing bg-gradient-to-t from-white/20 to-transparent"
             />
           </div>
-        </div>
-      )}
-
-      {/* same end screen as G18 / G19 / G20: trophy, title, one score line, best-score lines, Button3D + finish */}
-      {phase === "summary" && (
-        // no gp-compact of its own: it takes the scale the root sets
-        <div className="flex min-h-0 flex-1 flex-col bg-white">
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
-              <ResultTrophy />
-              <p className="result-pop gp-type-h1 text-black">{height > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
-              {height > 0 ? (
-                <p className="result-rise gp-type-h3 text-[#4B4B4B]">
-                  หอไอติมสูง <CountUp value={height} className="font-bold text-[#B45309]" /> ชั้น
-                </p>
-              ) : (
-                <p className="result-rise gp-type-h3 text-[#4B4B4B]">
-                  ลากกรวยไปรับลูกไอติม แล้วหลบลูกระเบิดนะ
-                </p>
-              )}
+          {/* Result popup over the frozen scene (trial of the Figma popup design — only this game so far) */}
+          {phase === "summary" && (
+            <GameResultPopup
+              praise={height > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}
+              headline={height > 0 ? "หอไอติมสูง" : "ลากกรวยไปรับไอติม"}
+              score={height > 0 ? <><CountUp value={height} /> ชั้น</> : undefined}
+              finishLabel={learningMode === "manual" ? "จบเกม" : "เสร็จสิ้นบทเรียน"}
+              onFinish={() => onFinish(height)}
+              onReplay={startGame}
+              dim={!resultPopupCovered}
+            >
+              {height === 0 && <p className="result-rise gp-type-body text-[#4B4B4B]">แล้วหลบลูกระเบิดนะ</p>}
               {SHOW_RESULT_BEST_SCORE && runs > 1 && height > 0 && height === bestHeight && (
-                <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
+                <p className="result-rise gp-type-body text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
               )}
               {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-                <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestHeight} ชั้น</p>
+                <p className="result-rise gp-type-body text-[#4B4B4B]">สถิติดีที่สุด: {bestHeight} ชั้น</p>
               )}
-            </div>
-          </div>
-          <div className="result-actions flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
-            <Button3D variant="secondary" onClick={startGame}>เล่นอีกครั้ง</Button3D>
-            <Button3D onClick={() => onFinish(height)}>{learningMode === "manual" ? "จบเกม" : "เสร็จสิ้นบทเรียน"}</Button3D>
-          </div>
+            </GameResultPopup>
+          )}
         </div>
       )}
     </div>
