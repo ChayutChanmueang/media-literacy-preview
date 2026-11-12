@@ -32,6 +32,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  agentRules: false,
   // อ่าน dev origins จาก env (คั่นด้วย comma) หรือใช้ default สำหรับ WSL/Local Dev IP
   allowedDevOrigins: (process.env.NEXT_ALLOWED_DEV_ORIGINS ?? "172.23.64.1,localhost")
     .split(",")
@@ -53,4 +54,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+// The PWA is disabled in development; omit its webpack configuration so Turbopack can run.
+export default process.env.NODE_ENV === "development" ? nextConfig : withPWA(nextConfig);

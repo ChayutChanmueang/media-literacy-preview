@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getExportMode, getSupabaseAuthConfig, isDataExportEnabled } from "@/lib/adminAuth";
 import { getDatabasePool } from "@/lib/database";
 import { buildExportDownload } from "@/lib/export/download";
-import { exportFunctionUrl, useDirectExport } from "@/lib/export/edge";
+import { exportFunctionUrl, isDirectExportEnabled } from "@/lib/export/edge";
 import { readDbFacts } from "@/lib/export/queries";
 import { dbMatchesMode, ExportError, runExport, type ExportResult } from "@/lib/export/run";
 import { createSupabaseServerClient, getAdminIdentity, type AdminIdentity } from "@/lib/supabase/server";
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   const mode = getExportMode();
 
   try {
-    const result = useDirectExport() ? await runDirect(exportRequest, mode) : await runViaEdge(supabase, exportRequest);
+    const result = isDirectExportEnabled() ? await runDirect(exportRequest, mode) : await runViaEdge(supabase, exportRequest);
     return sendDownload(
       buildExportDownload(result, exportRequest, {
         mode,

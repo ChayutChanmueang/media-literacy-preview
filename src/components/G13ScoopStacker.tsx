@@ -1661,7 +1661,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
               className="absolute inset-x-0 bottom-0 z-10 h-[34%] min-h-24 touch-none cursor-grab active:cursor-grabbing bg-gradient-to-t from-white/20 to-transparent"
             />
           </div>
-          {/* Result popup over the frozen scene (trial of the Figma popup design — only this game so far) */}
+          {/* Result popup over the frozen scene (Figma popup design — same as G18–G20K) */}
           {phase === "summary" && (
             <GameResultPopup
               praise={height > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}

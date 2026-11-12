@@ -12,7 +12,7 @@ const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 export const BOARD_BAR = "#A855D4"; // Figma "Primary Purple"
 export const OWN_ROW = { bg: "#F0AE03", border: "#C38D00" }; // Figma "Primary Yellow" / "Yellow Pressed"
 // white on yellow is below 4.5:1 on its own — same dark text shadow the old podium rows used
-const ON_YELLOW_SHADOW = "0px 2px 4px rgba(0, 0, 0, 0.5)";
+export const ON_YELLOW_SHADOW ="0px 2px 4px rgba(0, 0, 0, 0.5)";
 
 // 52px white circle with a grey ring (rank) — medals for 1–3
 export function RankBadge({ rank }: { rank: number }) {

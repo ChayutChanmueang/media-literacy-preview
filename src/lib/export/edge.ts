@@ -4,6 +4,6 @@ export function exportFunctionUrl(supabaseUrl: string): string {
 }
 
 /** Local/dev escape hatch: query DATABASE_URL in the Next process instead of the edge function. */
-export function useDirectExport(): boolean {
+export function isDirectExportEnabled(): boolean {
   return process.env.DATA_EXPORT_DIRECT === "true";
 }

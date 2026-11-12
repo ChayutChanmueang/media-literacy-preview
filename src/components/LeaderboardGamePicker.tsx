@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Trophy, X } from "lucide-react";
 import { loggingService } from "@/services/loggingService";
 import { BROWSABLE_LEADERBOARD_GAMES, LOCAL_BROWSABLE_LEADERBOARD_GAMES, isLocalhost, type LeaderboardGame } from "@/lib/leaderboard";
+import LeaderboardPopup from "./LeaderboardPopup";
+import Press3D from "./Press3D";
 
 // เกม localOnly (ยังไม่ต่อ DB) ไม่มาจาก API — ต่อท้ายจาก config (กระดานของเกมเหล่านี้เก็บในเครื่อง; ตอนนี้ยังไม่มี)
 const toBrowsable = (game: LeaderboardGame): BrowsableGame => ({
@@ -31,14 +32,16 @@ type PickerStatus = "loading" | "ready" | "error";
 
 /**
  * US-CF-52: popup เลือกเกมเพื่อเปิดกระดานคะแนนแบบ browse
- * ใช้ร่วมกันทั้งใน navigation drawer (AppLayout) และปุ่ม "เลือกเกม" บนหน้า leaderboard โหมด browse
+ * ใช้ร่วมกันใน navigation drawer, หน้าเกมสนุก และปุ่ม "เลือกเกม" บนหน้า leaderboard โหมด browse
  * รายชื่อ + ชื่อเกม โหลดจากฐานข้อมูลผ่าน GET /api/leaderboard/games (ไม่มีชื่อ hardcode)
  * ยกเว้นเกมที่ยังไม่ต่อ DB (localOnly) ซึ่งต่อท้ายจาก config — ดู LOCAL_GAMES
+ * เลือกเกมแล้ว: เปิดกระดานคะแนนเป็น LeaderboardPopup (โหมด browse) ทับหน้าเดิม แทนการไปหน้า ?view=browse
+ * ปุ่ม "ปิด" ของ popup ปิดทั้งหมดกลับหน้าเดิม
  */
 export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGamePickerProps) {
-  const router = useRouter();
   const [games, setGames] = useState<BrowsableGame[]>([]);
   const [status, setStatus] = useState<PickerStatus>("loading");
+  const [boardLessonId, setBoardLessonId] = useState<string | null>(null);
 
   // โหลดรายชื่อเกม (ชื่อจริงจาก DB) ทุกครั้งที่เปิด popup
   useEffect(() => {
@@ -74,9 +77,21 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
 
   const handleSelect = (lessonId: string, gid: string) => {
     loggingService.logEvent("leaderboard_browse_open", { game_id: gid });
-    onClose();
-    router.push(`/lessons/${lessonId}/leaderboard?view=browse`);
+    setBoardLessonId(lessonId);
   };
+
+  if (boardLessonId) {
+    return (
+      <LeaderboardPopup
+        lessonId={boardLessonId}
+        browse
+        onFinish={() => {
+          setBoardLessonId(null);
+          onClose();
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -85,9 +100,10 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
       aria-modal="true"
       aria-label="เลือกเกมเพื่อดูกระดานคะแนน"
     >
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      {/* same entrance as the other popups (globals.css): dim fades in, card rises in */}
+      <div className="result-backdrop absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
-      <div className="relative z-[1] w-full max-w-sm rounded-[28px] border-2 border-[var(--primary)] bg-[var(--bg-card)] p-5 shadow-[var(--shadow-lg)]">
+      <div className="result-card relative z-[1] max-h-full w-full max-w-sm overflow-y-auto rounded-[28px] border-2 border-[#A5A5A5] bg-[var(--bg-card)] p-5 shadow-[var(--shadow-lg)]">
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Trophy size={26} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
@@ -125,23 +141,26 @@ export default function LeaderboardGamePicker({ open, onClose }: LeaderboardGame
 
           {status === "ready" &&
             games.map((game) => (
-              <button
+              // 3D press like the lessons page's game cards (Press3D: 8px grey base the face presses down onto)
+              <Press3D
                 key={game.gid}
-                type="button"
                 onClick={() => handleSelect(game.lessonId, game.gid)}
-                className="flex min-h-[72px] cursor-pointer items-center gap-3 rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-app)] px-4 py-3 text-left transition-colors hover:border-[var(--primary)] hover:bg-[var(--primary-light)] active:bg-[var(--primary-light)]"
+                className="w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                baseRadius="rounded-2xl"
               >
-                {game.icon ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={game.icon}
-                    alt=""
-                    aria-hidden="true"
-                    className="h-12 w-12 shrink-0 object-contain"
-                  />
-                ) : null}
-                <span className="text-button text-[var(--text-primary)]">{game.name}</span>
-              </button>
+                <span className="flex min-h-[72px] items-center gap-3 rounded-2xl border-2 border-solid border-[#D9D9D9] bg-white px-4 py-3">
+                  {game.icon ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={game.icon}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-12 w-12 shrink-0 object-contain"
+                    />
+                  ) : null}
+                  <span className="text-button text-[var(--text-primary)]">{game.name}</span>
+                </span>
+              </Press3D>
             ))}
         </div>
       </div>

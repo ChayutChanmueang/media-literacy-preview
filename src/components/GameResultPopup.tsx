@@ -10,7 +10,7 @@ import GamePopupShell from "./GamePopupShell";
  * headline (H2) → score (H1, Primary Green) → "จบเกม" (primary) over "เล่นอีกครั้ง" (secondary).
  * The badge is the Figma trophy badge (Group 76) — public/assets/result/trophy-badge.svg.
  *
- * Trial: only G13 (ice cream) uses this for now; G18–G20K keep the full-screen summary.
+ * Used by every fun game with a leaderboard: G13 (ice cream) and G18–G20K.
  * Render it inside a `position: relative` box that covers the scene — it fills that box.
  */
 interface GameResultPopupProps {

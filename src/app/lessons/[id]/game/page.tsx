@@ -31,7 +31,7 @@ const G17ScamBreaker = dynamic(() => import("@/components/G17ScamBreaker"), { ss
 const G18MemoryPads = dynamic(() => import("@/components/G18MemoryPads"), { ssr: false });
 const G19FruitMatch = dynamic(() => import("@/components/G19FruitMatch"), { ssr: false });
 const G20VeggieToss = dynamic(() => import("@/components/G20VeggieToss"), { ssr: false });
-// รุ่นทดลองของ G20 (ไม่มีลูกศรแรงโยน) — โหมดอิสระ › เกมสนุก "ผักบุ้งลอยฟ้า (ทดลอง)"
+// รุ่นไม่มีลูกศรแรงโยนของ G20 — เปิดเป็นรุ่นหลักแทน G20 ชั่วคราวใน โหมดอิสระ › เกมสนุก "ผักบุ้งลอยฟ้า"
 const G20KVeggieTossKitchen = dynamic(() => import("@/components/G20KVeggieTossKitchen"), { ssr: false });
 
 const getGameId = (lessonId: string) => {
@@ -63,10 +63,12 @@ export default function GameShellPage() {
   // เกมสนุกที่มีกระดานคะแนน (G13, G18–G20K): จบเกมแล้วถามก่อนว่าจะเก็บคะแนนไหม (Figma 3157:15321)
   // คะแนนรอไว้เป็น pending score — "ใช่" ไปหน้ากรอกชื่อ, "ไม่" ทิ้งคะแนนแล้วไปกระดานคะแนนของเกมนี้
   const [scorePrompt, setScorePrompt] = useState<{ gid: string; score: number } | null>(null);
-  // G13 (trial): "ใช่" opens the name entry popup over the game instead of the leaderboard's ?step=save page
+  // "ใช่" opens the name entry popup over the game (all fun games: G13, G18–G20K) instead of the leaderboard's ?step=save page
   const [nameEntryOpen, setNameEntryOpen] = useState(false);
-  // G13 (trial): after the name, the leaderboard opens as a popup too (LeaderboardPopup) instead of the page
+  // after the name, the leaderboard opens as a popup too (LeaderboardPopup) instead of the page
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  // the game's own game-over popup (GameResultPopup) is under another popup — only the topmost one dims
+  const resultPopupCovered = Boolean(scorePrompt) || nameEntryOpen;
 
   useEffect(() => {
     // Verification of session
@@ -186,12 +188,10 @@ export default function GameShellPage() {
       lesson_id: lessonId,
       score: scorePrompt.score,
     });
-    if (save && lessonId === FLOW_G13_ID) {
-      // trial: G13 asks for the name in a popup over the game (NameEntryPopup) instead of the ?step=save page —
+    if (save) {
+      // the name in a popup over the game (NameEntryPopup) instead of the ?step=save page —
       // stacked on top: the game-over and "เก็บคะแนนไหม?" popups stay open underneath
       setNameEntryOpen(true);
-    } else if (save) {
-      router.push(`/lessons/${lessonId}/leaderboard?step=save`);
     } else {
       leaderboardScoreService.clearPendingScore(scorePrompt.gid);
       const progress = progressService.getProgress();
@@ -201,7 +201,7 @@ export default function GameShellPage() {
     }
   };
 
-  // NameEntryPopup "ยืนยัน" (G13): the profile is saved — the leaderboard popup opens on top and saves the
+  // NameEntryPopup "ยืนยัน": the profile is saved — the leaderboard popup opens on top and saves the
   // pending score for it as it loads (same as the leaderboard page)
   const handleNameSaved = (reusedProfile: boolean) => {
     loggingService.logEvent("leaderboard_name_saved", { lesson_id: lessonId, reused_profile: reusedProfile, via: "popup" });
@@ -232,7 +232,7 @@ export default function GameShellPage() {
             onFinish={handleFinishGame}
             logEvent={logEventBound}
             learningMode={learningMode}
-            resultPopupCovered={Boolean(scorePrompt) || nameEntryOpen}
+            resultPopupCovered={resultPopupCovered}
           />
         );
       case "g15":
@@ -242,13 +242,13 @@ export default function GameShellPage() {
       case "g17":
         return <G17ScamBreaker onFinish={handleFinishGame} logEvent={logEventBound} />;
       case "g18":
-        return <G18MemoryPads onFinish={handleFinishGame} logEvent={logEventBound} />;
+        return <G18MemoryPads onFinish={handleFinishGame} logEvent={logEventBound} resultPopupCovered={resultPopupCovered} />;
       case "g19":
-        return <G19FruitMatch onFinish={handleFinishGame} logEvent={logEventBound} />;
+        return <G19FruitMatch onFinish={handleFinishGame} logEvent={logEventBound} resultPopupCovered={resultPopupCovered} />;
       case "g20":
-        return <G20VeggieToss onFinish={handleFinishGame} logEvent={logEventBound} />;
+        return <G20VeggieToss onFinish={handleFinishGame} logEvent={logEventBound} resultPopupCovered={resultPopupCovered} />;
       case "g20k":
-        return <G20KVeggieTossKitchen onFinish={handleFinishGame} logEvent={logEventBound} />;
+        return <G20KVeggieTossKitchen onFinish={handleFinishGame} logEvent={logEventBound} resultPopupCovered={resultPopupCovered} />;
       default:
         return <G1FactCheck onFinish={handleFinishGame} logEvent={logEventBound} />;
     }
@@ -270,7 +270,7 @@ export default function GameShellPage() {
         {renderGameContent()}
       </div>
       {scorePrompt && (
-        // only the topmost popup dims: the popups under it (G13: game-over, then this one) sit beneath its dim
+        // only the topmost popup dims: the popups under it (the game's game-over popup, then this one) sit beneath its dim
         <SaveScorePopup
           onYes={() => handleSaveScoreChoice(true)}
           onNo={() => handleSaveScoreChoice(false)}

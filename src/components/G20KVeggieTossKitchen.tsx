@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import StagePopup from "@/components/StagePopup";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
-import Button3D from "@/components/Button3D";
-import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
+import { CountUp } from "@/components/ResultCelebration";
+import GameResultPopup from "@/components/GameResultPopup";
 import GameIntro from "@/components/GameIntro";
 import { fitStage, toStage } from "@/lib/gameViewport";
 import { useStageScale } from "@/lib/useStageScale";
@@ -15,7 +15,7 @@ import { usePreloadSfx } from "@/lib/audio/useAudio";
 const G20_SFX = ["g20.dragLoop", "g20.throwBall", "g20.basketScore", "g20.ballMiss"] as const;
 
 /**
- * G20K — ผักบุ้งลอยฟ้า (ทดลอง: ไม่มีลูกศร) — EXPERIMENTAL copy of G20VeggieToss
+ * G20K — ผักบุ้งลอยฟ้า (ไม่มีลูกศรแรงโยน — เปิดเป็นรุ่นหลักแทน G20 ชั่วคราว)
  *
  * The kitchen scene was first built here (the bowl on a table under a shop wall, the veggie in a frying
  * pan on a stove, a tiled wall between) and has since been copied into G20, so both now share the scene,
@@ -54,6 +54,8 @@ type Props = {
   /** score = best run since the game was opened — goes on the (device-only for now) leaderboard */
   onFinish: (stars: number, score?: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
+  /** another popup (save score? / name entry) is open on top of the game-over popup — that one dims instead */
+  resultPopupCovered?: boolean;
 };
 
 type Phase = "intro" | "play" | "result";
@@ -750,7 +752,7 @@ function drawVeggie(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null,
   ctx.fillText("🥬", x, y); // leafy-green stand-in until the ผักบุ้ง sprite loads
 }
 
-export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
+export default function G20KVeggieTossKitchen({ onFinish, logEvent, resultPopupCovered = false }: Props) {
   // header card / result screen shrink with the screen (the scene already fits itself, see fitStage)
   const { ref: stageRootRef } = useStageScale({ gameId: "G20K", logEvent });
   usePreloadSfx(G20_SFX);
@@ -1272,7 +1274,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     return (
       <GameIntro
         containerClassName="bg-white gp-compact"
-        title="ผักบุ้งลอยฟ้า (ทดลอง)"
+        title="ผักบุ้งลอยฟ้า"
         objective="โยนผักบุ้งให้ลอยไปบนจาน สามารถโยนชิ่งกำแพงได้"
         choices={`โยนได้ ${THROWS_PER_RUN} ครั้ง ไม่จับเวลา`}
         imageSrc="/assets/icons/g20-veggie-tross.png"
@@ -1286,37 +1288,28 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
     );
   }
 
-  if (phase === "result") {
-    // same end screen as G18 / G19: trophy, title, one score line, best-score lines, Button3D + "จบเกม"
-    const newBest = runs > 1 && served > 0 && served === bestServed;
-    return (
-      <div ref={stageRootRef} className={`gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
-            <ResultTrophy />
-            <p className="result-pop gp-type-h1 text-black">{served > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
-            {served > 0 ? (
-              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
-                เสิร์ฟลงจานได้ <CountUp value={served} className="font-bold text-[#B45309]" /> จาน
-              </p>
-            ) : (
-              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
-                {TOUCH_HINT}แล้วลากนิ้วขึ้น เล็งไปที่จานได้เลย
-              </p>
-            )}
-            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
-            {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-              <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestServed} จาน</p>
-            )}
-          </div>
-        </div>
-        <div className="result-actions flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
-          <Button3D variant="secondary" onClick={startRun}>เล่นอีกครั้ง</Button3D>
-          <Button3D onClick={finish}>จบเกม</Button3D>
-        </div>
-      </div>
-    );
-  }
+  // Game over: the same popup as G13 (GameResultPopup) over the frozen play screen, instead of a separate
+  // score screen — then "เก็บคะแนนไหม?" → name entry → leaderboard popups on top (game page)
+  const resultPopup =
+    phase === "result" ? (
+      <GameResultPopup
+        praise={served > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}
+        headline={served > 0 ? "เสิร์ฟลงจานได้" : "เล็งไปที่จานได้เลย"}
+        score={served > 0 ? <><CountUp value={served} /> จาน</> : undefined}
+        finishLabel="จบเกม"
+        onFinish={finish}
+        onReplay={startRun}
+        dim={!resultPopupCovered}
+      >
+        {served === 0 && <p className="result-rise gp-type-body text-[#4B4B4B]">{TOUCH_HINT}แล้วลากนิ้วขึ้น</p>}
+        {SHOW_RESULT_BEST_SCORE && runs > 1 && served > 0 && served === bestServed && (
+          <p className="result-rise gp-type-body text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
+        )}
+        {SHOW_RESULT_BEST_SCORE && runs > 1 && (
+          <p className="result-rise gp-type-body text-[#4B4B4B]">สถิติดีที่สุด: {bestServed} จาน</p>
+        )}
+      </GameResultPopup>
+    ) : null;
 
   return (
     <div
@@ -1434,6 +1427,7 @@ export default function G20KVeggieTossKitchen({ onFinish, logEvent }: Props) {
           </>
         )}
       </div>
+      {resultPopup}
     </div>
   );
 }

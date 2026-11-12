@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
-import Button3D from "@/components/Button3D";
-import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
+import { CountUp } from "@/components/ResultCelebration";
+import GameResultPopup from "@/components/GameResultPopup";
 import GameIntro from "@/components/GameIntro";
 import { seededStream, todaySeed, type Rng } from "@/lib/seededRandom";
 import { useStageScale } from "@/lib/useStageScale";
@@ -63,6 +63,8 @@ type Props = {
   /** score = best run since the game was opened — goes on the (device-only for now) leaderboard */
   onFinish: (stars: number, score?: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
+  /** another popup (save score? / name entry) is open on top of the game-over popup — that one dims instead */
+  resultPopupCovered?: boolean;
 };
 
 type Phase = "intro" | "play" | "result";
@@ -563,7 +565,7 @@ function ScoreTicker({ value }: { value: number }) {
 const isAdjacent = (a: Cell, b: Cell) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
 const sameCell = (a: Cell | null, b: Cell) => !!a && a.r === b.r && a.c === b.c;
 
-export default function G19FruitMatch({ onFinish, logEvent }: Props) {
+export default function G19FruitMatch({ onFinish, logEvent, resultPopupCovered = false }: Props) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [slideMs, setSlideMs] = useState(SWAP_MS); // top/left transition: swap vs fall
@@ -1124,30 +1126,27 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
     );
   }
 
-  if (phase === "result") {
-    const newBest = runs > 1 && score > 0 && score === bestScore;
-    return (
-      <div ref={stageRootRef} className={`gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
-            <ResultTrophy />
-            <p className="result-pop gp-type-h1 text-black">เก่งมาก!</p>
-            <p className="result-rise gp-type-h3 text-[#4B4B4B]">
-              ได้คะแนน <CountUp value={score} className="font-bold text-[#B45309]" /> คะแนน
-            </p>
-            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
-            {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-              <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} คะแนน</p>
-            )}
-          </div>
-        </div>
-        <div className="result-actions flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
-          <Button3D variant="secondary" onClick={startRun}>เล่นอีกครั้ง</Button3D>
-          <Button3D onClick={finish}>จบเกม</Button3D>
-        </div>
-      </div>
-    );
-  }
+  // Game over: the same popup as G13 (GameResultPopup) over the frozen play screen, instead of a separate
+  // score screen — then "เก็บคะแนนไหม?" → name entry → leaderboard popups on top (game page)
+  const resultPopup =
+    phase === "result" ? (
+      <GameResultPopup
+        praise="เก่งมาก!"
+        headline="ได้คะแนน"
+        score={<><CountUp value={score} /> คะแนน</>}
+        finishLabel="จบเกม"
+        onFinish={finish}
+        onReplay={startRun}
+        dim={!resultPopupCovered}
+      >
+        {SHOW_RESULT_BEST_SCORE && runs > 1 && score > 0 && score === bestScore && (
+          <p className="result-rise gp-type-body text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
+        )}
+        {SHOW_RESULT_BEST_SCORE && runs > 1 && (
+          <p className="result-rise gp-type-body text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} คะแนน</p>
+        )}
+      </GameResultPopup>
+    ) : null;
 
   const isHint = (cell: Cell) => !!hint && (sameCell(hint[0], cell) || sameCell(hint[1], cell));
 
@@ -1474,6 +1473,7 @@ export default function G19FruitMatch({ onFinish, logEvent }: Props) {
           </div>
         </div>
       )}
+      {resultPopup}
     </div>
   );
 }

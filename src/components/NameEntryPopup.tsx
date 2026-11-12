@@ -11,7 +11,7 @@ import GamePopupShell from "./GamePopupShell";
 /**
  * Name entry ("กรอกชื่อเพื่อเก็บคะแนน") as a popup over the game instead of the leaderboard page's
  * ?step=save screen — same content as that screen (avatar, title, name field, "ยืนยัน"; Figma 3347:15533)
- * in the result popup's card (GamePopupShell). Trial: G13 only; G18–G20K still use the page.
+ * in the result popup's card (GamePopupShell). Used by every fun game (G13, G18–G20K).
  *
  * "ยืนยัน" keeps the stored profile when the name is unchanged (a new name = a new player), as the page
  * does, then calls onSaved — the leaderboard page saves the pending score for that profile when it loads.

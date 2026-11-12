@@ -5,8 +5,8 @@ import GameStageHeader, { HUD_DEV_BUTTON_CLASS } from "./GameStageHeader";
 import G18Background from "./G18Background";
 import { Eye } from "lucide-react";
 import { SHOW_RESULT_BEST_SCORE } from "@/lib/gameScore";
-import Button3D from "@/components/Button3D";
-import { CountUp, ResultTrophy } from "@/components/ResultCelebration";
+import { CountUp } from "@/components/ResultCelebration";
+import GameResultPopup from "@/components/GameResultPopup";
 import GameIntro from "@/components/GameIntro";
 import StagePopup, { type StagePopupStage } from "@/components/StagePopup";
 import DATA from "@/data/g18-simon-pads.json";
@@ -62,6 +62,8 @@ type Props = {
   /** score = best run since the game was opened — goes on the (device-only for now) leaderboard */
   onFinish: (stars: number, score?: number) => void;
   logEvent: (event: string, payload?: Record<string, unknown>) => void;
+  /** another popup (save score? / name entry) is open on top of the game-over popup — that one dims instead */
+  resultPopupCovered?: boolean;
 };
 
 // watch = sequence playing · input = player's turn · correct = short feedback between levels
@@ -131,7 +133,7 @@ function nextPad(seq: number[], rng: Rng) {
   }
 }
 
-export default function G18MemoryPads({ onFinish, logEvent }: Props) {
+export default function G18MemoryPads({ onFinish, logEvent, resultPopupCovered = false }: Props) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [level, setLevel] = useState(1);
   const [step, setStep] = useState(0); // pads tapped correctly in this attempt
@@ -418,36 +420,28 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
     );
   }
 
-  if (phase === "result") {
-    const newBest = runs > 1 && score > 0 && score === bestScore;
-    return (
-      <div ref={stageRootRef} className={`gp-compact flex min-h-0 flex-1 flex-col bg-white`}>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="flex min-h-full flex-col items-center justify-center gp-gap-20 gp-px-24 gp-py-28 text-center">
-            <ResultTrophy />
-            <p className="result-pop gp-type-h1 text-black">{score > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}</p>
-            {score > 0 ? (
-              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
-                ทำได้ต่อเนื่อง <CountUp value={score} className="font-bold text-[#2563EB]" /> ด่าน
-              </p>
-            ) : (
-              <p className="result-rise gp-type-h3 text-[#4B4B4B]">
-                ด่านแรกมีไฟดวงเดียว ค่อย ๆ ดูแล้วกดตามได้เลย
-              </p>
-            )}
-            {SHOW_RESULT_BEST_SCORE && newBest && <p className="result-rise gp-type-h3 text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>}
-            {SHOW_RESULT_BEST_SCORE && runs > 1 && (
-              <p className="result-rise gp-type-body-lg text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} ด่าน</p>
-            )}
-          </div>
-        </div>
-        <div className="result-actions flex shrink-0 flex-col gp-gap-14 gp-px-24 gp-pb-action-bar gp-pt-22">
-          <Button3D variant="secondary" onClick={startRun}>เล่นอีกครั้ง</Button3D>
-          <Button3D onClick={finish}>จบเกม</Button3D>
-        </div>
-      </div>
-    );
-  }
+  // Game over: the same popup as G13 (GameResultPopup) over the frozen play screen, instead of a separate
+  // score screen — then "เก็บคะแนนไหม?" → name entry → leaderboard popups on top (game page)
+  const resultPopup =
+    phase === "result" ? (
+      <GameResultPopup
+        praise={score > 0 ? "เก่งมาก!" : "มาลองอีกรอบกัน!"}
+        headline={score > 0 ? "ทำได้ต่อเนื่อง" : "ด่านแรกมีไฟดวงเดียว"}
+        score={score > 0 ? <><CountUp value={score} /> ด่าน</> : undefined}
+        finishLabel="จบเกม"
+        onFinish={finish}
+        onReplay={startRun}
+        dim={!resultPopupCovered}
+      >
+        {score === 0 && <p className="result-rise gp-type-body text-[#4B4B4B]">ค่อย ๆ ดูแล้วกดตามได้เลย</p>}
+        {SHOW_RESULT_BEST_SCORE && runs > 1 && score > 0 && score === bestScore && (
+          <p className="result-rise gp-type-body text-[#15803D]">🎉 สถิติใหม่ของคุณ!</p>
+        )}
+        {SHOW_RESULT_BEST_SCORE && runs > 1 && (
+          <p className="result-rise gp-type-body text-[#4B4B4B]">สถิติดีที่สุด: {bestScore} ด่าน</p>
+        )}
+      </GameResultPopup>
+    ) : null;
 
   const length = level;
   const isInput = phase === "input";
@@ -500,6 +494,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
       case "retry":
         return "กดผิดปุ่ม — ดูไฟอีกครั้ง";
       case "oops":
+      case "result": // stays under the game-over popup
         return "กดผิดปุ่ม — มาดูคะแนนกัน";
       default:
         return "";
@@ -746,6 +741,7 @@ export default function G18MemoryPads({ onFinish, logEvent }: Props) {
           )}
         </div>
       </div>
+      {resultPopup}
     </div>
   );
 }

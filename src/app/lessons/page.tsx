@@ -8,51 +8,11 @@ import { loggingService } from "@/services/loggingService";
 import { firstIncompleteFlowLesson } from "@/lib/flow";
 import { useIsClient } from "@/lib/useIsClient";
 import CustomScrollArea from "@/components/CustomScrollArea";
+import LeaderboardGamePicker from "@/components/LeaderboardGamePicker";
+import Press3D from "@/components/Press3D";
+import { ON_YELLOW_SHADOW, OWN_ROW } from "@/components/LeaderboardRows";
 import { PAGE_SCROLL_TRACK_CLASS, SCROLL_THUMB_CLASS } from "@/lib/scrollbarStyles";
 import { getOrderedLessonIds, getVideoByLessonId } from "@/lib/videos";
-
-// 3D press shared by the cards and back button below — same feel as Button3D: the grey base is its own
-// layer exactly 8px under the face (so it stays visible however tall the face grows with its text),
-// the face slides down over it in 90ms, and the base hides only once fully covered (no grey sliver at
-// the rounded corners) and comes back at once on release. Face (children) carries the white fill,
-// the #D9D9D9 2px border and the rounding; baseRadius must match that rounding.
-// depth: how far below the face the base shows (8px like Button3D; the mode cards use Figma's 2px shadow).
-// Full class strings per depth so Tailwind can see them.
-const PRESS_DEPTH = {
-  8: { pad: "pb-[8px]", base: "top-[8px]", press: "group-active:translate-y-[8px]" },
-  2: { pad: "pb-[2px]", base: "top-[2px]", press: "group-active:translate-y-[2px]" },
-} as const;
-
-function Press3D({
-  onClick,
-  className = "",
-  baseRadius,
-  depth = 8,
-  children,
-}: {
-  onClick: () => void;
-  className?: string;
-  baseRadius: string;
-  depth?: keyof typeof PRESS_DEPTH;
-  children: React.ReactNode;
-}) {
-  const d = PRESS_DEPTH[depth];
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`group relative block cursor-pointer border-0 bg-transparent p-0 ${d.pad} text-left ${className}`}
-    >
-      <span
-        aria-hidden="true"
-        className={`absolute inset-x-0 bottom-0 ${d.base} ${baseRadius} bg-[#D9D9D9] transition-opacity duration-0 group-active:opacity-0 group-active:delay-[90ms]`}
-      />
-      <span className={`relative block transition-transform duration-[90ms] ease-out ${d.press}`}>
-        {children}
-      </span>
-    </button>
-  );
-}
 
 // Figma node 3347:15420 "เลือกโหมด1" — การ์ดเลือกโหมด 352×256 (คลิกได้ทั้งใบ ไม่มีปุ่มยืนยันแยก):
 // ภาพซ้าย (ห่างขอบ 20) · ชื่อโหมด + คำอธิบาย กึ่งกลางแนวตั้ง (คอลัมน์ 148) · ลูกศรฟ้า 44px มุมขวาล่าง (ห่างขอบ 20)
@@ -172,15 +132,14 @@ const CATEGORIES = [
   { id: "video", icon: "/images/lessons/category-video.png", label: "วิดีโอ" },
 ] as const;
 
-// เกมสนุก (นอกสาย Flow) — G13 + G18–G20 (เดิม prototype GP7–GP9) เปิดเฉพาะโหมดอิสระ
-// G18–G20 (รวมรุ่นทดลอง G20K) มีไอคอนเฉพาะเกมแล้ว
+// เกมสนุก (นอกสาย Flow) — G13 + G18–G20K (เดิม prototype GP7–GP9) เปิดเฉพาะโหมดอิสระ
+// ปิด G20 ชั่วคราว ใช้ G20K (ไม่มีลูกศรแรงโยน เล็งด้วยจุดวิถีโยน) เป็นรุ่นหลัก "ผักบุ้งลอยฟ้า" แทน
 const FUN_GAMES = [
   { id: "flow-g13", icon: "/assets/icons/g13-ice-cream.jpg", label: "ต่อไอติมฝึกสมอง" },
   { id: "g18", icon: "/assets/icons/g18-simon.png", label: "จำให้ขึ้นใจ" },
   { id: "g19", icon: "/assets/icons/g19-fruit-match.png", label: "เรียงผลไม้" },
-  { id: "g20", icon: "/assets/icons/g20-veggie-tross.png", label: "ผักบุ้งลอยฟ้า" },
-  // รุ่นทดลอง (ไม่มีลูกศรแรงโยน เล็งด้วยจุดวิถีโยน) ให้ผู้ทดสอบเล่นเทียบกับ G20 — ชื่อมี "(ทดลอง)" กำกับ
-  { id: "g20k", icon: "/assets/icons/g20-veggie-tross.png", label: "ผักบุ้งลอยฟ้า (ทดลอง)" },
+  // { id: "g20", icon: "/assets/icons/g20-veggie-tross.png", label: "ผักบุ้งลอยฟ้า" },
+  { id: "g20k", icon: "/assets/icons/g20-veggie-tross.png", label: "ผักบุ้งลอยฟ้า" },
 ];
 
 // Figma node "เกมเพื่อการเรียนรู้" — mockup มี 3 แถว (แถวสุดท้ายซ้ำข้อความแถวแรกในต้นฉบับ ดูเป็น
@@ -262,6 +221,7 @@ export default function LessonSelectorPage() {
 function LessonSelector() {
   const router = useRouter();
   const [progress, setProgress] = useState<UserProgress>(() => progressService.getProgress());
+  const [leaderboardPickerOpen, setLeaderboardPickerOpen] = useState(false);
   // เคยเลือกโหมดอิสระค้างไว้ → กลับเข้าหน้าหมวดหมู่เลย ไม่ต้องเลือกโหมดซ้ำ
   const [activeSubPage, setActiveSubPage] = useState<"modes" | "categories" | "lessons" | "fun-games" | "videos">(
     () => (progress.learningMode === "manual" ? "categories" : "modes"),
@@ -442,7 +402,24 @@ function LessonSelector() {
         {/* scroll bar วาดเอง ให้เห็นตลอดเมื่อรายการยาวเกินจอ (native scrollbar บนมือถือซ่อนตัวเอง) */}
         <CustomScrollArea className="min-h-0 flex-1" trackClassName={PAGE_SCROLL_TRACK_CLASS} thumbClassName={SCROLL_THUMB_CLASS}>
           <div className="flex min-h-full flex-col gap-[24px] px-[24px] py-[28px]">
-            <p className="text-h2">เกมสนุก</p>
+            <div className="flex items-center gap-[24px]">
+              <p className="shrink-0 text-h2">เกมสนุก</p>
+              {/* same look as the player's own yellow row in LeaderboardPopup (CompactBoardRow own) — the yellow face
+                  stays 36px; Press3D adds the page's 8px drop shadow under it, in the stroke's darker yellow (button is 44px overall) */}
+              <Press3D
+                onClick={() => setLeaderboardPickerOpen(true)}
+                className="min-w-0 flex-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                baseRadius="rounded-[12px]"
+                baseColor={OWN_ROW.border}
+              >
+                <span
+                  className="flex h-[36px] items-center justify-center truncate rounded-[12px] border-2 border-solid px-[16px] text-center text-body text-white"
+                  style={{ backgroundColor: OWN_ROW.bg, borderColor: OWN_ROW.border, textShadow: ON_YELLOW_SHADOW }}
+                >
+                  กระดานคะแนน
+                </span>
+              </Press3D>
+            </div>
 
             <div className="flex w-full flex-col gap-[16px]">
               {FUN_GAMES.map((game) => (
@@ -460,6 +437,7 @@ function LessonSelector() {
         <div className="shrink-0 px-[24px] pb-action-bar pt-[24px]">
           <BackPillButton onClick={handleBackToCategories} />
         </div>
+        <LeaderboardGamePicker open={leaderboardPickerOpen} onClose={() => setLeaderboardPickerOpen(false)} />
       </div>
     );
   }
