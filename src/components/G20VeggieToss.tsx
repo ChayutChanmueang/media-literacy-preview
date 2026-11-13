@@ -11,6 +11,7 @@ import { fitStage, toStage } from "@/lib/gameViewport";
 import { useStageScale } from "@/lib/useStageScale";
 import { audio } from "@/lib/audio/audioEngine";
 import { usePreloadSfx } from "@/lib/audio/useAudio";
+import { panTossPosition, randomTossX, startPanToss, type PanToss } from "@/lib/g20PanToss";
 
 const G20_SFX = ["g20.dragLoop", "g20.throwBall", "g20.basketScore", "g20.ballMiss"] as const;
 
@@ -67,10 +68,11 @@ type Props = {
 type Phase = "intro" | "play" | "result";
 type FinishPopup = "enter" | "show" | "leave" | null;
 // idle = in the pan, ready · served = sitting on the plate · done = run over, no more throws
-type VeggieState = "idle" | "dragging" | "flying" | "served" | "done";
+// arriving = the next veggie being tossed up from below the screen into the pan (no input until it lands)
+type VeggieState = "idle" | "dragging" | "flying" | "served" | "done" | "arriving";
 
 type World = {
-  veggie: { x: number; y: number; vx: number; vy: number; state: VeggieState; plateOffset: number };
+  veggie: { x: number; y: number; vx: number; vy: number; state: VeggieState; plateOffset: number; toss?: PanToss };
   plate: { x: number; speed: number; direction: number };
   drag: { startX: number; startY: number; x: number; y: number } | null;
 };
@@ -85,6 +87,10 @@ const MIN_DRAG_UP = 20; // a shorter upward drag doesn't throw
 const WALL_BOUNCE = 0.8;
 const VEGGIE_RADIUS = 40;
 const VEGGIE_HOME = { x: GAME_W / 2, y: 760 }; // in the pan on the stove
+// The next veggie's toss into the pan: launched from below the screen (under the miss line, so it starts
+// out of sight), it peaks this far above the pan and drops in (~1 s)
+const PAN_TOSS_FROM_Y = GAME_H + 160;
+const PAN_TOSS_PEAK_RISE = 160;
 const STOVE_TOP = 850; // kitchen scene: stove surface the pan sits on
 const PLATE_Y = 200;
 const PLATE_W = 140;
@@ -276,6 +282,13 @@ function levelMessage(level: number) {
 
 function homeVeggie(state: VeggieState): World["veggie"] {
   return { ...VEGGIE_HOME, vx: 0, vy: 0, state, plateOffset: 0 };
+}
+
+// The next veggie, tossed up from below the screen at fromX into the pan (lands → idle, see update())
+function arrivingVeggie(fromX: number): World["veggie"] {
+  const x = Math.max(VEGGIE_RADIUS, Math.min(GAME_W - VEGGIE_RADIUS, fromX));
+  const toss = startPanToss(x, PAN_TOSS_FROM_Y, VEGGIE_HOME, GRAVITY, PAN_TOSS_PEAK_RISE);
+  return { x, y: PAN_TOSS_FROM_Y, vx: 0, vy: 0, state: "arriving", plateOffset: 0, toss };
 }
 
 // ---- Kitchen scene (first built for G20K) — all in stage units, drawn on the canvas, no image files ----
@@ -973,7 +986,8 @@ export default function G20VeggieToss({ onFinish, logEvent, resultPopupCovered =
       return;
     }
     world.plate = plateFor(levelRef.current);
-    world.veggie = homeVeggie("idle");
+    // served: the next veggie comes up from a random spot along the bottom
+    world.veggie = arrivingVeggie(randomTossX(GAME_W, VEGGIE_RADIUS));
     say(levelMessage(levelRef.current));
   };
 
@@ -994,7 +1008,8 @@ export default function G20VeggieToss({ onFinish, logEvent, resultPopupCovered =
       void finishRun(genRef.current);
       return;
     }
-    world.veggie = homeVeggie("idle");
+    // missed: the veggie is tossed back up from where it fell off the bottom
+    world.veggie = arrivingVeggie(world.veggie.x);
     say("ยังไม่ลงจาน ลองใหม่นะ 💪 ชิ่งกำแพงข้าง ๆ ก็ได้");
   };
 
@@ -1018,6 +1033,15 @@ export default function G20VeggieToss({ onFinish, logEvent, resultPopupCovered =
 
     if (veggie.state === "served") {
       veggie.x = plate.x + veggie.plateOffset; // rides along with a moving plate
+      return;
+    }
+    if (veggie.state === "arriving" && veggie.toss) {
+      const toss = veggie.toss;
+      toss.t += step;
+      const at = panTossPosition(toss, GRAVITY);
+      veggie.x = at.x;
+      veggie.y = at.y;
+      if (toss.t >= toss.frames) worldRef.current.veggie = homeVeggie("idle"); // landed in the pan — ready
       return;
     }
     if (veggie.state !== "flying") return;

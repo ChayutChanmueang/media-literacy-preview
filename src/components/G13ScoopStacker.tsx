@@ -12,6 +12,7 @@ import {
   getBombDropCount,
   getDifficultyProgress,
   getKeyframeValue,
+  getScoredHeight,
   getSkyAltitudeProgress,
   getTowerCameraTarget,
   getVisibleScoopRange,
@@ -109,6 +110,9 @@ type GameWorld = {
   dragPointerId: number | null;
   roundStartedAt: number; // world.elapsed when the timed round began (the tutorial isn't timed)
   tutorial: Tutorial | null;
+  // scoops at the bottom of the stack that were given, not caught (the tutorial's practice scoop /
+  // a replay's starter scoop): they stay on the cone but don't count as score
+  freeScoops: number;
   catchBottom: number; // catch zone's bottom edge, below the cone's rim (so the camera doesn't move it)
 };
 
@@ -269,8 +273,12 @@ const createWorld = (): GameWorld => ({
   dragPointerId: null,
   roundStartedAt: 0,
   tutorial: null,
+  freeScoops: 0,
   catchBottom: EMPTY_CONE_CATCH_DEPTH,
 });
+
+/** Tower height that counts as score (the free scoops at the bottom are left out) */
+const scoreOf = (world: GameWorld) => getScoredHeight(world.stack.length, world.freeScoops);
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
@@ -608,7 +616,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
   }, [timeLeft]);
 
   const showSummary = useCallback(() => {
-    const finalHeight = worldRef.current.stack.length;
+    const finalHeight = scoreOf(worldRef.current);
     setHeight(finalHeight);
     setBestHeight((previous) => Math.max(previous, finalHeight));
     setTimeLeft(0);
@@ -659,7 +667,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     const radius = Math.min(SCOOP_RADIUS, world.width * FALLING_RADIUS_WIDTH_RATIO);
     const margin = radius + 8;
     // US-CF-15: bomb chance ramps from BOMB_CHANCE_BASE → BOMB_CHANCE_MAX with score
-    const progress = getDifficultyProgress(world.stack.length, DIFFICULTY_SCORE_CAP);
+    const progress = getDifficultyProgress(scoreOf(world), DIFFICULTY_SCORE_CAP);
     const bombChance = BOMB_CHANCE_BASE + (BOMB_CHANCE_MAX - BOMB_CHANCE_BASE) * progress;
     const rolls = drawSpawnRolls(spawnerIndex === 1 ? spawnRngsRef.current.spawner1 : spawnRngsRef.current.spawner2);
     let kind: FallingKind = rolls.kind < bombChance ? "bomb" : "scoop";
@@ -729,7 +737,10 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     if (removedCount === 0) return 0;
 
     const geometry = getTowerGeometry(world, reduceMotionRef.current);
+    const scoreBefore = scoreOf(world);
     const removed = world.stack.splice(world.stack.length - removedCount, removedCount);
+    // a bomb that reaches the free scoop knocks it off too — it isn't given back
+    world.freeScoops = Math.min(world.freeScoops, world.stack.length);
     removed.reverse().forEach((flavor, index) => {
       world.debris.push({
         x: geometry.x + geometry.wobble + (index === 0 ? -8 : 8),
@@ -742,8 +753,8 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         flavor,
       });
     });
-    setHeight(world.stack.length);
-    return removedCount;
+    setHeight(scoreOf(world));
+    return scoreBefore - scoreOf(world); // score lost (a free scoop knocked off doesn't count)
   }, []);
 
   const resolveFallingObject = useCallback(
@@ -755,19 +766,19 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         if (caught) {
           const flavor = falling.flavor ?? FLAVORS[0];
           world.stack.push(flavor);
-          setHeight(world.stack.length);
+          setHeight(scoreOf(world));
           addScorePopup(1);
-          setBestHeight((previous) => Math.max(previous, world.stack.length));
+          setBestHeight((previous) => Math.max(previous, scoreOf(world)));
           audio.playSfx("g13.scoopCatch");
           logRef.current("scoop_catch", {
             game_id: "g13",
-            tower_height: world.stack.length,
+            tower_height: scoreOf(world),
             renderer: "canvas",
           });
         } else {
           logRef.current("scoop_miss", {
             game_id: "g13",
-            tower_height: world.stack.length,
+            tower_height: scoreOf(world),
             renderer: "canvas",
           });
         }
@@ -776,21 +787,21 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           const flavor1 = falling.flavor ?? FLAVORS[0];
           const flavor2 = falling.flavor2 ?? FLAVORS[1];
           world.stack.push(flavor1, flavor2);
-          setHeight(world.stack.length);
+          setHeight(scoreOf(world));
           addScorePopup(2);
-          setBestHeight((previous) => Math.max(previous, world.stack.length));
+          setBestHeight((previous) => Math.max(previous, scoreOf(world)));
           world.flash = 0.35;
           world.flashColor = "rgba(234,179,8,"; // Golden flash
           audio.playSfx("g13.scoopCatchX2");
           logRef.current("double_catch", {
             game_id: "g13",
-            tower_height: world.stack.length,
+            tower_height: scoreOf(world),
             renderer: "canvas",
           });
         } else {
           logRef.current("double_miss", {
             game_id: "g13",
-            tower_height: world.stack.length,
+            tower_height: scoreOf(world),
             renderer: "canvas",
           });
         }
@@ -803,18 +814,18 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
         logRef.current("bomb_hit", {
           game_id: "g13",
           scoops_dropped: removed,
-          tower_height: world.stack.length,
+          tower_height: scoreOf(world),
           renderer: "canvas",
         });
       } else {
         logRef.current("bomb_dodge", {
           game_id: "g13",
-          tower_height: world.stack.length,
+          tower_height: scoreOf(world),
           renderer: "canvas",
         });
       }
 
-      const progress = getDifficultyProgress(world.stack.length, DIFFICULTY_SCORE_CAP);
+      const progress = getDifficultyProgress(scoreOf(world), DIFFICULTY_SCORE_CAP);
       if (falling.spawnerIndex === 1) {
         const delayMultiplier = 1 - (1 - SPAWN_DELAY_MIN_MULTIPLIER) * progress;
         world.spawnDelay1 = (falling.kind === "bomb" ? 0.55 : 0.32) * delayMultiplier;
@@ -825,6 +836,15 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
     },
     [addScorePopup, removeTopScoops]
   );
+
+  // The round starts with one scoop already on the cone (the tutorial's practice scoop, or a fresh one
+  // on "เล่นอีกรอบ" / a skipped tutorial) — free, not counted as score
+  const giveStarterScoop = useCallback(() => {
+    const world = worldRef.current;
+    if (world.stack.length === 0) world.stack.push(FLAVORS[TUTORIAL_SCOOP_FLAVOR]);
+    world.freeScoops = world.stack.length;
+    setHeight(scoreOf(world));
+  }, []);
 
   // Starts the timed round: seeded drops from here on (after the tutorial, or straight away on a replay)
   const beginRound = useCallback(() => {
@@ -841,6 +861,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       renderer: "canvas",
       session_duration_seconds: SESSION_TIME_SECONDS,
       seed,
+      free_scoops: world.freeScoops,
     });
   }, []);
 
@@ -850,15 +871,15 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       if (!world.tutorial) return;
       world.tutorial = null;
       world.falling = [];
-      // the practice scoop pops off the cone — the real round starts from zero
-      removeTopScoops(world.stack.length);
+      // the practice scoop stays on the cone as a free starter scoop — the score starts from zero
+      giveStarterScoop();
       tutorialPendingRef.current = false;
       setInTutorial(false);
       setTutorialBanner(null);
       logRef.current("tutorial_done", { game_id: "g13", skipped });
       beginRound();
     },
-    [beginRound, removeTopScoops]
+    [beginRound, giveStarterScoop]
   );
 
   // Moves the tutorial to its next step, with a short "เก่งมาก!" first
@@ -900,7 +921,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       // a bomb hit knocked the practice scoop off — put a fresh one on so the next try looks the same
       if (world.stack.length === 0) {
         world.stack.push(FLAVORS[TUTORIAL_SCOOP_FLAVOR]);
-        setHeight(world.stack.length);
+        setHeight(scoreOf(world));
       }
       tutorial.dodgeX = reachable(world.width * (onLeft ? 0.8 : 0.2));
       world.falling.push({
@@ -945,7 +966,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       if (caught) {
         audio.playSfx("g13.scoopCatch");
         world.stack.push(falling.flavor ?? FLAVORS[0]);
-        setHeight(world.stack.length);
+        setHeight(scoreOf(world));
         addScorePopup(1);
         advanceTutorial("catch", "dodge");
         return;
@@ -1323,7 +1344,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
           if (world.spawnDelay1 <= 0) spawnObject(1);
         }
 
-        if (world.stack.length >= 10 && !world.secondSpawnerActive) {
+        if (scoreOf(world) >= 10 && !world.secondSpawnerActive) {
           world.secondSpawnerActive = true;
           world.spawnDelay2 = 0.3 + spawnRngsRef.current.spawner2Delay() * 0.5;
         }
@@ -1486,6 +1507,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
       setTutorialBanner({ text: TUTORIAL_TEXT.move, tone: "info" });
       logRef.current("tutorial_start", { game_id: "g13" });
     } else {
+      giveStarterScoop();
       beginRound();
     }
   };
@@ -1588,7 +1610,7 @@ export default function G13ScoopStacker({ onFinish, logEvent, learningMode = "fl
                 onClick={() => {
                   logRef.current("g13_dev_skip_timer", {
                     game_id: "g13",
-                    tower_height: worldRef.current.stack.length,
+                    tower_height: scoreOf(worldRef.current),
                   });
                   finishGame();
                 }}

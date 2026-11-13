@@ -45,7 +45,7 @@ function LeaderboardPageInner() {
     ? "leaderboard"
     : player === undefined
       ? "loading"
-      : isSaveStep
+      : isSaveStep && !player // a returning player skips the name entry, straight to the board
         ? "name-entry"
         : "leaderboard";
 

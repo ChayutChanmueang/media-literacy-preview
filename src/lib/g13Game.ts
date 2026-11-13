@@ -102,3 +102,10 @@ export const getKeyframeValue = (t: number, keys: readonly (readonly [number, nu
   }
   return keys[keys.length - 1][1];
 };
+
+/**
+ * The tower height that counts as score: every scoop on the cone except the free ones at the
+ * bottom (the tutorial's practice scoop, or the starter scoop a replay begins with). Never below 0.
+ */
+export const getScoredHeight = (stackLength: number, freeScoops: number) =>
+  Math.max(0, stackLength - Math.max(0, freeScoops));

@@ -3,6 +3,7 @@ import {
   clampToRange,
   getBombDropCount,
   getKeyframeValue,
+  getScoredHeight,
   getSkyAltitudeProgress,
   getStackTargetY,
   getTowerCameraTarget,
@@ -12,6 +13,13 @@ import {
 } from "@/lib/g13Game";
 
 describe("G13 Canvas remake game rules", () => {
+  it("leaves the free starter scoop out of the score", () => {
+    expect(getScoredHeight(1, 1)).toBe(0); // round start: only the free scoop
+    expect(getScoredHeight(4, 1)).toBe(3);
+    expect(getScoredHeight(3, 0)).toBe(3); // tutorial / no free scoop
+    expect(getScoredHeight(0, 1)).toBe(0); // never negative
+  });
+
   it("eases the catch zone's bottom up after a catch and snaps it down when the tower shrinks", () => {
     // tower grew: bottom moves part of the way up, never past the new target
     const eased = stepCatchBottom(-10, -60, 0.1, 4);

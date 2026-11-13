@@ -7,6 +7,7 @@ import { loggingService } from "@/services/loggingService";
 import { progressService } from "@/services/progressService";
 import { apiClient } from "@/services/apiClient";
 import { leaderboardScoreService } from "@/services/leaderboardScoreService";
+import { leaderboardPlayerService } from "@/services/leaderboardPlayerService";
 import { selfAssessmentService } from "@/services/selfAssessmentService";
 import { FLOW_G13_ID, FLOW_POST_TEST_ID, FLOW_POST_TEST_PATH, nextFlowLessonAfterGame } from "@/lib/flow";
 import { useDevSkip } from "@/lib/devSkip";
@@ -189,6 +190,14 @@ export default function GameShellPage() {
       score: scorePrompt.score,
     });
     if (save) {
+      // a returning player (profile already stored on this device) goes straight to the leaderboard popup,
+      // which saves the pending score under that profile — the name is asked only when there's no profile
+      // (first save, or the browser data was cleared)
+      if (leaderboardPlayerService.getProfile()) {
+        loggingService.logEvent("leaderboard_name_saved", { lesson_id: lessonId, reused_profile: true, via: "auto" });
+        setLeaderboardOpen(true);
+        return;
+      }
       // the name in a popup over the game (NameEntryPopup) instead of the ?step=save page —
       // stacked on top: the game-over and "เก็บคะแนนไหม?" popups stay open underneath
       setNameEntryOpen(true);
@@ -274,7 +283,7 @@ export default function GameShellPage() {
         <SaveScorePopup
           onYes={() => handleSaveScoreChoice(true)}
           onNo={() => handleSaveScoreChoice(false)}
-          dim={!nameEntryOpen}
+          dim={!nameEntryOpen && !leaderboardOpen}
         />
       )}
       {nameEntryOpen && <NameEntryPopup onSaved={handleNameSaved} dim={!leaderboardOpen} />}
